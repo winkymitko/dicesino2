@@ -202,7 +202,7 @@ const DiceGame: React.FC = () => {
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium mb-2">Choose Stake</label>
-              <div className="grid grid-cols-2 gap-2 mb-3">
+              <div className="grid grid-cols-3 gap-2 mb-3">
                 {[0.5, 1, 2].map((amount) => (
                   <button
                     key={amount}
@@ -217,7 +217,7 @@ const DiceGame: React.FC = () => {
                   </button>
                 ))}
               </div>
-              <div className="grid grid-cols-2 gap-2 mb-3">
+              <div className="grid grid-cols-3 gap-2 mb-3">
                 {[5, 10, 20].map((amount) => (
                   <button
                     key={amount}
