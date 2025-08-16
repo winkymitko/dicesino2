@@ -22,9 +22,13 @@ router.post('/register', async (req, res) => {
     
     const hashedPassword = await bcrypt.hash(password, 10);
     
+    // Generate username from email (part before @)
+    const username = email.split('@')[0];
+    
     const user = await prisma.user.create({
       data: {
         email,
+        username,
         password: hashedPassword,
         name,
         isAdmin: email === process.env.ADMIN_EMAIL

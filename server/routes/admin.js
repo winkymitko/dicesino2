@@ -7,27 +7,25 @@ const prisma = new PrismaClient();
 
 // Default bot names
 const DEFAULT_BOT_NAMES = [
-  'DiceKing', 'RollMaster', 'LuckyStrike', 'BattleBot', 'DiceWarrior',
-  'RollHunter', 'DiceLord', 'BattleMage', 'RollSeeker', 'DiceChamp',
-  'LuckyRoller', 'BattleAce', 'DicePro', 'RollStar', 'BattleWolf',
-  'CubeSlayer', 'DiceNinja', 'RollPhoenix', 'BattleTitan', 'DiceViper',
-  'RollShadow', 'DiceStorm', 'BattleHawk', 'RollThunder', 'DiceFury',
-  'BattleRaven', 'RollBlaze', 'DiceSpirit', 'BattleFrost', 'RollVenom',
-  'DiceCrusher', 'BattleGhost', 'RollFire', 'DiceReaper', 'BattleSteel',
-  'RollCobra', 'DicePhantom', 'BattleWind', 'RollLightning', 'DiceShark',
-  'BattleIce', 'RollDragon', 'DiceWolf', 'BattleFlame', 'RollEagle',
-  'DiceTiger', 'BattleStorm', 'RollPanther', 'DiceRaptor', 'BattleLion',
-  'RollFalcon', 'DiceVenom', 'BattleSnake', 'RollBeast', 'DiceHunter',
-  'BattleClaw', 'RollFang', 'DiceRage', 'BattleForce', 'RollPower',
-  'DiceBlitz', 'BattleRush', 'RollStrike', 'DiceSlash', 'BattleCrush',
-  'RollSmash', 'DiceBlast', 'BattleBoom', 'RollShock', 'DiceFlash',
-  'BattleZap', 'RollBolt', 'DiceSpike', 'BattleEdge', 'RollBlade',
-  'DiceShield', 'BattleGuard', 'RollDefend', 'DiceArmor', 'BattleWall',
-  'RollBarrier', 'DiceFortress', 'BattleTower', 'RollCastle', 'DiceKeep',
-  'BattleHold', 'RollStand', 'DiceRise', 'BattleClimb', 'RollPeak',
-  'DiceSummit', 'BattleTop', 'RollHigh', 'DiceMax', 'BattleSupreme',
-  'RollUltimate', 'DiceFinal', 'BattleEnd', 'RollLast', 'DiceFinish',
-  'BattleWin', 'RollVictory', 'DiceTriumph', 'BattleGlory', 'RollHonor'
+  'alex_gaming', 'mike_dice', 'sarah_lucky', 'john_roller', 'emma_wins',
+  'david_pro', 'lisa_battle', 'chris_king', 'anna_strike', 'tom_master',
+  'jenny_ace', 'mark_hunter', 'kate_star', 'ryan_wolf', 'amy_ninja',
+  'steve_phoenix', 'lucy_titan', 'jake_viper', 'mia_shadow', 'nick_storm',
+  'zoe_hawk', 'ben_thunder', 'eva_fury', 'sam_raven', 'lea_blaze',
+  'max_spirit', 'ivy_frost', 'leo_venom', 'ava_crusher', 'dan_ghost',
+  'kim_fire', 'joe_reaper', 'sue_steel', 'ray_cobra', 'joy_phantom',
+  'tim_wind', 'may_lightning', 'rob_shark', 'sky_ice', 'ace_dragon',
+  'fox_wolf', 'rio_flame', 'neo_eagle', 'zed_tiger', 'kai_storm',
+  'rex_panther', 'ash_raptor', 'blu_lion', 'red_falcon', 'gem_venom',
+  'jet_snake', 'orb_beast', 'hex_hunter', 'arc_claw', 'nyx_fang',
+  'zen_rage', 'pax_force', 'lux_power', 'vex_blitz', 'rox_rush',
+  'dex_strike', 'jax_slash', 'kex_crush', 'tex_smash', 'wex_blast',
+  'yex_boom', 'zex_shock', 'qex_flash', 'rex_zap', 'sex_bolt',
+  'pex_spike', 'lex_edge', 'mex_blade', 'nex_shield', 'oex_guard',
+  'gex_defend', 'hex_armor', 'iex_wall', 'jex_barrier', 'kex_fortress',
+  'lex_tower', 'mex_castle', 'nex_keep', 'oex_hold', 'pex_stand',
+  'qex_rise', 'rex_climb', 'sex_peak', 'tex_summit', 'uex_top',
+  'vex_high', 'wex_max', 'xex_supreme', 'yex_ultimate', 'zex_final'
 ];
 
 // In-memory bot names storage (in production, use database)
@@ -43,6 +41,7 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
       select: {
         id: true,
         email: true,
+        username: true,
         name: true,
         phone: true,
         cryptoWallet: true,

@@ -243,6 +243,7 @@ const AdminPanel: React.FC = () => {
             <thead>
               <tr className="border-b border-white/20">
                 <th className="text-left p-3">Email</th>
+                <th className="text-left p-3">Username</th>
                 <th className="text-left p-3">Name</th>
                 <th className="text-left p-3">Virtual Balance</th>
                 <th className="text-left p-3">Real Balance</th>
@@ -258,6 +259,7 @@ const AdminPanel: React.FC = () => {
                 <React.Fragment key={user.id}>
                   <tr className="border-b border-white/10 hover:bg-white/5">
                   <td className="p-3">{user.email}</td>
+                  <td className="p-3 text-blue-400">@{user.username}</td>
                   <td className="p-3">{user.name || '-'}</td>
                   <td className="p-3 text-green-400">${user.virtualBalance.toFixed(2)}</td>
                   <td className="p-3 text-yellow-400">${user.realBalance.toFixed(2)}</td>
@@ -558,7 +560,7 @@ const AdminPanel: React.FC = () => {
                     </tr>
                   )}
                 </React.Fragment>
-              ))}
+                      <td colSpan={10} className="p-0">
             </tbody>
           </table>
         </div>

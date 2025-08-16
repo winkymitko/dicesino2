@@ -139,6 +139,13 @@ const Profile: React.FC = () => {
             </div>
 
             <div>
+              <label className="block text-sm font-medium mb-2">Username</label>
+              <div className="px-4 py-3 bg-black/30 border border-white/20 rounded-lg text-gray-400">
+                @{user.username || user.email.split('@')[0]}
+              </div>
+            </div>
+
+            <div>
               <label className="block text-sm font-medium mb-2">Name</label>
               <input
                 value={name}
