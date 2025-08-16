@@ -34,6 +34,7 @@ const DiceBattle: React.FC = () => {
     try {
       setError('');
       setMatchmaking(true);
+      setGuessConfirmed(false); // Reset guess confirmation
       
       // Simulate matchmaking delay
       await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
@@ -55,6 +56,7 @@ const DiceBattle: React.FC = () => {
       setOpponent(data.opponent);
       setGameActive(true);
       setMatchmaking(false);
+      // Don't reset playerGuess here - keep the current guess
       await refreshUser();
     } catch (err: any) {
       setError(err.message);
@@ -106,6 +108,8 @@ const DiceBattle: React.FC = () => {
     setMatchmaking(false);
     setRolling(false);
     setGuessConfirmed(false);
+    // Reset playerGuess to default when starting completely fresh
+    setPlayerGuess(10);
     setError('');
   };
 
