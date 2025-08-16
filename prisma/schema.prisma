@@ -28,6 +28,10 @@ model User {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
+  // Per-game win chance modifiers
+  diceGameModifier     Float @default(1.0)
+  diceBattleModifier   Float @default(1.0)
+
   games       Game[]
   gameRounds  GameRound[]
   bonuses     Bonus[]

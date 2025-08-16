@@ -158,7 +158,7 @@ router.post('/dice/roll', authenticateToken, async (req, res) => {
     const gameCoefficient = 0.8 + (Math.random() * 0.4);
     
     // Apply fairness modifier from user settings with game coefficient
-    const effectiveModifier = req.user.winChanceModifier * gameCoefficient;
+    const effectiveModifier = req.user.diceGameModifier * gameCoefficient;
     points = applyFairnessModifier([dice1, dice2, dice3], points, effectiveModifier);
     
     const multiplier = getMultiplier(points);
@@ -498,7 +498,7 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
     let opponentDistance = Math.abs(total - opponent.guess);
     
     // Apply win chance modifier (subtle adjustment)
-    const modifier = req.user.winChanceModifier;
+    const modifier = req.user.diceBattleModifier;
     const gameCoefficient = 0.9 + (Math.random() * 0.2); // 0.9 to 1.1
     const effectiveModifier = modifier * gameCoefficient;
     

@@ -11,7 +11,8 @@ const AdminPanel: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [bonusAmount, setBonusAmount] = useState('');
   const [bonusDescription, setBonusDescription] = useState('');
-  const [winChanceModifier, setWinChanceModifier] = useState('1.0');
+  const [diceGameModifier, setDiceGameModifier] = useState('1.0');
+  const [diceBattleModifier, setDiceBattleModifier] = useState('1.0');
 
   useEffect(() => {
     if (!user?.isAdmin) {
@@ -50,19 +51,22 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  const updateWinChance = async (userId: string) => {
+  const updateModifiers = async (userId: string) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}/win-chance`, {
+      const response = await fetch(`/api/admin/users/${userId}/modifiers`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ winChanceModifier: parseFloat(winChanceModifier) })
+        body: JSON.stringify({ 
+          diceGameModifier: parseFloat(diceGameModifier),
+          diceBattleModifier: parseFloat(diceBattleModifier)
+        })
       });
 
       if (response.ok) {
         fetchUsers();
         setSelectedUser(null);
-        alert('Win chance updated successfully');
+        alert('Game modifiers updated successfully');
       } else {
         const error = await response.json();
         alert(error.error);
@@ -145,7 +149,7 @@ const AdminPanel: React.FC = () => {
                 <th className="text-left p-3">Real Balance</th>
                 <th className="text-left p-3">Games</th>
                 <th className="text-left p-3">Win Rate</th>
-                <th className="text-left p-3">Win Modifier</th>
+                <th className="text-left p-3">Dice/Battle Mod</th>
                 <th className="text-left p-3">Actions</th>
               </tr>
             </thead>
@@ -162,18 +166,19 @@ const AdminPanel: React.FC = () => {
                   </td>
                   <td className="p-3">
                     <span className={`px-2 py-1 rounded text-xs ${
-                      user.winChanceModifier > 1 ? 'bg-green-500/20 text-green-400' :
-                      user.winChanceModifier < 1 ? 'bg-red-500/20 text-red-400' :
+                      user.diceGameModifier > 1 || user.diceBattleModifier > 1 ? 'bg-green-500/20 text-green-400' :
+                      user.diceGameModifier < 1 || user.diceBattleModifier < 1 ? 'bg-red-500/20 text-red-400' :
                       'bg-gray-500/20 text-gray-400'
                     }`}>
-                      {user.winChanceModifier}x
+                      {user.diceGameModifier}x/{user.diceBattleModifier}x
                     </span>
                   </td>
                   <td className="p-3">
                     <button
                       onClick={() => {
                         setSelectedUser(user);
-                        setWinChanceModifier(user.winChanceModifier.toString());
+                        setDiceGameModifier(user.diceGameModifier.toString());
+                        setDiceBattleModifier(user.diceBattleModifier.toString());
                       }}
                       className="bg-blue-500/20 text-blue-400 px-3 py-1 rounded text-xs hover:bg-blue-500/30 mr-2"
                     >
@@ -203,18 +208,34 @@ const AdminPanel: React.FC = () => {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Win Chance Modifier</label>
+                <label className="block text-sm font-medium mb-2">Dice Game Modifier</label>
                 <input
                   type="number"
                   step="0.1"
                   min="0.1"
                   max="5.0"
-                  value={winChanceModifier}
-                  onChange={(e) => setWinChanceModifier(e.target.value)}
+                  value={diceGameModifier}
+                  onChange={(e) => setDiceGameModifier(e.target.value)}
                   className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
                 />
                 <p className="text-xs text-gray-400 mt-1">
                   1.0 = normal, &gt;1.0 = better luck, &lt;1.0 = worse luck
+                </p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">DiceBattle Modifier</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0.1"
+                  max="5.0"
+                  value={diceBattleModifier}
+                  onChange={(e) => setDiceBattleModifier(e.target.value)}
+                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  1.0 = normal, >1.0 = better luck, <1.0 = worse luck
                 </p>
               </div>
 
@@ -244,10 +265,10 @@ const AdminPanel: React.FC = () => {
 
               <div className="flex space-x-3 pt-4">
                 <button
-                  onClick={() => updateWinChance(selectedUser.id)}
+                  onClick={() => updateModifiers(selectedUser.id)}
                   className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-2 rounded-lg transition-all"
                 >
-                  Update Win Chance
+                  Update Modifiers
                 </button>
                 
                 <button

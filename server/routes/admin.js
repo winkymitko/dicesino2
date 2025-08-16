@@ -17,7 +17,8 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
         cryptoWallet: true,
         realBalance: true,
         virtualBalance: true,
-        winChanceModifier: true,
+        diceGameModifier: true,
+        diceBattleModifier: true,
         totalInvested: true,
         totalGames: true,
         totalWins: true,
@@ -36,19 +37,20 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// Update user win chance modifier
-router.put('/users/:userId/win-chance', authenticateToken, requireAdmin, async (req, res) => {
+// Update user game modifiers
+router.put('/users/:userId/modifiers', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { userId } = req.params;
-    const { winChanceModifier } = req.body;
+    const { diceGameModifier, diceBattleModifier } = req.body;
     
-    if (winChanceModifier < 0.1 || winChanceModifier > 5.0) {
-      return res.status(400).json({ error: 'Win chance modifier must be between 0.1 and 5.0' });
+    if (diceGameModifier < 0.1 || diceGameModifier > 5.0 || 
+        diceBattleModifier < 0.1 || diceBattleModifier > 5.0) {
+      return res.status(400).json({ error: 'Modifiers must be between 0.1 and 5.0' });
     }
     
     await prisma.user.update({
       where: { id: userId },
-      data: { winChanceModifier }
+      data: { diceGameModifier, diceBattleModifier }
     });
     
     res.json({ success: true });
