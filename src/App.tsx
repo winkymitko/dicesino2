@@ -9,6 +9,7 @@ import DiceGame from './pages/DiceGame';
 import DiceBattle from './pages/DiceBattle';
 import Profile from './pages/Profile';
 import AdminPanel from './pages/AdminPanel';
+import TopUp from './pages/TopUp';
 import { AuthProvider } from './context/AuthContext';
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
               <Route path="/dicebattle" element={<DiceBattle />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/topup" element={<TopUp />} />
             </Routes>
           </main>
           <Footer />

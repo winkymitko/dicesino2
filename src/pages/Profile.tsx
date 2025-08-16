@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Trophy, History, Wallet } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 type GameRound = {
@@ -179,6 +180,18 @@ const Profile: React.FC = () => {
 
         {/* Stats */}
         <div className="space-y-6">
+          {/* Top Up Button */}
+          <div className="bg-gradient-to-r from-green-500/20 to-green-600/20 backdrop-blur-sm rounded-2xl border border-green-500/30 p-6 text-center">
+            <h3 className="text-lg font-bold mb-2 text-green-400">💰 Need More Real Money?</h3>
+            <p className="text-gray-300 text-sm mb-4">Top up your account with USDT and start playing with real money!</p>
+            <Link
+              to="/topup"
+              className="inline-block bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-2 px-6 rounded-lg transition-all"
+            >
+              Top Up Now
+            </Link>
+          </div>
+
           {/* Balances */}
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
             <div className="flex items-center space-x-3 mb-6">

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Dice6, User, LogOut, Settings } from 'lucide-react';
+import { Dice6, User, LogOut, Settings, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Header: React.FC = () => {
@@ -46,6 +46,14 @@ const Header: React.FC = () => {
                   <span className="text-green-400">${user.virtualBalance.toFixed(2)} Virtual</span>
                   <span className="text-yellow-400">${user.realBalance.toFixed(2)} Real</span>
                 </div>
+                
+                <Link
+                  to="/topup"
+                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium px-3 py-2 rounded-lg transition-all flex items-center space-x-1"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Top Up</span>
+                </Link>
                 
                 <div className="flex items-center space-x-2">
                   <Link

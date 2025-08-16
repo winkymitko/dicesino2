@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/auth.js';
 import gameRoutes from './routes/games.js';
 import adminRoutes from './routes/admin.js';
+import walletRoutes from './routes/wallet.js';
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.use(cookieParser());
 app.use('/api/auth', authRoutes);
 app.use('/api/games', gameRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/wallet', walletRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

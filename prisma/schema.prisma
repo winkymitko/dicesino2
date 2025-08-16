@@ -37,6 +37,8 @@ model User {
   games       Game[]
   gameRounds  GameRound[]
   bonuses     Bonus[]
+  cryptoWallet CryptoWallet?
+  cryptoDeposits CryptoDeposit[]
 
   @@map("users")
 }
@@ -94,4 +96,37 @@ model Bonus {
   user User @relation(fields: [userId], references: [id])
 
   @@map("bonuses")
+}
+model CryptoWallet {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  address    String   @unique
+  privateKey String   // In production, encrypt this!
+  currency   String   @default("USDT")
+  network    String   @default("TRC20")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id])
+  deposits CryptoDeposit[]
+
+  @@map("crypto_wallets")
+}
+
+model CryptoDeposit {
+  id            String   @id @default(cuid())
+  userId        String
+  walletId      String
+  amount        Float
+  currency      String   @default("USDT")
+  txHash        String   @unique
+  status        String   @default("pending") // pending, confirmed, failed
+  confirmations Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user   User         @relation(fields: [userId], references: [id])
+  wallet CryptoWallet @relation(fields: [walletId], references: [id])
+
+  @@map("crypto_deposits")
 }

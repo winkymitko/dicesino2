@@ -25,6 +25,16 @@ const Home: React.FC = () => {
   const rBal = user ? Number(user.realBalance ?? 0) : 0;
   const streak = user ? Number(user.currentWinStreak ?? 0) : 0;
 
+  // Random game selection
+  const getRandomGame = () => {
+    const games = ['BarboDice', 'DiceBattle'];
+    return games[Math.floor(Math.random() * games.length)];
+  };
+
+  const getRandomGamePath = () => {
+    const paths = ['/dice', '/dicebattle'];
+    return paths[Math.floor(Math.random() * paths.length)];
+  };
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Hero Section */}
@@ -42,10 +52,10 @@ const Home: React.FC = () => {
         {user ? (
           <div className="space-y-4">
             <Link
-              to="/dice"
+              to={getRandomGamePath()}
               className="inline-block bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-bold text-lg px-8 py-4 rounded-xl transition-all transform hover:scale-105"
             >
-              Play Dice Game
+              Play {getRandomGame()}
             </Link>
             <div className="flex justify-center items-center space-x-8 text-sm">
               <div className="text-center">
