@@ -9,6 +9,8 @@ const AdminPanel: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [stats, setStats] = useState<any>({});
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [expandedUser, setExpandedUser] = useState<string | null>(null);
+  const [userStats, setUserStats] = useState<any>({});
   const [bonusAmount, setBonusAmount] = useState('');
   const [bonusDescription, setBonusDescription] = useState('');
   const [diceGameModifier, setDiceGameModifier] = useState('1.0');
@@ -100,6 +102,31 @@ const AdminPanel: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to add bonus:', error);
+    }
+  };
+
+  const fetchUserStats = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/stats`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUserStats(prev => ({ ...prev, [userId]: data }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch user stats:', error);
+    }
+  };
+
+  const toggleUserStats = async (userId: string) => {
+    if (expandedUser === userId) {
+      setExpandedUser(null);
+    } else {
+      setExpandedUser(userId);
+      if (!userStats[userId]) {
+        await fetchUserStats(userId);
+      }
     }
   };
 
