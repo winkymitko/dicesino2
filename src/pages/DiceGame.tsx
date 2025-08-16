@@ -87,9 +87,6 @@ const DiceGame: React.FC = () => {
       if (data.gameOver) {
         setGameActive(false);
         setGameId(null);
-        if (!data.won) {
-          setError('Game Over! No winning combination.');
-        }
         await refreshUser();
       }
     } catch (err: any) {
@@ -259,23 +256,33 @@ const DiceGame: React.FC = () => {
 
           {/* Dice Display */}
           <div className="flex justify-center space-x-4 mb-6">
-            {lastRoll ? (
-              [lastRoll.dice1, lastRoll.dice2, lastRoll.dice3].map((die, index) => {
-                const DiceComponent = diceComponents[die - 1];
-                return (
+            {(lastRoll || (rolling && gameActive)) ? (
+              lastRoll ? (
+                [lastRoll.dice1, lastRoll.dice2, lastRoll.dice3].map((die, index) => {
+                  const DiceComponent = diceComponents[die - 1];
+                  return (
+                    <div key={index} className="relative">
+                      <div className="w-20 h-20 bg-white rounded-lg flex items-center justify-center shadow-lg">
+                        <DiceComponent className="h-12 w-12 text-black" />
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                [1, 2, 3].map((index) => (
                   <div key={index} className="relative">
-                    <div className="w-20 h-20 bg-white rounded-lg flex items-center justify-center shadow-lg">
-                      <DiceComponent className="h-12 w-12 text-black" />
+                    <div className={`w-20 h-20 bg-white rounded-lg flex items-center justify-center shadow-lg ${
+                      rolling ? 'animate-spin' : ''
+                    }`}>
+                      <Dice1 className="h-12 w-12 text-black" />
                     </div>
                   </div>
-                );
-              })
+                ))
+              )
             ) : (
               [1, 2, 3].map((index) => (
                 <div key={index} className="relative">
-                  <div className={`w-20 h-20 bg-white rounded-lg flex items-center justify-center shadow-lg ${
-                    rolling ? 'animate-spin' : ''
-                  }`}>
+                  <div className="w-20 h-20 bg-white rounded-lg flex items-center justify-center shadow-lg">
                     <Dice1 className="h-12 w-12 text-black" />
                   </div>
                 </div>
@@ -283,16 +290,41 @@ const DiceGame: React.FC = () => {
             )}
           </div>
 
-          {lastRoll && (
+          {lastRoll && gameActive && (
             <div className="text-center mb-6 p-4 bg-black/30 rounded-lg">
               <div className="text-lg font-bold mb-2">
-                {lastRoll.points > 0 ? getScoreExplanation(lastRoll) : 'No winning combination - Game Over!'}
+                {getScoreExplanation(lastRoll)}
               </div>
-              {lastRoll.points > 0 && (
+              <div className="text-sm text-gray-400">
+                Multiplier: {lastRoll.multiplier}x | Pot: ${lastRoll.potBefore.toFixed(2)} → ${lastRoll.potAfter.toFixed(2)}
+              </div>
+            </div>
+          )}
+          
+          {lastRoll && !gameActive && lastRoll.points === 0 && (
+            <div className="text-center mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <div className="text-lg font-bold mb-2 text-red-400">
+                No winning combination - Game Over!
+              </div>
+              <div className="text-sm text-gray-400">
+                {getScoreExplanation(lastRoll)}
+              </div>
+            </div>
+          )}
+          
+          {lastRoll && !gameActive && lastRoll.points > 0 && (
+            <div className="text-center mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+              <div className="text-lg font-bold mb-2 text-green-400">
+                Winning combination! You cashed out successfully!
+              </div>
+              <div className="text-sm text-gray-400">
+                {getScoreExplanation(lastRoll)}
+              </div>
+              <div className="text-sm text-gray-400">
                 <div className="text-sm text-gray-400">
                   Multiplier: {lastRoll.multiplier}x | Pot: ${lastRoll.potBefore.toFixed(2)} → ${lastRoll.potAfter.toFixed(2)}
                 </div>
-              )}
+              </div>
             </div>
           )}
 
