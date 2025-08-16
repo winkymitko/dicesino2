@@ -113,7 +113,11 @@ const DiceBattle: React.FC = () => {
   };
 
   const confirmGuess = () => {
-    setConfirmedGuess(playerGuess);
+    // Get the current value directly from the slider element to avoid async state issues
+    const sliderElement = document.querySelector('input[type="range"]') as HTMLInputElement;
+    const currentGuess = sliderElement ? parseInt(sliderElement.value) : playerGuess;
+    setConfirmedGuess(currentGuess);
+    setPlayerGuess(currentGuess); // Ensure state is in sync
     setGuessConfirmed(true);
   };
   return (
