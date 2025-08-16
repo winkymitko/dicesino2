@@ -202,9 +202,8 @@ const AdminPanel: React.FC = () => {
                   </td>
                   <td className="p-3">
                     <div className="text-xs">
-                      <div className="text-green-400">Dice: ${(user.casinoProfitDice || 0).toFixed(2)}</div>
-                      <div className="text-blue-400">Battle: ${(user.casinoProfitBattle || 0).toFixed(2)}</div>
-                      <div className="text-yellow-400 font-bold">Total: ${((user.casinoProfitDice || 0) + (user.casinoProfitBattle || 0)).toFixed(2)}</div>
+                      <div className="text-yellow-400 font-bold">${((user.casinoProfitDice || 0) + (user.casinoProfitBattle || 0)).toFixed(2)}</div>
+                      <div className="text-gray-400">Casino Profit</div>
                     </div>
                   </td>
                   <td className="p-3">
@@ -368,9 +367,56 @@ const AdminPanel: React.FC = () => {
                               <div className="flex justify-between border-t border-white/20 pt-2">
                                 <span className="font-bold">🏦 Casino Profit (BarboDice):</span>
                                 <span className="text-yellow-400 font-bold">
-                                      ${diceStats.casino_profit?.toFixed(2) || '0.00'}
+                                  ${currentStats?.diceCasinoProfit?.toFixed(2) || '0.00'}
                                 </span>
                               </div>
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          </div>
+
+                          {/* DiceBattle Game Stats */}
+                          <div className="bg-white/5 rounded-lg p-4">
+                            <h5 className="font-bold mb-3 text-red-400">
+                              ⚔️ {(statsViewMode[user.id] || 'virtual') === 'virtual' ? 'Virtual' : 'Real'} DiceBattle (PvP Game)
+                            </h5>
+                            <div className="space-y-2 text-sm">
+                              {(() => {
+                                const currentStats = userStats[user.id][(statsViewMode[user.id] || 'virtual')];
+                                const battleStats = currentStats?.battleGames || {};
+                                return (
+                                  <>
+                                    <div className="flex justify-between">
+                                      <span>Total Battles:</span>
+                                      <span>{battleStats.total || 0}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Battles Won:</span>
+                                      <span className="text-green-400">{battleStats.won || 0}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Battles Lost:</span>
+                                      <span className="text-red-400">{battleStats.lost || 0}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Battles Tied:</span>
+                                      <span className="text-yellow-400">{battleStats.tied || 0}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Money Bet on DiceBattle:</span>
+                                      <span className="text-orange-400">${battleStats.wagered?.toFixed(2) || '0.00'}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>Money Won from DiceBattle:</span>
+                                      <span className="text-green-400">${battleStats.won_amount?.toFixed(2) || '0.00'}</span>
+                                    </div>
+                                    <div className="flex justify-between border-t border-white/20 pt-2">
+                                      <span className="font-bold">🏦 Casino Profit (DiceBattle):</span>
+                                      <span className="text-yellow-400 font-bold">
+                                        ${currentStats?.battleCasinoProfit?.toFixed(2) || '0.00'}
+                                      </span>
+                                    </div>
                                   </>
                                 );
                               })()}
