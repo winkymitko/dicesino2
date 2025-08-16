@@ -398,7 +398,6 @@ const DiceGame: React.FC = () => {
               <div className="flex justify-between">
                 <span>200pts:</span><span className="text-yellow-400">1.4x</span>
               </div>
-              <div className="flex justify-between">
             </div>
           </div>
         </div>
