@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Wallet, Copy, CheckCircle, RefreshCw, History, QrCode } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import QRCode from 'qrcode';
+import * as QRCode from 'qrcode';
 
 const TopUp: React.FC = () => {
   const { user, refreshUser } = useAuth();
