@@ -273,21 +273,21 @@ const Profile: React.FC = () => {
             {battleStats.battleHistory && battleStats.battleHistory.length > 0 && (
               <div className="mt-6">
                 <h4 className="font-bold mb-3 text-center">Recent Battles</h4>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
+                <div className="space-y-3 max-h-60 overflow-y-auto">
                   {battleStats.battleHistory.map((battle: any, index: number) => (
-                    <div key={index} className="flex justify-between items-center text-xs bg-black/20 rounded p-2">
-                      <div className="flex-1">
-                        <div className="font-medium">{battle.opponent}</div>
-                        <div className="text-gray-400">
-                          You: {battle.playerGuess} | Them: {battle.opponentGuess} | Roll: {battle.actualRoll}
+                    <div key={index} className="bg-black/20 rounded-lg p-3">
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="font-medium text-white">{battle.opponent}</div>
+                        <div className={`px-3 py-1 rounded-full text-sm font-bold ${
+                          battle.result === 'won' ? 'bg-green-500/20 text-green-400' :
+                          battle.result === 'lost' ? 'bg-red-500/20 text-red-400' :
+                          'bg-yellow-500/20 text-yellow-400'
+                        }`}>
+                          {battle.result === 'won' ? 'Win' : battle.result === 'lost' ? 'Loss' : 'Tie'}
                         </div>
                       </div>
-                      <div className={`px-2 py-1 rounded text-xs font-bold ${
-                        battle.result === 'won' ? 'bg-green-500/20 text-green-400' :
-                        battle.result === 'lost' ? 'bg-red-500/20 text-red-400' :
-                        'bg-yellow-500/20 text-yellow-400'
-                      }`}>
-                        {battle.result === 'won' ? 'W' : battle.result === 'lost' ? 'L' : 'Tie'}
+                      <div className="text-xs text-gray-400">
+                        Record vs {battle.opponent}: {battle.opponentRecord?.wins || 0} Wins, {battle.opponentRecord?.losses || 0} Losses, {battle.opponentRecord?.ties || 0} Ties
                       </div>
                     </div>
                   ))}

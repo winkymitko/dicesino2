@@ -658,13 +658,31 @@ router.get('/dicebattle/stats', authenticateToken, async (req, res) => {
             date: game.createdAt,
             opponent: roundMetadata.opponentName,
             result: game.status === 'cashed_out' ? 'won' : game.status,
-            playerGuess: metadata.playerGuess,
-            opponentGuess: metadata.opponent?.guess,
-            actualRoll: round.points,
-            winnings: game.finalPot || 0
+            opponentRecord: null // Will be calculated below
           });
         }
       }
+    });
+    
+    // Calculate records against each opponent
+    const opponentRecords = {};
+    battleHistory.forEach(battle => {
+      if (!opponentRecords[battle.opponent]) {
+        opponentRecords[battle.opponent] = { wins: 0, losses: 0, ties: 0 };
+      }
+      
+      if (battle.result === 'won') {
+        opponentRecords[battle.opponent].wins++;
+      } else if (battle.result === 'lost') {
+        opponentRecords[battle.opponent].losses++;
+      } else if (battle.result === 'tie') {
+        opponentRecords[battle.opponent].ties++;
+      }
+    });
+    
+    // Add opponent records to battle history
+    battleHistory.forEach(battle => {
+      battle.opponentRecord = opponentRecords[battle.opponent];
     });
     
     res.json({
