@@ -523,7 +523,7 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
     
     // Update user balance and stats
     const balanceField = useVirtual ? 'virtualBalance' : 'realBalance';
-    const updateData: any = {};
+    const updateData = {};
     
     if (winnings > 0) {
       updateData[balanceField] = { increment: winnings };
