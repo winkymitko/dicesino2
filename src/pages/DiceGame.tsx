@@ -259,13 +259,13 @@ const DiceGame: React.FC = () => {
 
           {/* Dice Display */}
           <div className="flex justify-center space-x-4 mb-6">
-            {(lastRoll || (rolling && gameActive)) ? (
+            {lastRoll ? (
               [lastRoll.dice1, lastRoll.dice2, lastRoll.dice3].map((die, index) => {
                 const DiceComponent = diceComponents[die - 1];
                 return (
                   <div key={index} className="relative">
                     <div className="w-20 h-20 bg-white rounded-lg flex items-center justify-center shadow-lg">
-                      rolling && !lastRoll ? 'animate-spin' : ''
+                      <DiceComponent className="h-12 w-12 text-black" />
                     </div>
                   </div>
                 );
