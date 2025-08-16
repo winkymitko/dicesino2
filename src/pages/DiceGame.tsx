@@ -15,6 +15,7 @@ const DiceGame: React.FC = () => {
   const [rolling, setRolling] = useState(false);
   const [canCashOut, setCanCashOut] = useState(false);
   const [error, setError] = useState('');
+  const [showResult, setShowResult] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -47,6 +48,7 @@ const DiceGame: React.FC = () => {
       setGameActive(true);
       setCanCashOut(false);
       setLastRoll(null);
+      setShowResult(false);
       await refreshUser();
     } catch (err: any) {
       setError(err.message);
@@ -86,7 +88,7 @@ const DiceGame: React.FC = () => {
       
       if (data.gameOver) {
         setGameActive(false);
-        setGameId(null);
+        setShowResult(true);
         await refreshUser();
       }
     } catch (err: any) {
@@ -115,7 +117,7 @@ const DiceGame: React.FC = () => {
 
       const data = await response.json();
       setGameActive(false);
-      setGameId(null);
+      setShowResult(true);
       setCanCashOut(false);
       await refreshUser();
       
@@ -123,6 +125,15 @@ const DiceGame: React.FC = () => {
     } catch (err: any) {
       setError(err.message);
     }
+  };
+
+  const resetGame = () => {
+    setGameActive(false);
+    setGameId(null);
+    setLastRoll(null);
+    setCanCashOut(false);
+    setTotalPot(0);
+    setShowResult(false);
   };
 
   const getScoreExplanation = (round: any) => {
@@ -184,7 +195,7 @@ const DiceGame: React.FC = () => {
       )}
 
       {/* Game Controls */}
-      {!gameActive && (
+      {!gameActive && !showResult && (
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 mb-6">
           <h3 className="text-xl font-bold mb-4">Start New Game</h3>
           
@@ -245,7 +256,7 @@ const DiceGame: React.FC = () => {
       )}
 
       {/* Active Game */}
-      {gameActive && (
+      {(gameActive || showResult) && (
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 mb-6">
           <div className="text-center mb-6">
             <div className="text-3xl font-bold text-yellow-400 mb-2">
@@ -282,7 +293,7 @@ const DiceGame: React.FC = () => {
 
           {lastRoll && (
             <div className="text-center mb-6 p-4 bg-black/30 rounded-lg">
-              {gameActive ? (
+              {gameActive && !showResult ? (
                 <>
                   <div className="text-lg font-bold mb-2">
                     {getScoreExplanation(lastRoll)}
@@ -291,7 +302,7 @@ const DiceGame: React.FC = () => {
                     Multiplier: {lastRoll.multiplier}x | Pot: ${lastRoll.potBefore.toFixed(2)} → ${lastRoll.potAfter.toFixed(2)}
                   </div>
                 </>
-              ) : lastRoll.points === 0 ? (
+              ) : showResult && lastRoll.points === 0 ? (
                 <>
                   <div className="text-lg font-bold mb-2 text-red-400">
                     Game Over! No winning combination
@@ -300,7 +311,7 @@ const DiceGame: React.FC = () => {
                     {getScoreExplanation(lastRoll)} | Pot Lost: ${lastRoll.potBefore.toFixed(2)}
                   </div>
                 </>
-              ) : (
+              ) : showResult && lastRoll.points > 0 ? (
                 <>
                   <div className="text-lg font-bold mb-2 text-green-400">
                     Winning combination! You cashed out successfully!
@@ -312,12 +323,12 @@ const DiceGame: React.FC = () => {
                     Multiplier: {lastRoll.multiplier}x | Pot: ${lastRoll.potBefore.toFixed(2)} → ${lastRoll.potAfter.toFixed(2)}
                   </div>
                 </>
-              )}
+              ) : null}
             </div>
           )}
 
           <div className="flex space-x-4">
-            {gameActive ? (
+            {gameActive && !showResult ? (
               <>
                 <button
                   onClick={rollDice}
@@ -338,20 +349,14 @@ const DiceGame: React.FC = () => {
                   </button>
                 )}
               </>
-            ) : (
+            ) : showResult ? (
               <button
-                onClick={() => {
-                  setGameActive(false);
-                  setGameId(null);
-                  setLastRoll(null);
-                  setCanCashOut(false);
-                  setTotalPot(0);
-                }}
+                onClick={resetGame}
                 className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-bold py-3 rounded-lg transition-all"
               >
                 Play Again
               </button>
-            )}
+            ) : null}
           </div>
         </div>
       )}
