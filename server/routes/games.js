@@ -62,20 +62,28 @@ function getMultiplier(points) {
 }
 
 // Apply provably fair adjustments (admin can modify win chances)
-function applyFairnessModifier(points, winChanceModifier) {
-  // Only apply modifier to losing rolls (0 points) to make them more/less likely
-  if (points > 0) return points; // Don't modify winning combinations
-  
-  // For losing rolls, modifier affects whether to convert to a small win
+function applyFairnessModifier(dice, points, winChanceModifier) {
   const random = Math.random();
-  const threshold = 0.15 * (winChanceModifier - 1); // Only when modifier > 1
   
-  if (winChanceModifier > 1 && random < threshold) {
-    // Convert some losing rolls to small wins
-    return 50; // Give minimum points
+  if (points === 0) {
+    // For losing rolls, modifier affects whether to convert to a small win
+    const threshold = 0.15 * Math.max(0, winChanceModifier - 1);
+    if (random < threshold) {
+      return 50; // Convert to minimum win
+    }
+    return 0;
   }
   
-  return 0; // Keep as losing roll
+  // For winning rolls, apply modifier to potentially reduce wins
+  if (winChanceModifier < 1.0) {
+    const reductionChance = 0.2 * (1.0 - winChanceModifier);
+    if (random < reductionChance) {
+      // Convert winning roll to losing roll by changing dice interpretation
+      return 0;
+    }
+  }
+  
+  return points;
 }
 
 // Start new dice game
@@ -146,8 +154,12 @@ router.post('/dice/roll', authenticateToken, async (req, res) => {
     // Calculate points
     let points = calculatePoints(dice1, dice2, dice3);
     
-    // Apply fairness modifier from user settings
-    points = applyFairnessModifier(points, req.user.winChanceModifier);
+    // Generate per-game coefficient (0.8 to 1.2)
+    const gameCoefficient = 0.8 + (Math.random() * 0.4);
+    
+    // Apply fairness modifier from user settings with game coefficient
+    const effectiveModifier = req.user.winChanceModifier * gameCoefficient;
+    points = applyFairnessModifier([dice1, dice2, dice3], points, effectiveModifier);
     
     const multiplier = getMultiplier(points);
     const potBefore = game.totalPot;
@@ -166,7 +178,8 @@ router.post('/dice/roll', authenticateToken, async (req, res) => {
         potAfter,
         serverSeed,
         clientSeed,
-        nonce
+        nonce,
+        metadata: JSON.stringify({ gameCoefficient, effectiveModifier })
       }
     });
     
@@ -353,13 +366,32 @@ export default router;
 
 // Generate bot opponent
 function generateBotOpponent(stake) {
-  const names = [
+  const fakeUsers = [
     'DiceKing', 'RollMaster', 'LuckyStrike', 'BattleBot', 'DiceWarrior',
     'RollHunter', 'DiceLord', 'BattleMage', 'RollSeeker', 'DiceChamp',
-    'LuckyRoller', 'BattleAce', 'DicePro', 'RollStar', 'BattleWolf'
+    'LuckyRoller', 'BattleAce', 'DicePro', 'RollStar', 'BattleWolf',
+    'CubeSlayer', 'DiceNinja', 'RollPhoenix', 'BattleTitan', 'DiceViper',
+    'RollShadow', 'DiceStorm', 'BattleHawk', 'RollThunder', 'DiceFury',
+    'BattleRaven', 'RollBlaze', 'DiceSpirit', 'BattleFrost', 'RollVenom',
+    'DiceCrusher', 'BattleGhost', 'RollFire', 'DiceReaper', 'BattleSteel',
+    'RollCobra', 'DicePhantom', 'BattleWind', 'RollLightning', 'DiceShark',
+    'BattleIce', 'RollDragon', 'DiceWolf', 'BattleFlame', 'RollEagle',
+    'DiceTiger', 'BattleStorm', 'RollPanther', 'DiceRaptor', 'BattleLion',
+    'RollFalcon', 'DiceVenom', 'BattleSnake', 'RollBeast', 'DiceHunter',
+    'BattleClaw', 'RollFang', 'DiceRage', 'BattleForce', 'RollPower',
+    'DiceBlitz', 'BattleRush', 'RollStrike', 'DiceSlash', 'BattleCrush',
+    'RollSmash', 'DiceBlast', 'BattleBoom', 'RollShock', 'DiceFlash',
+    'BattleZap', 'RollBolt', 'DiceSpike', 'BattleEdge', 'RollBlade',
+    'DiceShield', 'BattleGuard', 'RollDefend', 'DiceArmor', 'BattleWall',
+    'RollBarrier', 'DiceFortress', 'BattleTower', 'RollCastle', 'DiceKeep',
+    'BattleHold', 'RollStand', 'DiceRise', 'BattleClimb', 'RollPeak',
+    'DiceSummit', 'BattleTop', 'RollHigh', 'DiceMax', 'BattleSupreme',
+    'RollUltimate', 'DiceFinal', 'BattleEnd', 'RollLast', 'DiceFinish',
+    'BattleWin', 'RollVictory', 'DiceTriumph', 'BattleGlory', 'RollHonor'
   ];
   
-  const name = names[Math.floor(Math.random() * names.length)];
+  const name = fakeUsers[Math.floor(Math.random() * fakeUsers.length)];
+  const id = `bot_${Math.floor(Math.random() * 100000)}`;
   const level = Math.floor(Math.random() * 50) + 1;
   const wins = Math.floor(Math.random() * 200) + 10;
   const losses = Math.floor(Math.random() * 150) + 5;
@@ -378,7 +410,7 @@ function generateBotOpponent(stake) {
     guess = Math.floor(Math.random() * 16) + 3;
   }
   
-  return { name, level, wins, losses, guess };
+  return { id, name, level, wins, losses, guess };
 }
 
 // Start DiceBattle game
@@ -467,12 +499,15 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
     
     // Apply win chance modifier (subtle adjustment)
     const modifier = req.user.winChanceModifier;
+    const gameCoefficient = 0.9 + (Math.random() * 0.2); // 0.9 to 1.1
+    const effectiveModifier = modifier * gameCoefficient;
+    
     if (modifier !== 1.0) {
       const random = Math.random();
-      if (modifier > 1.0 && random < 0.3) {
+      if (effectiveModifier > 1.0 && random < 0.3) {
         // Slightly help player
         opponentDistance += Math.floor(Math.random() * 2) + 1;
-      } else if (modifier < 1.0 && random < 0.3) {
+      } else if (effectiveModifier < 1.0 && random < 0.3) {
         // Slightly help opponent
         opponentDistance = Math.max(0, opponentDistance - 1);
       }
@@ -505,7 +540,13 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
         potAfter: winnings,
         serverSeed,
         clientSeed,
-        nonce
+        nonce,
+        metadata: JSON.stringify({ 
+          gameCoefficient, 
+          effectiveModifier,
+          opponentId: opponent.id,
+          opponentName: opponent.name
+        })
       }
     });
     
@@ -568,7 +609,8 @@ router.get('/dicebattle/stats', authenticateToken, async (req, res) => {
     // Get DiceBattle specific stats
     const battleGames = await prisma.game.findMany({
       where: { userId, gameType: 'dicebattle' },
-      include: { rounds: true }
+      include: { rounds: true },
+      orderBy: { createdAt: 'desc' }
     });
     
     const totalBattles = battleGames.length;
@@ -582,13 +624,31 @@ router.get('/dicebattle/stats', authenticateToken, async (req, res) => {
     let totalDistance = 0;
     let validRounds = 0;
     
+    // Battle history with opponents
+    const battleHistory = [];
+    
     battleGames.forEach(game => {
       if (game.rounds && game.rounds.length > 0) {
         const round = game.rounds[0];
         const metadata = JSON.parse(game.metadata || '{}');
+        const roundMetadata = JSON.parse(round.metadata || '{}');
+        
         if (metadata.playerGuess && round.points) {
           totalDistance += Math.abs(round.points - metadata.playerGuess);
           validRounds++;
+        }
+        
+        // Add to battle history
+        if (roundMetadata.opponentName) {
+          battleHistory.push({
+            date: game.createdAt,
+            opponent: roundMetadata.opponentName,
+            result: game.status,
+            playerGuess: metadata.playerGuess,
+            opponentGuess: metadata.opponent?.guess,
+            actualRoll: round.points,
+            winnings: game.finalPot || 0
+          });
         }
       }
     });
@@ -601,7 +661,8 @@ router.get('/dicebattle/stats', authenticateToken, async (req, res) => {
       lostBattles,
       tiedBattles,
       winRate: winRate.toFixed(1),
-      avgDistance: avgDistance.toFixed(1)
+      avgDistance: avgDistance.toFixed(1),
+      battleHistory: battleHistory.slice(0, 10) // Last 10 battles
     });
   } catch (error) {
     console.error(error);

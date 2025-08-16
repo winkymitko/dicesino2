@@ -68,6 +68,7 @@ model GameRound {
   serverSeed  String   // For provably fair
   clientSeed  String   // For provably fair
   nonce       Int      // For provably fair
+  metadata    String?  // JSON string for round-specific data
   createdAt   DateTime @default(now())
 
   game Game @relation(fields: [gameId], references: [id])

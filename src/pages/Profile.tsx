@@ -255,6 +255,32 @@ const Profile: React.FC = () => {
                 <div className="text-gray-400">Avg Distance</div>
               </div>
             </div>
+            
+            {/* Battle History */}
+            {battleStats.battleHistory && battleStats.battleHistory.length > 0 && (
+              <div className="mt-6">
+                <h4 className="font-bold mb-3 text-center">Recent Battles</h4>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {battleStats.battleHistory.map((battle: any, index: number) => (
+                    <div key={index} className="flex justify-between items-center text-xs bg-black/20 rounded p-2">
+                      <div className="flex-1">
+                        <div className="font-medium">{battle.opponent}</div>
+                        <div className="text-gray-400">
+                          You: {battle.playerGuess} | Them: {battle.opponentGuess} | Roll: {battle.actualRoll}
+                        </div>
+                      </div>
+                      <div className={`px-2 py-1 rounded text-xs font-bold ${
+                        battle.result === 'won' ? 'bg-green-500/20 text-green-400' :
+                        battle.result === 'lost' ? 'bg-red-500/20 text-red-400' :
+                        'bg-yellow-500/20 text-yellow-400'
+                      }`}>
+                        {battle.result === 'won' ? 'W' : battle.result === 'lost' ? 'L' : 'T'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
