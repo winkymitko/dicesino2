@@ -341,47 +341,11 @@ const AdminPanel: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* PvP Battle Stats */}
-                          <div className="bg-white/5 rounded-lg p-4">
-                            <h5 className="font-bold mb-3 text-red-400">⚔️ DiceBattle (PvP Game)</h5>
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span>Total Battles:</span>
-                                <span>{userStats[user.id].battleGames?.total || 0}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Battles Won:</span>
-                                <span className="text-green-400">{userStats[user.id].battleGames?.won || 0}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Battles Lost:</span>
-                                <span className="text-red-400">{userStats[user.id].battleGames?.lost || 0}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Battles Tied:</span>
-                                <span className="text-yellow-400">{userStats[user.id].battleGames?.tied || 0}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Money Bet on DiceBattle:</span>
-                                <span className="text-orange-400">${userStats[user.id].battleGames?.wagered?.toFixed(2) || '0.00'}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Money Won from DiceBattle:</span>
-                                <span className="text-green-400">${userStats[user.id].battleGames?.won_amount?.toFixed(2) || '0.00'}</span>
-                              </div>
-                              <div className="flex justify-between border-t border-white/20 pt-2">
-                                <span className="font-bold">🏦 Casino Profit (DiceBattle):</span>
-                                <span className="text-yellow-400 font-bold">
-                                  ${userStats[user.id].battleGames?.casino_profit?.toFixed(2) || '0.00'}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
                         {/* Recent Games History */}
                         <div className="bg-white/5 rounded-lg p-4">
-                          <h5 className="font-bold mb-3 text-blue-400">📊 Recent Games History (Last 10)</h5>
+                            <h5 className="font-bold mb-3 text-blue-400">
+                              📊 Recent {(statsViewMode[user.id] || 'virtual') === 'virtual' ? 'Virtual' : 'Real'} Games History (Last 10)
+                            </h5>
                           <div className="overflow-x-auto">
                             <table className="w-full text-xs">
                               <thead>
@@ -430,7 +394,7 @@ const AdminPanel: React.FC = () => {
                                   </tr>
                                 ))}
                               </tbody>
-                            </table>
+                                  {userStats[user.id][(statsViewMode[user.id] || 'virtual')]?.recentGames?.map((game: any, index: number) => (
                           </div>
                         </div>
                       </div>

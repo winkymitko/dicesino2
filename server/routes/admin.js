@@ -145,53 +145,116 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
       orderBy: { createdAt: 'desc' }
     });
     
-    // Calculate totals
-    const totalWagered = games.reduce((sum, game) => sum + (game.stake || 0), 0);
-    const totalWon = games.reduce((sum, game) => sum + (game.finalPot || 0), 0);
+    // Separate games by balance type (from metadata)
+    const virtualGames = [];
+    const realGames = [];
+    
+    games.forEach(game => {
+      try {
+        const metadata = JSON.parse(game.metadata || '{}');
+        if (metadata.useVirtual === false) {
+          realGames.push(game);
+        } else {
+          virtualGames.push(game); // Default to virtual if not specified
+        }
+      } catch {
+        virtualGames.push(game); // Default to virtual if metadata parsing fails
+      }
+    });
+    
+    // Calculate virtual stats
+    const virtualWagered = virtualGames.reduce((sum, game) => sum + (game.stake || 0), 0);
+    const virtualWon = virtualGames.reduce((sum, game) => sum + (game.finalPot || 0), 0);
     const virtualDeposited = bonuses.reduce((sum, bonus) => sum + (bonus.amount || 0), 0) + 1000; // Starting balance
+    
+    // Calculate real stats
+    const realWagered = realGames.reduce((sum, game) => sum + (game.stake || 0), 0);
+    const realWon = realGames.reduce((sum, game) => sum + (game.finalPot || 0), 0);
     const realDeposited = 0; // No real deposits in this system yet
     
-    // Separate by game type
-    const diceGames = games.filter(g => g.gameType === 'dice');
-    const battleGames = games.filter(g => g.gameType === 'dicebattle');
+    // Separate by game type for virtual
+    const virtualDiceGames = virtualGames.filter(g => g.gameType === 'dice');
+    const virtualBattleGames = virtualGames.filter(g => g.gameType === 'dicebattle');
     
-    // BarboDice stats
-    const diceStats = {
-      total: diceGames.length,
-      won: diceGames.filter(g => g.status === 'cashed_out').length,
-      lost: diceGames.filter(g => g.status === 'lost').length,
-      wagered: diceGames.reduce((sum, game) => sum + (game.stake || 0), 0),
-      won_amount: diceGames.reduce((sum, game) => sum + (game.finalPot || 0), 0),
+    // Separate by game type for real
+    const realDiceGames = realGames.filter(g => g.gameType === 'dice');
+    const realBattleGames = realGames.filter(g => g.gameType === 'dicebattle');
+    
+    // Virtual BarboDice stats
+    const virtualDiceStats = {
+      total: virtualDiceGames.length,
+      won: virtualDiceGames.filter(g => g.status === 'cashed_out').length,
+      lost: virtualDiceGames.filter(g => g.status === 'lost').length,
+      wagered: virtualDiceGames.reduce((sum, game) => sum + (game.stake || 0), 0),
+      won_amount: virtualDiceGames.reduce((sum, game) => sum + (game.finalPot || 0), 0),
       casino_profit: 0
     };
-    diceStats.casino_profit = diceStats.wagered - diceStats.won_amount;
+    virtualDiceStats.casino_profit = virtualDiceStats.wagered - virtualDiceStats.won_amount;
     
-    // DiceBattle stats
-    const battleStats = {
-      total: battleGames.length,
-      won: battleGames.filter(g => g.status === 'cashed_out').length,
-      lost: battleGames.filter(g => g.status === 'lost').length,
-      tied: battleGames.filter(g => g.status === 'tie').length,
-      wagered: battleGames.reduce((sum, game) => sum + (game.stake || 0), 0),
-      won_amount: battleGames.reduce((sum, game) => sum + (game.finalPot || 0), 0),
+    // Virtual DiceBattle stats
+    const virtualBattleStats = {
+      total: virtualBattleGames.length,
+      won: virtualBattleGames.filter(g => g.status === 'cashed_out').length,
+      lost: virtualBattleGames.filter(g => g.status === 'lost').length,
+      tied: virtualBattleGames.filter(g => g.status === 'tie').length,
+      wagered: virtualBattleGames.reduce((sum, game) => sum + (game.stake || 0), 0),
+      won_amount: virtualBattleGames.reduce((sum, game) => sum + (game.finalPot || 0), 0),
       casino_profit: 0
     };
-    battleStats.casino_profit = battleStats.wagered - battleStats.won_amount;
+    virtualBattleStats.casino_profit = virtualBattleStats.wagered - virtualBattleStats.won_amount;
     
-    // Recent games with casino profit calculation
-    const recentGames = games.slice(0, 10).map(game => ({
+    // Real BarboDice stats
+    const realDiceStats = {
+      total: realDiceGames.length,
+      won: realDiceGames.filter(g => g.status === 'cashed_out').length,
+      lost: realDiceGames.filter(g => g.status === 'lost').length,
+      wagered: realDiceGames.reduce((sum, game) => sum + (game.stake || 0), 0),
+      won_amount: realDiceGames.reduce((sum, game) => sum + (game.finalPot || 0), 0),
+      casino_profit: 0
+    };
+    realDiceStats.casino_profit = realDiceStats.wagered - realDiceStats.won_amount;
+    
+    // Real DiceBattle stats
+    const realBattleStats = {
+      total: realBattleGames.length,
+      won: realBattleGames.filter(g => g.status === 'cashed_out').length,
+      lost: realBattleGames.filter(g => g.status === 'lost').length,
+      tied: realBattleGames.filter(g => g.status === 'tie').length,
+      wagered: realBattleGames.reduce((sum, game) => sum + (game.stake || 0), 0),
+      won_amount: realBattleGames.reduce((sum, game) => sum + (game.finalPot || 0), 0),
+      casino_profit: 0
+    };
+    realBattleStats.casino_profit = realBattleStats.wagered - realBattleStats.won_amount;
+    
+    // Recent virtual games with casino profit calculation
+    const virtualRecentGames = virtualGames.slice(0, 10).map(game => ({
+      ...game,
+      casinoProfit: (game.stake || 0) - (game.finalPot || 0)
+    }));
+    
+    // Recent real games with casino profit calculation
+    const realRecentGames = realGames.slice(0, 10).map(game => ({
       ...game,
       casinoProfit: (game.stake || 0) - (game.finalPot || 0)
     }));
     
     res.json({
-      virtualDeposited,
-      realDeposited,
-      totalWagered,
-      totalWon,
-      diceGames: diceStats,
-      battleGames: battleStats,
-      recentGames
+      virtual: {
+        deposited: virtualDeposited,
+        wagered: virtualWagered,
+        won: virtualWon,
+        diceGames: virtualDiceStats,
+        battleGames: virtualBattleStats,
+        recentGames: virtualRecentGames
+      },
+      real: {
+        deposited: realDeposited,
+        wagered: realWagered,
+        won: realWon,
+        diceGames: realDiceStats,
+        battleGames: realBattleStats,
+        recentGames: realRecentGames
+      }
     });
   } catch (error) {
     console.error(error);
@@ -200,75 +263,3 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
 });
 
 export default router;
-
-// Get detailed user statistics
-router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const { userId } = req.params;
-    
-    // Get all games for this user
-    const games = await prisma.game.findMany({
-      where: { userId },
-      include: { rounds: true },
-      orderBy: { createdAt: 'desc' }
-    });
-    
-    // Get all bonuses for this user
-    const bonuses = await prisma.bonus.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' }
-    });
-    
-    // Calculate totals
-    const totalWagered = games.reduce((sum, game) => sum + (game.stake || 0), 0);
-    const totalWon = games.reduce((sum, game) => sum + (game.finalPot || 0), 0);
-    const virtualDeposited = bonuses.reduce((sum, bonus) => sum + (bonus.amount || 0), 0) + 1000; // Starting balance
-    const realDeposited = 0; // No real deposits in this system yet
-    
-    // Separate by game type
-    const diceGames = games.filter(g => g.gameType === 'dice');
-    const battleGames = games.filter(g => g.gameType === 'dicebattle');
-    
-    // BarboDice stats
-    const diceStats = {
-      total: diceGames.length,
-      won: diceGames.filter(g => g.status === 'cashed_out').length,
-      lost: diceGames.filter(g => g.status === 'lost').length,
-      wagered: diceGames.reduce((sum, game) => sum + (game.stake || 0), 0),
-      won_amount: diceGames.reduce((sum, game) => sum + (game.finalPot || 0), 0),
-      casino_profit: 0
-    };
-    diceStats.casino_profit = diceStats.wagered - diceStats.won_amount;
-    
-    // DiceBattle stats
-    const battleStats = {
-      total: battleGames.length,
-      won: battleGames.filter(g => g.status === 'cashed_out').length,
-      lost: battleGames.filter(g => g.status === 'lost').length,
-      tied: battleGames.filter(g => g.status === 'tie').length,
-      wagered: battleGames.reduce((sum, game) => sum + (game.stake || 0), 0),
-      won_amount: battleGames.reduce((sum, game) => sum + (game.finalPot || 0), 0),
-      casino_profit: 0
-    };
-    battleStats.casino_profit = battleStats.wagered - battleStats.won_amount;
-    
-    // Recent games with casino profit calculation
-    const recentGames = games.slice(0, 10).map(game => ({
-      ...game,
-      casinoProfit: (game.stake || 0) - (game.finalPot || 0)
-    }));
-    
-    res.json({
-      virtualDeposited,
-      realDeposited,
-      totalWagered,
-      totalWon,
-      diceGames: diceStats,
-      battleGames: battleStats,
-      recentGames
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
