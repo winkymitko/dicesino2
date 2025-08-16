@@ -169,8 +169,8 @@ const Profile: React.FC = () => {
   if (!user) return null;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="grid md:grid-cols-2 gap-8">
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="grid md:grid-cols-3 gap-8">
         {/* Profile Info */}
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
           <div className="flex items-center space-x-3 mb-6">
