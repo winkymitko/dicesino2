@@ -87,4 +87,26 @@ router.post('/logout', (req, res) => {
   res.json({ message: 'Logged out successfully' });
 });
 
+// Update profile
+router.post('/update-profile', authenticateToken, async (req, res) => {
+  try {
+    const { name, phone, cryptoWallet } = req.body;
+    
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        name: name || null,
+        phone: phone || null,
+        cryptoWallet: cryptoWallet || null
+      }
+    });
+    
+    const { password, ...userWithoutPassword } = updatedUser;
+    res.json({ user: userWithoutPassword });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 export default router;
