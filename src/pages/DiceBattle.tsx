@@ -18,6 +18,7 @@ const DiceBattle: React.FC = () => {
   const [battleResult, setBattleResult] = useState<any>(null);
   const [rolling, setRolling] = useState(false);
   const [guessConfirmed, setGuessConfirmed] = useState(false);
+  const [confirmedGuess, setConfirmedGuess] = useState<number>(10);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -34,10 +35,6 @@ const DiceBattle: React.FC = () => {
     try {
       setError('');
       setMatchmaking(true);
-      setGuessConfirmed(false); // Reset guess confirmation
-      
-      // Use the current playerGuess value at the time of calling
-      const currentGuess = playerGuess;
       
       // Simulate matchmaking delay
       await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
@@ -46,7 +43,7 @@ const DiceBattle: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ stake, useVirtual, playerGuess: currentGuess })
+        body: JSON.stringify({ stake, useVirtual, playerGuess: confirmedGuess })
       });
 
       if (!response.ok) {
@@ -59,8 +56,6 @@ const DiceBattle: React.FC = () => {
       setOpponent(data.opponent);
       setGameActive(true);
       setMatchmaking(false);
-      // Update playerGuess to match what was actually sent to server
-      setPlayerGuess(currentGuess);
       await refreshUser();
     } catch (err: any) {
       setError(err.message);
@@ -113,10 +108,12 @@ const DiceBattle: React.FC = () => {
     setRolling(false);
     setGuessConfirmed(false);
     // Don't reset playerGuess - keep user's current guess
+    setConfirmedGuess(10); // Reset confirmed guess for next battle
     setError('');
   };
 
   const confirmGuess = () => {
+    setConfirmedGuess(playerGuess);
     setGuessConfirmed(true);
   };
   return (
@@ -249,7 +246,7 @@ const DiceBattle: React.FC = () => {
               <div className="text-lg font-bold text-blue-400 mb-2">You</div>
               <div className="text-sm text-gray-400 mb-2">Your Guess</div>
               <div className="text-3xl font-bold">
-                {guessConfirmed ? playerGuess : "?"}
+                {guessConfirmed ? confirmedGuess : "?"}
               </div>
               <div className="text-xs text-gray-500 mt-2">
                 {guessConfirmed ? "Guess confirmed!" : "Set your guess below"}
