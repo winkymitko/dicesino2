@@ -213,8 +213,7 @@ const DiceGame: React.FC = () => {
                         : 'bg-white/10 hover:bg-white/20'
                     }`}
                   >
-                    ${amount}
-                    ${amount.toFixed(1)}
+                    ${amount < 1 ? amount.toFixed(1) : amount}
                   </button>
                 ))}
               </div>
