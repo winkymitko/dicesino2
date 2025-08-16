@@ -235,7 +235,7 @@ const AdminPanel: React.FC = () => {
                   className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
                 />
                 <p className="text-xs text-gray-400 mt-1">
-                  1.0 = normal, >1.0 = better luck, <1.0 = worse luck
+                  1.0 = normal, &gt;1.0 = better luck, &lt;1.0 = worse luck
                 </p>
               </div>
 
