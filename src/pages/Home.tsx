@@ -120,7 +120,7 @@ const Home: React.FC = () => {
                   <Dice6 className="h-6 w-6 text-black" />
                 </div>
               </div>
-              <h3 className="text-xl font-bold mb-2">3-Dice Game</h3>
+              <h3 className="text-xl font-bold mb-2">BarboDice</h3>
               <p className="text-gray-400 text-sm mb-4">
                 Roll for singles, straights, and triples. Multiply your pot up to 2.2x!
               </p>
@@ -324,7 +324,7 @@ const Home: React.FC = () => {
       {/* Featured Game Details */}
       <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-8 mb-16">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold mb-4">Featured: 3-Dice Game</h2>
+          <h2 className="text-3xl font-bold mb-4">Featured: BarboDice</h2>
           <div className="flex justify-center space-x-4 mb-6">
             <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center shadow-lg">
               <Dice6 className="h-8 w-8 text-black" />

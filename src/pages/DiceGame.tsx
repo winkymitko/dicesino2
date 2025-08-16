@@ -163,7 +163,7 @@ const DiceGame: React.FC = () => {
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Game Header */}
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold mb-4">3-Dice Game</h1>
+        <h1 className="text-4xl font-bold mb-4">BarboDice</h1>
         <div className="flex justify-center items-center space-x-8 mb-6">
           <div className="text-center">
             <div className="text-green-400 font-bold text-xl">${user.virtualBalance.toFixed(2)}</div>

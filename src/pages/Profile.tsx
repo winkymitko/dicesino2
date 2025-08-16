@@ -206,7 +206,7 @@ const Profile: React.FC = () => {
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
             <div className="flex items-center space-x-3 mb-6">
               <Trophy className="h-6 w-6 text-purple-500" />
-              <h2 className="text-2xl font-bold">Game Statistics</h2>
+              <h2 className="text-2xl font-bold">BarboDice Statistics</h2>
             </div>
 
             {/* Four tiles as requested */}
@@ -251,8 +251,8 @@ const Profile: React.FC = () => {
                 <div className="text-gray-400">Victories</div>
               </div>
               <div className="text-center">
-                <div className="text-xl font-bold text-orange-400">{battleStats.avgDistance || '0.0'}</div>
-                <div className="text-gray-400">Avg Distance</div>
+                <div className="text-xl font-bold text-orange-400">{battleStats.tiedBattles || 0}</div>
+                <div className="text-gray-400">Ties</div>
               </div>
             </div>
             
@@ -274,7 +274,7 @@ const Profile: React.FC = () => {
                         battle.result === 'lost' ? 'bg-red-500/20 text-red-400' :
                         'bg-yellow-500/20 text-yellow-400'
                       }`}>
-                        {battle.result === 'won' ? 'W' : battle.result === 'lost' ? 'L' : 'T'}
+                        {battle.result === 'won' ? 'W' : battle.result === 'lost' ? 'L' : 'Tie'}
                       </div>
                     </div>
                   ))}
@@ -316,16 +316,12 @@ const Profile: React.FC = () => {
                       className={`px-2 py-1 rounded text-xs font-bold ${
                         game.status === 'cashed_out'
                           ? 'bg-green-500/20 text-green-400'
-                          : game.status === 'lost'
-                          ? 'bg-red-500/20 text-red-400'
-                          : 'bg-yellow-500/20 text-yellow-400'
+                          : 'bg-red-500/20 text-red-400'
                       }`}
                     >
                       {game.status === 'cashed_out'
                         ? 'Won'
-                        : game.status === 'lost'
-                        ? 'Lost'
-                        : 'Active'}
+                        : 'Lost'}
                     </span>
                   </td>
                   <td className="p-3">

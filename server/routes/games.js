@@ -616,15 +616,11 @@ router.get('/dicebattle/stats', authenticateToken, async (req, res) => {
     });
     
     const totalBattles = battleGames.length;
-    const wonBattles = battleGames.filter(g => g.status === 'won').length;
+    const wonBattles = battleGames.filter(g => g.status === 'cashed_out').length;
     const lostBattles = battleGames.filter(g => g.status === 'lost').length;
     const tiedBattles = battleGames.filter(g => g.status === 'tie').length;
     
     const winRate = totalBattles > 0 ? (wonBattles / totalBattles * 100) : 0;
-    
-    // Calculate average distance from target
-    let totalDistance = 0;
-    let validRounds = 0;
     
     // Battle history with opponents
     const battleHistory = [];
@@ -635,17 +631,12 @@ router.get('/dicebattle/stats', authenticateToken, async (req, res) => {
         const metadata = JSON.parse(game.metadata || '{}');
         const roundMetadata = JSON.parse(round.metadata || '{}');
         
-        if (metadata.playerGuess && round.points) {
-          totalDistance += Math.abs(round.points - metadata.playerGuess);
-          validRounds++;
-        }
-        
         // Add to battle history
         if (roundMetadata.opponentName) {
           battleHistory.push({
             date: game.createdAt,
             opponent: roundMetadata.opponentName,
-            result: game.status,
+            result: game.status === 'cashed_out' ? 'won' : game.status,
             playerGuess: metadata.playerGuess,
             opponentGuess: metadata.opponent?.guess,
             actualRoll: round.points,
@@ -655,15 +646,12 @@ router.get('/dicebattle/stats', authenticateToken, async (req, res) => {
       }
     });
     
-    const avgDistance = validRounds > 0 ? (totalDistance / validRounds) : 0;
-    
     res.json({
       totalBattles,
       wonBattles,
       lostBattles,
       tiedBattles,
       winRate: winRate.toFixed(1),
-      avgDistance: avgDistance.toFixed(1),
       battleHistory: battleHistory.slice(0, 10) // Last 10 battles
     });
   } catch (error) {

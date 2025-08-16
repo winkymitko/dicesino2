@@ -29,7 +29,7 @@ const Header: React.FC = () => {
             </Link>
             {user && (
               <Link to="/dice" className="text-gray-300 hover:text-white transition-colors">
-                Dice Game
+                BarboDice
               </Link>
             )}
             {user && (
