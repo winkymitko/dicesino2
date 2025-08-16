@@ -204,22 +204,6 @@ const DiceBattle: React.FC = () => {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-2">Your Guess (3-18)</label>
-              <div className="relative">
-                <input
-                  type="range"
-                  min="3"
-                  max="18"
-                  value={playerGuess}
-                  onChange={(e) => setPlayerGuess(parseInt(e.target.value))}
-                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
-                />
-                <div className="text-center mt-2">
-                  <span className="text-2xl font-bold text-blue-400">{playerGuess}</span>
-                </div>
-              </div>
-            </div>
           </div>
           
           <button
