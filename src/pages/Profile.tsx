@@ -272,22 +272,38 @@ const Profile: React.FC = () => {
             {/* Battle History */}
             {battleStats.battleHistory && battleStats.battleHistory.length > 0 && (
               <div className="mt-6">
-                <h4 className="font-bold mb-3 text-center">Recent Battles</h4>
-                <div className="space-y-3 max-h-60 overflow-y-auto">
+                <h4 className="font-bold mb-4 text-center text-red-400">Battle Records vs Opponents</h4>
+                <div className="space-y-3 max-h-80 overflow-y-auto">
                   {battleStats.battleHistory.map((battle: any, index: number) => (
-                    <div key={index} className="bg-black/20 rounded-lg p-3">
-                      <div className="flex justify-between items-center mb-2">
-                        <div className="font-medium text-white">{battle.opponent}</div>
+                    <div key={index} className="bg-black/30 rounded-lg p-4 border border-white/10">
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="font-bold text-white text-lg">{battle.opponent}</div>
                         <div className={`px-3 py-1 rounded-full text-sm font-bold ${
                           battle.result === 'won' ? 'bg-green-500/20 text-green-400' :
                           battle.result === 'lost' ? 'bg-red-500/20 text-red-400' :
                           'bg-yellow-500/20 text-yellow-400'
                         }`}>
-                          {battle.result === 'won' ? 'Win' : battle.result === 'lost' ? 'Loss' : 'Tie'}
+                          Last: {battle.result === 'won' ? 'Win' : battle.result === 'lost' ? 'Loss' : 'Tie'}
                         </div>
                       </div>
-                      <div className="text-xs text-gray-400">
-                        Record vs {battle.opponent}: {battle.opponentRecord?.wins || 0} Wins, {battle.opponentRecord?.losses || 0} Losses, {battle.opponentRecord?.ties || 0} Ties
+                      <div className="grid grid-cols-3 gap-3 text-center">
+                        <div className="bg-green-500/10 rounded p-2">
+                          <div className="text-lg font-bold text-green-400">{battle.opponentRecord?.wins || 0}</div>
+                          <div className="text-xs text-gray-400">Wins</div>
+                        </div>
+                        <div className="bg-red-500/10 rounded p-2">
+                          <div className="text-lg font-bold text-red-400">{battle.opponentRecord?.losses || 0}</div>
+                          <div className="text-xs text-gray-400">Losses</div>
+                        </div>
+                        <div className="bg-yellow-500/10 rounded p-2">
+                          <div className="text-lg font-bold text-yellow-400">{battle.opponentRecord?.ties || 0}</div>
+                          <div className="text-xs text-gray-400">Ties</div>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-center">
+                        <div className="text-sm text-gray-300">
+                          Total Battles: {(battle.opponentRecord?.wins || 0) + (battle.opponentRecord?.losses || 0) + (battle.opponentRecord?.ties || 0)}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -298,61 +314,6 @@ const Profile: React.FC = () => {
         </div>
       </div>
 
-      {/* Game History */}
-      <div className="mt-8 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-        <div className="flex items-center space-x-3 mb-6">
-          <History className="h-6 w-6 text-blue-500" />
-          <h2 className="text-2xl font-bold">Recent Games</h2>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-white/20">
-                <th className="text-left p-3">Date</th>
-                <th className="text-left p-3">Stake</th>
-                <th className="text-left p-3">Rounds</th>
-                <th className="text-left p-3">Result</th>
-                <th className="text-left p-3">Payout</th>
-              </tr>
-            </thead>
-            <tbody>
-              {gameHistory.map((game) => (
-                <tr key={game.id} className="border-b border-white/10">
-                  <td className="p-3">
-                    {new Date(game.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="p-3">${Number(game.stake ?? 0).toFixed(2)}</td>
-                  <td className="p-3">{Array.isArray(game.rounds) ? game.rounds.length : 0}</td>
-                  <td className="p-3">
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-bold ${
-                        game.status === 'cashed_out'
-                          ? 'bg-green-500/20 text-green-400'
-                          : 'bg-red-500/20 text-red-400'
-                      }`}
-                    >
-                      {game.status === 'cashed_out'
-                        ? 'Won'
-                        : 'Lost'}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    {game.finalPot != null ? `$${Number(game.finalPot).toFixed(2)}` : '-'}
-                  </td>
-                </tr>
-              ))}
-              {gameHistory.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="p-6 text-center text-gray-400">
-                    No games yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   );
 };

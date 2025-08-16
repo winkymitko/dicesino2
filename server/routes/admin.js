@@ -5,6 +5,37 @@ import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 const router = express.Router();
 const prisma = new PrismaClient();
 
+// Default bot names
+const DEFAULT_BOT_NAMES = [
+  'DiceKing', 'RollMaster', 'LuckyStrike', 'BattleBot', 'DiceWarrior',
+  'RollHunter', 'DiceLord', 'BattleMage', 'RollSeeker', 'DiceChamp',
+  'LuckyRoller', 'BattleAce', 'DicePro', 'RollStar', 'BattleWolf',
+  'CubeSlayer', 'DiceNinja', 'RollPhoenix', 'BattleTitan', 'DiceViper',
+  'RollShadow', 'DiceStorm', 'BattleHawk', 'RollThunder', 'DiceFury',
+  'BattleRaven', 'RollBlaze', 'DiceSpirit', 'BattleFrost', 'RollVenom',
+  'DiceCrusher', 'BattleGhost', 'RollFire', 'DiceReaper', 'BattleSteel',
+  'RollCobra', 'DicePhantom', 'BattleWind', 'RollLightning', 'DiceShark',
+  'BattleIce', 'RollDragon', 'DiceWolf', 'BattleFlame', 'RollEagle',
+  'DiceTiger', 'BattleStorm', 'RollPanther', 'DiceRaptor', 'BattleLion',
+  'RollFalcon', 'DiceVenom', 'BattleSnake', 'RollBeast', 'DiceHunter',
+  'BattleClaw', 'RollFang', 'DiceRage', 'BattleForce', 'RollPower',
+  'DiceBlitz', 'BattleRush', 'RollStrike', 'DiceSlash', 'BattleCrush',
+  'RollSmash', 'DiceBlast', 'BattleBoom', 'RollShock', 'DiceFlash',
+  'BattleZap', 'RollBolt', 'DiceSpike', 'BattleEdge', 'RollBlade',
+  'DiceShield', 'BattleGuard', 'RollDefend', 'DiceArmor', 'BattleWall',
+  'RollBarrier', 'DiceFortress', 'BattleTower', 'RollCastle', 'DiceKeep',
+  'BattleHold', 'RollStand', 'DiceRise', 'BattleClimb', 'RollPeak',
+  'DiceSummit', 'BattleTop', 'RollHigh', 'DiceMax', 'BattleSupreme',
+  'RollUltimate', 'DiceFinal', 'BattleEnd', 'RollLast', 'DiceFinish',
+  'BattleWin', 'RollVictory', 'DiceTriumph', 'BattleGlory', 'RollHonor'
+];
+
+// In-memory bot names storage (in production, use database)
+let botNames = [...DEFAULT_BOT_NAMES];
+
+// Export function to get bot names for other modules
+export const getBotNames = () => botNames;
+
 // Get all users (admin only)
 router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
   try {
@@ -264,6 +295,69 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
         recentGames: realRecentGames
       }
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get bot names
+router.get('/bot-names', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    res.json({ botNames });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Add bot name
+router.post('/bot-names', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { name } = req.body;
+    
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return res.status(400).json({ error: 'Bot name is required' });
+    }
+    
+    const trimmedName = name.trim();
+    
+    if (botNames.includes(trimmedName)) {
+      return res.status(400).json({ error: 'Bot name already exists' });
+    }
+    
+    if (trimmedName.length > 20) {
+      return res.status(400).json({ error: 'Bot name must be 20 characters or less' });
+    }
+    
+    botNames.push(trimmedName);
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Remove bot name
+router.delete('/bot-names', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { name } = req.body;
+    
+    if (!name || typeof name !== 'string') {
+      return res.status(400).json({ error: 'Bot name is required' });
+    }
+    
+    const index = botNames.indexOf(name);
+    if (index === -1) {
+      return res.status(400).json({ error: 'Bot name not found' });
+    }
+    
+    if (botNames.length <= 5) {
+      return res.status(400).json({ error: 'Cannot remove bot name - minimum 5 names required' });
+    }
+    
+    botNames.splice(index, 1);
+    res.json({ success: true });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Server error' });

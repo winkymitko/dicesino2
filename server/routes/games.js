@@ -367,31 +367,13 @@ export default router;
 
 // Generate bot opponent
 function generateBotOpponent(stake) {
-  const fakeUsers = [
-    'DiceKing', 'RollMaster', 'LuckyStrike', 'BattleBot', 'DiceWarrior',
-    'RollHunter', 'DiceLord', 'BattleMage', 'RollSeeker', 'DiceChamp',
-    'LuckyRoller', 'BattleAce', 'DicePro', 'RollStar', 'BattleWolf',
-    'CubeSlayer', 'DiceNinja', 'RollPhoenix', 'BattleTitan', 'DiceViper',
-    'RollShadow', 'DiceStorm', 'BattleHawk', 'RollThunder', 'DiceFury',
-    'BattleRaven', 'RollBlaze', 'DiceSpirit', 'BattleFrost', 'RollVenom',
-    'DiceCrusher', 'BattleGhost', 'RollFire', 'DiceReaper', 'BattleSteel',
-    'RollCobra', 'DicePhantom', 'BattleWind', 'RollLightning', 'DiceShark',
-    'BattleIce', 'RollDragon', 'DiceWolf', 'BattleFlame', 'RollEagle',
-    'DiceTiger', 'BattleStorm', 'RollPanther', 'DiceRaptor', 'BattleLion',
-    'RollFalcon', 'DiceVenom', 'BattleSnake', 'RollBeast', 'DiceHunter',
-    'BattleClaw', 'RollFang', 'DiceRage', 'BattleForce', 'RollPower',
-    'DiceBlitz', 'BattleRush', 'RollStrike', 'DiceSlash', 'BattleCrush',
-    'RollSmash', 'DiceBlast', 'BattleBoom', 'RollShock', 'DiceFlash',
-    'BattleZap', 'RollBolt', 'DiceSpike', 'BattleEdge', 'RollBlade',
-    'DiceShield', 'BattleGuard', 'RollDefend', 'DiceArmor', 'BattleWall',
-    'RollBarrier', 'DiceFortress', 'BattleTower', 'RollCastle', 'DiceKeep',
-    'BattleHold', 'RollStand', 'DiceRise', 'BattleClimb', 'RollPeak',
-    'DiceSummit', 'BattleTop', 'RollHigh', 'DiceMax', 'BattleSupreme',
-    'RollUltimate', 'DiceFinal', 'BattleEnd', 'RollLast', 'DiceFinish',
-    'BattleWin', 'RollVictory', 'DiceTriumph', 'BattleGlory', 'RollHonor'
+  // Import bot names from admin module
+  const adminModule = await import('./admin.js');
+  const availableBotNames = adminModule.getBotNames ? adminModule.getBotNames() : [
+    'DiceKing', 'RollMaster', 'LuckyStrike', 'BattleBot', 'DiceWarrior'
   ];
   
-  const name = fakeUsers[Math.floor(Math.random() * fakeUsers.length)];
+  const name = availableBotNames[Math.floor(Math.random() * availableBotNames.length)];
   const id = `bot_${Math.floor(Math.random() * 100000)}`;
   const level = Math.floor(Math.random() * 50) + 1;
   const wins = Math.floor(Math.random() * 200) + 10;

@@ -17,6 +17,11 @@ const AdminPanel: React.FC = () => {
   const [diceGameModifier, setDiceGameModifier] = useState('1.0');
   const [diceBattleModifier, setDiceBattleModifier] = useState('1.0');
 
+  // Bot management state
+  const [botNames, setBotNames] = useState<string[]>([]);
+  const [newBotName, setNewBotName] = useState('');
+  const [showBotManager, setShowBotManager] = useState(false);
+
   useEffect(() => {
     if (!user?.isAdmin) {
       navigate('/');
@@ -24,6 +29,7 @@ const AdminPanel: React.FC = () => {
     }
     fetchUsers();
     fetchStats();
+    fetchBotNames();
   }, [user, navigate]);
 
   const fetchUsers = async () => {
@@ -51,6 +57,65 @@ const AdminPanel: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to fetch stats:', error);
+    }
+  };
+
+  const fetchBotNames = async () => {
+    try {
+      const response = await fetch('/api/admin/bot-names', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setBotNames(data.botNames);
+      }
+    } catch (error) {
+      console.error('Failed to fetch bot names:', error);
+    }
+  };
+
+  const addBotName = async () => {
+    if (!newBotName.trim()) return;
+    
+    try {
+      const response = await fetch('/api/admin/bot-names', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name: newBotName.trim() })
+      });
+      
+      if (response.ok) {
+        await fetchBotNames();
+        setNewBotName('');
+        alert('Bot name added successfully');
+      } else {
+        const error = await response.json();
+        alert(error.error);
+      }
+    } catch (error) {
+      console.error('Failed to add bot name:', error);
+    }
+  };
+
+  const removeBotName = async (name: string) => {
+    try {
+      const response = await fetch('/api/admin/bot-names', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name })
+      });
+      
+      if (response.ok) {
+        await fetchBotNames();
+        alert('Bot name removed successfully');
+      } else {
+        const error = await response.json();
+        alert(error.error);
+      }
+    } catch (error) {
+      console.error('Failed to remove bot name:', error);
     }
   };
 
@@ -632,6 +697,65 @@ const AdminPanel: React.FC = () => {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Bot Management */}
+      <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold">DiceBattle Bot Management</h2>
+          <button
+            onClick={() => setShowBotManager(!showBotManager)}
+            className="bg-blue-500/20 text-blue-400 px-4 py-2 rounded-lg hover:bg-blue-500/30 transition-colors"
+          >
+            {showBotManager ? 'Hide' : 'Manage Bots'}
+          </button>
+        </div>
+
+        {showBotManager && (
+          <div className="space-y-6">
+            {/* Add New Bot */}
+            <div className="bg-black/30 rounded-lg p-4">
+              <h3 className="text-lg font-bold mb-4">Add New Bot Name</h3>
+              <div className="flex space-x-3">
+                <input
+                  type="text"
+                  value={newBotName}
+                  onChange={(e) => setNewBotName(e.target.value)}
+                  className="flex-1 px-4 py-2 bg-black/30 border border-white/20 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+                  placeholder="Enter bot name (e.g., DiceKing, RollMaster)"
+                />
+                <button
+                  onClick={addBotName}
+                  disabled={!newBotName.trim()}
+                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:opacity-50 text-white font-bold px-6 py-2 rounded-lg transition-all"
+                >
+                  Add Bot
+                </button>
+              </div>
+            </div>
+
+            {/* Current Bot Names */}
+            <div className="bg-black/30 rounded-lg p-4">
+              <h3 className="text-lg font-bold mb-4">Current Bot Names ({botNames.length})</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-60 overflow-y-auto">
+                {botNames.map((name, index) => (
+                  <div key={index} className="flex items-center justify-between bg-white/5 rounded-lg p-3">
+                    <span className="text-sm font-medium">{name}</span>
+                    <button
+                      onClick={() => removeBotName(name)}
+                      className="text-red-400 hover:text-red-300 text-xs ml-2"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {botNames.length === 0 && (
+                <p className="text-gray-400 text-center py-4">No bot names configured</p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
