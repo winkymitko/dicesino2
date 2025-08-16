@@ -172,7 +172,8 @@ const Profile: React.FC = () => {
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <div className="grid md:grid-cols-3 gap-8">
         {/* Profile Info */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+        <div className="md:col-span-1 space-y-6">
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
           <div className="flex items-center space-x-3 mb-6">
             <User className="h-6 w-6 text-yellow-500" />
             <h2 className="text-2xl font-bold">Profile</h2>
@@ -221,10 +222,71 @@ const Profile: React.FC = () => {
               {loading ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
+          </div>
+
+          {/* Change Password */}
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+            <h2 className="text-2xl font-bold mb-6">Change Password</h2>
+
+            {passwordError && (
+              <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg mb-4">
+                {passwordError}
+              </div>
+            )}
+
+            {passwordSuccess && (
+              <div className="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-3 rounded-lg mb-4">
+                {passwordSuccess}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Current Password</label>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors"
+                  placeholder="Enter current password"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">New Password</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors"
+                  placeholder="Enter new password"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Confirm New Password</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors"
+                  placeholder="Confirm new password"
+                />
+              </div>
+
+              <button
+                onClick={handlePasswordChange}
+                disabled={passwordLoading || !currentPassword || !newPassword || !confirmPassword}
+                className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-all"
+              >
+                {passwordLoading ? 'Changing Password...' : 'Change Password'}
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Stats */}
-        <div className="space-y-6">
+        <div className="md:col-span-2 space-y-6">
           {/* Top Up Button */}
           <div className="bg-gradient-to-r from-green-500/20 to-green-600/20 backdrop-blur-sm rounded-2xl border border-green-500/30 p-6 text-center">
             <h3 className="text-lg font-bold mb-2 text-green-400">💰 Need More Real Money?</h3>
