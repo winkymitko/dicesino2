@@ -278,66 +278,102 @@ const AdminPanel: React.FC = () => {
                         <div className="grid md:grid-cols-3 gap-6 mb-6">
                           {/* Money Flow */}
                           <div className="bg-white/5 rounded-lg p-4">
-                            <h5 className="font-bold mb-3 text-blue-400">💰 Money Flow Summary</h5>
+                            <h5 className="font-bold mb-3 text-blue-400">
+                              💰 {(statsViewMode[user.id] || 'virtual') === 'virtual' ? 'Virtual' : 'Real'} Money Flow Summary
+                            </h5>
                             <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span>Virtual Money Added:</span>
-                                <span className="text-green-400">${userStats[user.id].virtualDeposited?.toFixed(2) || '0.00'}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Real Money Deposited:</span>
-                                <span className="text-yellow-400">${userStats[user.id].realDeposited?.toFixed(2) || '0.00'}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Total Money Bet:</span>
-                                <span className="text-orange-400">${userStats[user.id].totalWagered?.toFixed(2) || '0.00'}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Total Money Won:</span>
-                                <span className="text-green-400">${userStats[user.id].totalWon?.toFixed(2) || '0.00'}</span>
-                              </div>
-                              <div className="flex justify-between border-t border-white/20 pt-2">
-                                <span className="font-bold">Player Net Result:</span>
-                                <span className={`font-bold ${
-                                  (userStats[user.id].totalWon - userStats[user.id].totalWagered) >= 0 
-                                    ? 'text-green-400' : 'text-red-400'
-                                }`}>
-                                  ${((userStats[user.id].totalWon || 0) - (userStats[user.id].totalWagered || 0)).toFixed(2)}
-                                </span>
-                              </div>
+                              {(statsViewMode[user.id] || 'virtual') === 'virtual' ? (
+                                <>
+                                  <div className="flex justify-between">
+                                    <span>Virtual Money Added:</span>
+                                    <span className="text-green-400">${userStats[user.id].virtual?.deposited?.toFixed(2) || '0.00'}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Total Virtual Money Bet:</span>
+                                    <span className="text-orange-400">${userStats[user.id].virtual?.wagered?.toFixed(2) || '0.00'}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Total Virtual Money Won:</span>
+                                    <span className="text-green-400">${userStats[user.id].virtual?.won?.toFixed(2) || '0.00'}</span>
+                                  </div>
+                                  <div className="flex justify-between border-t border-white/20 pt-2">
+                                    <span className="font-bold">Virtual Net Result:</span>
+                                    <span className={`font-bold ${
+                                      ((userStats[user.id].virtual?.won || 0) - (userStats[user.id].virtual?.wagered || 0)) >= 0 
+                                        ? 'text-green-400' : 'text-red-400'
+                                    }`}>
+                                      ${((userStats[user.id].virtual?.won || 0) - (userStats[user.id].virtual?.wagered || 0)).toFixed(2)}
+                                    </span>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="flex justify-between">
+                                    <span>Real Money Deposited:</span>
+                                    <span className="text-yellow-400">${userStats[user.id].real?.deposited?.toFixed(2) || '0.00'}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Total Real Money Bet:</span>
+                                    <span className="text-orange-400">${userStats[user.id].real?.wagered?.toFixed(2) || '0.00'}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Total Real Money Won:</span>
+                                    <span className="text-green-400">${userStats[user.id].real?.won?.toFixed(2) || '0.00'}</span>
+                                  </div>
+                                  <div className="flex justify-between border-t border-white/20 pt-2">
+                                    <span className="font-bold">Real Net Result:</span>
+                                    <span className={`font-bold ${
+                                      ((userStats[user.id].real?.won || 0) - (userStats[user.id].real?.wagered || 0)) >= 0 
+                                        ? 'text-green-400' : 'text-red-400'
+                                    }`}>
+                                      ${((userStats[user.id].real?.won || 0) - (userStats[user.id].real?.wagered || 0)).toFixed(2)}
+                                    </span>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           </div>
 
                           {/* 3-Dice Game Stats */}
                           <div className="bg-white/5 rounded-lg p-4">
-                            <h5 className="font-bold mb-3 text-green-400">🎲 BarboDice (3-Dice Game)</h5>
+                            <h5 className="font-bold mb-3 text-green-400">
+                              🎲 {(statsViewMode[user.id] || 'virtual') === 'virtual' ? 'Virtual' : 'Real'} BarboDice (3-Dice Game)
+                            </h5>
                             <div className="space-y-2 text-sm">
+                              {(() => {
+                                const currentStats = userStats[user.id][(statsViewMode[user.id] || 'virtual')];
+                                const diceStats = currentStats?.diceGames || {};
+                                return (
+                                  <>
                               <div className="flex justify-between">
                                 <span>Total Games:</span>
-                                <span>{userStats[user.id].diceGames?.total || 0}</span>
+                                    <span>{diceStats.total || 0}</span>
                               </div>
                               <div className="flex justify-between">
                                 <span>Games Won (Cashed Out):</span>
-                                <span className="text-green-400">{userStats[user.id].diceGames?.won || 0}</span>
+                                    <span className="text-green-400">{diceStats.won || 0}</span>
                               </div>
                               <div className="flex justify-between">
                                 <span>Games Lost (Busted):</span>
-                                <span className="text-red-400">{userStats[user.id].diceGames?.lost || 0}</span>
+                                    <span className="text-red-400">{diceStats.lost || 0}</span>
                               </div>
                               <div className="flex justify-between">
                                 <span>Money Bet on BarboDice:</span>
-                                <span className="text-orange-400">${userStats[user.id].diceGames?.wagered?.toFixed(2) || '0.00'}</span>
+                                    <span className="text-orange-400">${diceStats.wagered?.toFixed(2) || '0.00'}</span>
                               </div>
                               <div className="flex justify-between">
                                 <span>Money Won from BarboDice:</span>
-                                <span className="text-green-400">${userStats[user.id].diceGames?.won_amount?.toFixed(2) || '0.00'}</span>
+                                    <span className="text-green-400">${diceStats.won_amount?.toFixed(2) || '0.00'}</span>
                               </div>
                               <div className="flex justify-between border-t border-white/20 pt-2">
                                 <span className="font-bold">🏦 Casino Profit (BarboDice):</span>
                                 <span className="text-yellow-400 font-bold">
-                                  ${userStats[user.id].diceGames?.casino_profit?.toFixed(2) || '0.00'}
+                                      ${diceStats.casino_profit?.toFixed(2) || '0.00'}
                                 </span>
                               </div>
+                                  </>
+                                );
+                              })()}
                             </div>
                           </div>
 
@@ -392,7 +428,15 @@ const AdminPanel: React.FC = () => {
                                       </span>
                                     </td>
                                   </tr>
-                                ))}
+                                )) || []}
+                                {(!userStats[user.id][(statsViewMode[user.id] || 'virtual')]?.recentGames || 
+                                  userStats[user.id][(statsViewMode[user.id] || 'virtual')]?.recentGames?.length === 0) && (
+                                  <tr>
+                                    <td colSpan={6} className="p-4 text-center text-gray-400">
+                                      No {(statsViewMode[user.id] || 'virtual') === 'virtual' ? 'virtual' : 'real'} games found
+                                    </td>
+                                  </tr>
+                                )}
                               </tbody>
                             </table>
                           </div>
