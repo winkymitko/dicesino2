@@ -108,8 +108,7 @@ const DiceBattle: React.FC = () => {
     setMatchmaking(false);
     setRolling(false);
     setGuessConfirmed(false);
-    // Reset playerGuess to default when starting completely fresh
-    setPlayerGuess(10);
+    // Don't reset playerGuess - keep user's current guess
     setError('');
   };
 
