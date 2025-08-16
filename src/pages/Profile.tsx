@@ -142,6 +142,7 @@ const Profile: React.FC = () => {
     
     setPasswordLoading(true);
     try {
+      console.log('Sending password change request:', { currentPassword: '***', newPassword: '***' });
       const res = await fetch('/api/auth/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -149,14 +150,17 @@ const Profile: React.FC = () => {
         body: JSON.stringify({ currentPassword, newPassword }),
       });
       
+      console.log('Response status:', res.status);
+      const responseData = await res.json();
+      console.log('Response data:', responseData);
+      
       if (res.ok) {
-        setPasswordSuccess('Password changed successfully!');
+        setPasswordSuccess(responseData.message || 'Password changed successfully!');
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
       } else {
-        const error = await res.json();
-        setPasswordError(error.error || 'Failed to change password');
+        setPasswordError(responseData.error || 'Failed to change password');
       }
     } catch (e) {
       console.error('Password change error', e);
