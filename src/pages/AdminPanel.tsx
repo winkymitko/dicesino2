@@ -183,7 +183,8 @@ const AdminPanel: React.FC = () => {
             </thead>
             <tbody>
               {users.map((user) => (
-                <tr key={user.id} className="border-b border-white/10 hover:bg-white/5">
+                <React.Fragment key={user.id}>
+                  <tr className="border-b border-white/10 hover:bg-white/5">
                   <td className="p-3">{user.email}</td>
                   <td className="p-3">{user.name || '-'}</td>
                   <td className="p-3 text-green-400">${user.virtualBalance.toFixed(2)}</td>
@@ -232,9 +233,9 @@ const AdminPanel: React.FC = () => {
                       {expandedUser === user.id ? 'Hide Stats' : 'View Stats'}
                     </button>
                   </td>
-                </tr>
-                {expandedUser === user.id && userStats[user.id] && (
-                  <tr>
+                  </tr>
+                  {expandedUser === user.id && userStats[user.id] && (
+                    <tr>
                     <td colSpan={9} className="p-0">
                       <div className="bg-black/30 p-6 border-t border-white/10">
                         <h4 className="text-lg font-bold mb-4 text-purple-400">
@@ -401,8 +402,9 @@ const AdminPanel: React.FC = () => {
                         </div>
                       </div>
                     </td>
-                  </tr>
-                )}
+                    </tr>
+                  )}
+                </React.Fragment>
               ))}
             </tbody>
           </table>
