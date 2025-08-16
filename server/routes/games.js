@@ -474,7 +474,7 @@ router.post('/dicebattle/start', authenticateToken, async (req, res) => {
 // Roll dice for DiceBattle
 router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
   try {
-    const { gameId } = req.body;
+    const { gameId, playerGuess } = req.body;
     
     const game = await prisma.game.findUnique({
       where: { id: gameId }
@@ -485,7 +485,10 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
     }
     
     const metadata = JSON.parse(game.metadata || '{}');
-    const { playerGuess, opponent, useVirtual } = metadata;
+    const { opponent, useVirtual } = metadata;
+    
+    // Use the guess from the request body (confirmed by user)
+    const finalPlayerGuess = playerGuess || metadata.playerGuess;
     
     // Generate dice using provably fair
     const serverSeed = generateServerSeed();
@@ -495,7 +498,7 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
     const [dice1, dice2, dice3] = generateDiceRoll(serverSeed, clientSeed, nonce);
     const total = dice1 + dice2 + dice3;
     
-    const playerDistance = Math.abs(total - playerGuess);
+    const playerDistance = Math.abs(total - finalPlayerGuess);
     let opponentDistance = Math.abs(total - opponent.guess);
     
     // Apply fairness modifier (subtle adjustment)
@@ -605,7 +608,7 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
     res.json({
       dice1, dice2, dice3,
       total,
-      playerGuess,
+      playerGuess: finalPlayerGuess,
       playerDistance,
       opponent: {
         ...opponent,

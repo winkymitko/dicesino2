@@ -36,10 +36,6 @@ const DiceBattle: React.FC = () => {
       setError('');
       setMatchmaking(true);
       
-      // Get the current value directly from the slider DOM element to avoid async state issues
-      const sliderElement = document.querySelector('input[type="range"]') as HTMLInputElement;
-      const currentGuess = sliderElement ? parseInt(sliderElement.value) : playerGuess;
-      
       // Simulate matchmaking delay
       await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
       
@@ -47,7 +43,7 @@ const DiceBattle: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ stake, useVirtual, playerGuess: currentGuess })
+        body: JSON.stringify({ stake, useVirtual, playerGuess: 10 }) // Temporary value, real guess sent in rollDice
       });
 
       if (!response.ok) {
@@ -60,9 +56,6 @@ const DiceBattle: React.FC = () => {
       setOpponent(data.opponent);
       setGameActive(true);
       setMatchmaking(false);
-      
-      // Update state to match what was actually sent
-      setPlayerGuess(currentGuess);
       
       await refreshUser();
     } catch (err: any) {
@@ -78,11 +71,12 @@ const DiceBattle: React.FC = () => {
       setRolling(true);
       setError('');
       
+      // Use the confirmed guess value
       const response = await fetch('/api/games/dicebattle/roll', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ gameId })
+        body: JSON.stringify({ gameId, playerGuess: confirmedGuess })
       });
 
       if (!response.ok) {
