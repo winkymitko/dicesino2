@@ -366,7 +366,7 @@ export default router;
 // DiceBattle game routes
 
 // Generate bot opponent
-function generateBotOpponent(stake) {
+async function generateBotOpponent(stake) {
   // Import bot names from admin module
   const adminModule = await import('./admin.js');
   const availableBotNames = adminModule.getBotNames ? adminModule.getBotNames() : [
@@ -416,7 +416,7 @@ router.post('/dicebattle/start', authenticateToken, async (req, res) => {
     }
     
     // Generate bot opponent
-    const opponent = generateBotOpponent(stake);
+    const opponent = await generateBotOpponent(stake);
     
     // Create new game
     const game = await prisma.game.create({
