@@ -11,6 +11,7 @@ const AdminPanel: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [userStats, setUserStats] = useState<any>({});
+  const [statsViewMode, setStatsViewMode] = useState<{[key: string]: 'virtual' | 'real'}>({});
   const [bonusAmount, setBonusAmount] = useState('');
   const [bonusDescription, setBonusDescription] = useState('');
   const [diceGameModifier, setDiceGameModifier] = useState('1.0');
@@ -126,6 +127,10 @@ const AdminPanel: React.FC = () => {
       setExpandedUser(null);
     } else {
       setExpandedUser(userId);
+      // Initialize view mode to virtual by default
+      if (!statsViewMode[userId]) {
+        setStatsViewMode(prev => ({ ...prev, [userId]: 'virtual' }));
+      }
       if (!userStats[userId]) {
         await fetchUserStats(userId);
       }
@@ -244,6 +249,32 @@ const AdminPanel: React.FC = () => {
                           Detailed Statistics for {user.email}
                         </h4>
                         
+                          {/* Toggle Button */}
+                          <div className="flex justify-center mb-6">
+                            <div className="bg-white/10 rounded-lg p-1 flex">
+                              <button
+                                onClick={() => setStatsViewMode(prev => ({ ...prev, [user.id]: 'virtual' }))}
+                                className={`px-4 py-2 rounded-md font-medium transition-all ${
+                                  (statsViewMode[user.id] || 'virtual') === 'virtual'
+                                    ? 'bg-green-500 text-black'
+                                    : 'text-green-400 hover:bg-green-500/20'
+                                }`}
+                              >
+                                💚 Virtual Money Stats
+                              </button>
+                              <button
+                                onClick={() => setStatsViewMode(prev => ({ ...prev, [user.id]: 'real' }))}
+                                className={`px-4 py-2 rounded-md font-medium transition-all ${
+                                  statsViewMode[user.id] === 'real'
+                                    ? 'bg-yellow-500 text-black'
+                                    : 'text-yellow-400 hover:bg-yellow-500/20'
+                                }`}
+                              >
+                                💛 Real Money Stats
+                              </button>
+                            </div>
+                          </div>
+                          
                         <div className="grid md:grid-cols-3 gap-6 mb-6">
                           {/* Money Flow */}
                           <div className="bg-white/5 rounded-lg p-4">
