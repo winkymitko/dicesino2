@@ -414,7 +414,7 @@ const AdminPanel: React.FC = () => {
                                     <div className="flex justify-between border-t border-white/20 pt-2">
                                       <span className="font-bold">🏦 Casino Profit (DiceBattle):</span>
                                       <span className="text-yellow-400 font-bold">
-                                        ${currentStats?.battleCasinoProfit?.toFixed(2) || '0.00'}
+                                        ${(currentStats?.battleCasinoProfit || 0) >= 0 ? '+' : ''}${currentStats?.battleCasinoProfit?.toFixed(2) || '0.00'}
                                       </span>
                                     </div>
                                   </>

@@ -190,6 +190,7 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
       wagered: virtualDiceGames.reduce((sum, game) => sum + (game.stake || 0), 0),
       won_amount: virtualDiceGames.reduce((sum, game) => sum + (game.finalPot || 0), 0)
     };
+    // Casino profit = what players bet - what casino paid out to winners
     const virtualDiceCasinoProfit = virtualDiceStats.wagered - virtualDiceStats.won_amount;
     
     // Virtual DiceBattle stats
@@ -201,6 +202,7 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
       wagered: virtualBattleGames.reduce((sum, game) => sum + (game.stake || 0), 0),
       won_amount: virtualBattleGames.reduce((sum, game) => sum + (game.finalPot || 0), 0)
     };
+    // Casino profit = what players bet - what casino paid out to winners
     const virtualBattleCasinoProfit = virtualBattleStats.wagered - virtualBattleStats.won_amount;
     
     // Real BarboDice stats
@@ -211,6 +213,7 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
       wagered: realDiceGames.reduce((sum, game) => sum + (game.stake || 0), 0),
       won_amount: realDiceGames.reduce((sum, game) => sum + (game.finalPot || 0), 0)
     };
+    // Casino profit = what players bet - what casino paid out to winners  
     const realDiceCasinoProfit = realDiceStats.wagered - realDiceStats.won_amount;
     
     // Real DiceBattle stats
@@ -222,6 +225,7 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
       wagered: realBattleGames.reduce((sum, game) => sum + (game.stake || 0), 0),
       won_amount: realBattleGames.reduce((sum, game) => sum + (game.finalPot || 0), 0)
     };
+    // Casino profit = what players bet - what casino paid out to winners
     const realBattleCasinoProfit = realBattleStats.wagered - realBattleStats.won_amount;
     
     // Recent virtual games with casino profit calculation
