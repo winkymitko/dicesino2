@@ -19,7 +19,7 @@ const Header: React.FC = () => {
           <Link to="/" className="flex items-center space-x-2">
             <Dice6 className="h-8 w-8 text-yellow-500" />
             <span className="text-xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent">
-              DiceCasino
+              DiceSino
             </span>
           </Link>
 

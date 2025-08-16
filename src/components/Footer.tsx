@@ -8,7 +8,7 @@ const Footer: React.FC = () => {
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center space-x-2">
             <Dice6 className="h-4 w-4 text-yellow-500" />
-            <span className="text-gray-400">© 2025 DiceCasino</span>
+            <span className="text-gray-400">© 2025 DiceSino</span>
           </div>
           <div className="flex items-center space-x-4 text-gray-400">
             <span>Provably Fair</span>

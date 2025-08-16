@@ -203,7 +203,23 @@ const DiceGame: React.FC = () => {
             <div>
               <label className="block text-sm font-medium mb-2">Choose Stake</label>
               <div className="grid grid-cols-2 gap-2 mb-3">
-                {[5, 10, 20, 50].map((amount) => (
+                {[0.2, 0.5, 1, 2].map((amount) => (
+                  <button
+                    key={amount}
+                    onClick={() => setStake(amount)}
+                    className={`p-3 rounded-lg font-bold transition-all ${
+                      stake === amount
+                        ? 'bg-yellow-500 text-black'
+                        : 'bg-white/10 hover:bg-white/20'
+                    }`}
+                  >
+                    ${amount}
+                    ${amount.toFixed(1)}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                {[5, 10].map((amount) => (
                   <button
                     key={amount}
                     onClick={() => setStake(amount)}

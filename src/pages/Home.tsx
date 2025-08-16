@@ -42,7 +42,7 @@ const Home: React.FC = () => {
         <h1 className="text-4xl md:text-6xl font-bold mb-6">
           Welcome to{' '}
           <span className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 bg-clip-text text-transparent">
-            DiceCasino
+            DiceSino
           </span>
         </h1>
         <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
