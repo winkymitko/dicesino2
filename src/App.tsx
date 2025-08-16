@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import DiceGame from './pages/DiceGame';
+import DiceBattle from './pages/DiceBattle';
 import Profile from './pages/Profile';
 import AdminPanel from './pages/AdminPanel';
 import { AuthProvider } from './context/AuthContext';
@@ -22,6 +23,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/dice" element={<DiceGame />} />
+              <Route path="/dicebattle" element={<DiceBattle />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/admin" element={<AdminPanel />} />
             </Routes>

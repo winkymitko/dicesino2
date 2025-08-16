@@ -32,6 +32,11 @@ const Header: React.FC = () => {
                 Dice Game
               </Link>
             )}
+            {user && (
+              <Link to="/dicebattle" className="text-gray-300 hover:text-white transition-colors">
+                DiceBattle
+              </Link>
+            )}
           </nav>
 
           <div className="flex items-center space-x-4">

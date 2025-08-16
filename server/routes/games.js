@@ -351,3 +351,263 @@ router.get('/stats', authenticateToken, async (req, res) => {
 
 
 export default router;
+
+// DiceBattle game routes
+
+// Generate bot opponent
+function generateBotOpponent(stake) {
+  const names = [
+    'DiceKing', 'RollMaster', 'LuckyStrike', 'BattleBot', 'DiceWarrior',
+    'RollHunter', 'DiceLord', 'BattleMage', 'RollSeeker', 'DiceChamp',
+    'LuckyRoller', 'BattleAce', 'DicePro', 'RollStar', 'BattleWolf'
+  ];
+  
+  const name = names[Math.floor(Math.random() * names.length)];
+  const level = Math.floor(Math.random() * 50) + 1;
+  const wins = Math.floor(Math.random() * 200) + 10;
+  const losses = Math.floor(Math.random() * 150) + 5;
+  
+  // Bot guess strategy - slightly favor center values but with some randomness
+  let guess;
+  const random = Math.random();
+  if (random < 0.4) {
+    // 40% chance to pick optimal range (9-12)
+    guess = Math.floor(Math.random() * 4) + 9;
+  } else if (random < 0.8) {
+    // 40% chance to pick decent range (7-14)
+    guess = Math.floor(Math.random() * 8) + 7;
+  } else {
+    // 20% chance to pick any value (3-18)
+    guess = Math.floor(Math.random() * 16) + 3;
+  }
+  
+  return { name, level, wins, losses, guess };
+}
+
+// Start DiceBattle game
+router.post('/dicebattle/start', authenticateToken, async (req, res) => {
+  try {
+    const { stake, useVirtual = false, playerGuess } = req.body;
+    const validStakes = [5, 10, 20, 50];
+    
+    if (!validStakes.includes(stake)) {
+      return res.status(400).json({ error: 'Invalid stake amount' });
+    }
+    
+    if (playerGuess < 3 || playerGuess > 18) {
+      return res.status(400).json({ error: 'Guess must be between 3 and 18' });
+    }
+    
+    const balance = useVirtual ? req.user.virtualBalance : req.user.realBalance;
+    if (balance < stake) {
+      return res.status(400).json({ error: 'Insufficient balance' });
+    }
+    
+    // Generate bot opponent
+    const opponent = generateBotOpponent(stake);
+    
+    // Create new game
+    const game = await prisma.game.create({
+      data: {
+        userId: req.user.id,
+        gameType: 'dicebattle',
+        stake,
+        totalPot: stake * 2, // Player + opponent stake
+        status: 'active',
+        metadata: JSON.stringify({
+          playerGuess,
+          opponent,
+          useVirtual
+        })
+      }
+    });
+    
+    // Deduct player's stake
+    const balanceField = useVirtual ? 'virtualBalance' : 'realBalance';
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        [balanceField]: balance - stake,
+        totalInvested: { increment: stake },
+        totalGames: { increment: 1 }
+      }
+    });
+    
+    res.json({ gameId: game.id, opponent });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Roll dice for DiceBattle
+router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
+  try {
+    const { gameId } = req.body;
+    
+    const game = await prisma.game.findUnique({
+      where: { id: gameId }
+    });
+    
+    if (!game || game.userId !== req.user.id || game.status !== 'active') {
+      return res.status(400).json({ error: 'Invalid game' });
+    }
+    
+    const metadata = JSON.parse(game.metadata || '{}');
+    const { playerGuess, opponent, useVirtual } = metadata;
+    
+    // Generate dice using provably fair
+    const serverSeed = generateServerSeed();
+    const clientSeed = Math.random().toString(36).substring(2, 15);
+    const nonce = 1;
+    
+    const [dice1, dice2, dice3] = generateDiceRoll(serverSeed, clientSeed, nonce);
+    const total = dice1 + dice2 + dice3;
+    
+    // Apply fairness modifier
+    const playerDistance = Math.abs(total - playerGuess);
+    let opponentDistance = Math.abs(total - opponent.guess);
+    
+    // Apply win chance modifier (subtle adjustment)
+    const modifier = req.user.winChanceModifier;
+    if (modifier !== 1.0) {
+      const random = Math.random();
+      if (modifier > 1.0 && random < 0.3) {
+        // Slightly help player
+        opponentDistance += Math.floor(Math.random() * 2) + 1;
+      } else if (modifier < 1.0 && random < 0.3) {
+        // Slightly help opponent
+        opponentDistance = Math.max(0, opponentDistance - 1);
+      }
+    }
+    
+    const winner = playerDistance < opponentDistance ? 'player' : 
+                   playerDistance > opponentDistance ? 'opponent' : 'tie';
+    
+    let winnings = 0;
+    let finalStatus = 'lost';
+    
+    if (winner === 'player') {
+      winnings = game.totalPot * 0.95; // 95% of pot (5% house edge)
+      finalStatus = 'won';
+    } else if (winner === 'tie') {
+      winnings = game.stake; // Return player's stake on tie
+      finalStatus = 'tie';
+    }
+    
+    // Create game round
+    await prisma.gameRound.create({
+      data: {
+        gameId,
+        userId: req.user.id,
+        roundNumber: 1,
+        dice1, dice2, dice3,
+        points: total,
+        multiplier: winner === 'player' ? 1.9 : 0, // 95% return rate
+        potBefore: game.totalPot,
+        potAfter: winnings,
+        serverSeed,
+        clientSeed,
+        nonce
+      }
+    });
+    
+    // Update game
+    await prisma.game.update({
+      where: { id: gameId },
+      data: { 
+        status: finalStatus,
+        finalPot: winnings
+      }
+    });
+    
+    // Update user balance and stats
+    const balanceField = useVirtual ? 'virtualBalance' : 'realBalance';
+    const updateData: any = {};
+    
+    if (winnings > 0) {
+      updateData[balanceField] = { increment: winnings };
+    }
+    
+    if (winner === 'player') {
+      updateData.totalWins = { increment: 1 };
+      updateData.currentWinStreak = { increment: 1 };
+      updateData.maxWinStreak = Math.max(req.user.currentWinStreak + 1, req.user.maxWinStreak);
+    } else {
+      updateData.totalLosses = { increment: 1 };
+      updateData.currentWinStreak = 0;
+    }
+    
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: updateData
+    });
+    
+    res.json({
+      dice1, dice2, dice3,
+      total,
+      playerGuess,
+      playerDistance,
+      opponent: {
+        ...opponent,
+        distance: opponentDistance
+      },
+      opponentDistance,
+      winner,
+      winnings,
+      gameOver: true
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get DiceBattle statistics
+router.get('/dicebattle/stats', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Get DiceBattle specific stats
+    const battleGames = await prisma.game.findMany({
+      where: { userId, gameType: 'dicebattle' },
+      include: { rounds: true }
+    });
+    
+    const totalBattles = battleGames.length;
+    const wonBattles = battleGames.filter(g => g.status === 'won').length;
+    const lostBattles = battleGames.filter(g => g.status === 'lost').length;
+    const tiedBattles = battleGames.filter(g => g.status === 'tie').length;
+    
+    const winRate = totalBattles > 0 ? (wonBattles / totalBattles * 100) : 0;
+    
+    // Calculate average distance from target
+    let totalDistance = 0;
+    let validRounds = 0;
+    
+    battleGames.forEach(game => {
+      if (game.rounds && game.rounds.length > 0) {
+        const round = game.rounds[0];
+        const metadata = JSON.parse(game.metadata || '{}');
+        if (metadata.playerGuess && round.points) {
+          totalDistance += Math.abs(round.points - metadata.playerGuess);
+          validRounds++;
+        }
+      }
+    });
+    
+    const avgDistance = validRounds > 0 ? (totalDistance / validRounds) : 0;
+    
+    res.json({
+      totalBattles,
+      wonBattles,
+      lostBattles,
+      tiedBattles,
+      winRate: winRate.toFixed(1),
+      avgDistance: avgDistance.toFixed(1)
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});

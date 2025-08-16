@@ -35,6 +35,9 @@ const Profile: React.FC = () => {
   const [bestStrike, setBestStrike] = useState<number>(0);
   const [totalSuccessfulRolls, setTotalSuccessfulRolls] = useState<number>(0);
   const [totalGames, setTotalGames] = useState<number>(0);
+  
+  // DiceBattle stats
+  const [battleStats, setBattleStats] = useState<any>({});
 
   useEffect(() => {
     if (!user) return;
@@ -78,6 +81,17 @@ const Profile: React.FC = () => {
       setBestStrike(0);
       setTotalSuccessfulRolls(0);
       setTotalGames(0);
+    }
+    
+    // Fetch DiceBattle stats
+    try {
+      const battleRes = await fetch('/api/games/dicebattle/stats', { credentials: 'include' });
+      if (battleRes.ok) {
+        const battleData = await battleRes.json();
+        setBattleStats(battleData);
+      }
+    } catch (e) {
+      console.error('Failed to fetch battle stats', e);
     }
   };
 
@@ -212,6 +226,33 @@ const Profile: React.FC = () => {
               <div className="text-center">
                 <div className="text-xl font-bold text-green-400">{totalGames}</div>
                 <div className="text-gray-400">Total Games</div>
+              </div>
+            </div>
+          </div>
+          
+          {/* DiceBattle Statistics */}
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+            <div className="flex items-center space-x-3 mb-6">
+              <Trophy className="h-6 w-6 text-red-500" />
+              <h2 className="text-2xl font-bold">DiceBattle Statistics</h2>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6 text-sm">
+              <div className="text-center">
+                <div className="text-xl font-bold text-red-400">{battleStats.totalBattles || 0}</div>
+                <div className="text-gray-400">Total Battles</div>
+              </div>
+              <div className="text-center">
+                <div className="text-xl font-bold text-green-400">{battleStats.winRate || '0.0'}%</div>
+                <div className="text-gray-400">Win Rate</div>
+              </div>
+              <div className="text-center">
+                <div className="text-xl font-bold text-blue-400">{battleStats.wonBattles || 0}</div>
+                <div className="text-gray-400">Victories</div>
+              </div>
+              <div className="text-center">
+                <div className="text-xl font-bold text-orange-400">{battleStats.avgDistance || '0.0'}</div>
+                <div className="text-gray-400">Avg Distance</div>
               </div>
             </div>
           </div>

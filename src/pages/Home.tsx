@@ -146,6 +146,45 @@ const Home: React.FC = () => {
             </div>
           </div>
 
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 hover:border-red-500/50 transition-all transform hover:scale-105">
+            <div className="text-center">
+              <div className="flex justify-center space-x-2 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-lg flex items-center justify-center">
+                  <Dice6 className="h-6 w-6 text-white" />
+                </div>
+                <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center mt-2">
+                  <span className="text-black font-bold text-sm">VS</span>
+                </div>
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                  <Dice6 className="h-6 w-6 text-white" />
+                </div>
+              </div>
+              <h3 className="text-xl font-bold mb-2">DiceBattle</h3>
+              <p className="text-gray-400 text-sm mb-4">
+                Challenge opponents in dice prediction battles. Closest guess wins!
+              </p>
+              <div className="flex justify-center space-x-2 mb-4">
+                <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">Live</span>
+                <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded">PvP</span>
+              </div>
+              {user ? (
+                <Link
+                  to="/dicebattle"
+                  className="block bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-2 px-4 rounded-lg transition-all"
+                >
+                  Battle Now
+                </Link>
+              ) : (
+                <Link
+                  to="/register"
+                  className="block bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-2 px-4 rounded-lg transition-all"
+                >
+                  Register to Battle
+                </Link>
+              )}
+            </div>
+          </div>
+
           {/* Blackjack - Coming Soon */}
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/30"></div>

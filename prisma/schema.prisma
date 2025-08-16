@@ -42,6 +42,7 @@ model Game {
   totalPot  Float
   finalPot  Float?
   status    String   // "active", "cashed_out", "lost"
+  metadata  String?  // JSON string for game-specific data
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
