@@ -44,7 +44,7 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
         username: true,
         name: true,
         phone: true,
-        cryptoWallet: true,
+        cryptoWallets: true,
         realBalance: true,
         virtualBalance: true,
         diceGameModifier: true,
