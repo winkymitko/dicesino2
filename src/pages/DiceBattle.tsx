@@ -361,6 +361,10 @@ const DiceBattle: React.FC = () => {
               <div className="text-green-400 text-xl font-bold">
                 🎉 Victory! You won ${battleResult.winnings.toFixed(2)}!
               </div>
+            ) : battleResult.winner === 'tie' ? (
+              <div className="text-yellow-400 text-xl font-bold">
+                🤝 It's a Tie! Your stake ${stake.toFixed(2)} was returned
+              </div>
             ) : (
               <div className="text-red-400 text-xl font-bold">
                 💔 Defeat! You lost ${stake.toFixed(2)}

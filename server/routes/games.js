@@ -493,10 +493,10 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
     const [dice1, dice2, dice3] = generateDiceRoll(serverSeed, clientSeed, nonce);
     const total = dice1 + dice2 + dice3;
     
-    // Apply fairness modifier
     const playerDistance = Math.abs(total - playerGuess);
     let opponentDistance = Math.abs(total - opponent.guess);
     
+    // Apply fairness modifier (subtle adjustment)
     // Apply win chance modifier (subtle adjustment)
     const modifier = req.user.diceBattleModifier;
     const gameCoefficient = 0.9 + (Math.random() * 0.2); // 0.9 to 1.1
@@ -513,6 +513,7 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
       }
     }
     
+    // Determine winner based on distance
     const winner = playerDistance < opponentDistance ? 'player' : 
                    playerDistance > opponentDistance ? 'opponent' : 'tie';
     
@@ -521,7 +522,7 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
     
     if (winner === 'player') {
       winnings = game.totalPot * 0.95; // 95% of pot (5% house edge)
-      finalStatus = 'won';
+      finalStatus = 'cashed_out';
     } else if (winner === 'tie') {
       winnings = game.stake; // Return player's stake on tie
       finalStatus = 'tie';
@@ -571,10 +572,11 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
       updateData.totalWins = { increment: 1 };
       updateData.currentWinStreak = { increment: 1 };
       updateData.maxWinStreak = Math.max(req.user.currentWinStreak + 1, req.user.maxWinStreak);
-    } else {
+    } else if (winner === 'opponent') {
       updateData.totalLosses = { increment: 1 };
       updateData.currentWinStreak = 0;
     }
+    // Ties don't affect win/loss stats or streaks
     
     await prisma.user.update({
       where: { id: req.user.id },
@@ -590,7 +592,7 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
         ...opponent,
         distance: opponentDistance
       },
-      opponentDistance,
+      opponentDistance: Math.abs(total - opponent.guess), // Show actual distance, not modified
       winner,
       winnings,
       gameOver: true
