@@ -359,7 +359,7 @@ const AdminPanel: React.FC = () => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {userStats[user.id].recentGames?.map((game: any, index: number) => (
+                                {userStats[user.id][(statsViewMode[user.id] || 'virtual')]?.recentGames?.map((game: any, index: number) => (
                                   <tr key={index} className="border-b border-white/10">
                                     <td className="p-2">{new Date(game.createdAt).toLocaleDateString()}</td>
                                     <td className="p-2">
@@ -394,9 +394,10 @@ const AdminPanel: React.FC = () => {
                                   </tr>
                                 ))}
                               </tbody>
-                                  {userStats[user.id][(statsViewMode[user.id] || 'virtual')]?.recentGames?.map((game: any, index: number) => (
+                            </table>
                           </div>
                         </div>
+                      </div>
                       </div>
                     </td>
                     </tr>
