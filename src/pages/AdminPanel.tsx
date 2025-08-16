@@ -225,8 +225,184 @@ const AdminPanel: React.FC = () => {
                     >
                       Bonus
                     </button>
+                    <button
+                      onClick={() => toggleUserStats(user.id)}
+                      className="bg-purple-500/20 text-purple-400 px-3 py-1 rounded text-xs hover:bg-purple-500/30 ml-2"
+                    >
+                      {expandedUser === user.id ? 'Hide Stats' : 'View Stats'}
+                    </button>
                   </td>
                 </tr>
+                {expandedUser === user.id && userStats[user.id] && (
+                  <tr>
+                    <td colSpan={9} className="p-0">
+                      <div className="bg-black/30 p-6 border-t border-white/10">
+                        <h4 className="text-lg font-bold mb-4 text-purple-400">
+                          Detailed Statistics for {user.email}
+                        </h4>
+                        
+                        <div className="grid md:grid-cols-3 gap-6 mb-6">
+                          {/* Money Flow */}
+                          <div className="bg-white/5 rounded-lg p-4">
+                            <h5 className="font-bold mb-3 text-blue-400">Money Flow</h5>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span>Virtual Deposited:</span>
+                                <span className="text-green-400">${userStats[user.id].virtualDeposited?.toFixed(2) || '0.00'}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Real Deposited:</span>
+                                <span className="text-yellow-400">${userStats[user.id].realDeposited?.toFixed(2) || '0.00'}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Total Wagered:</span>
+                                <span className="text-orange-400">${userStats[user.id].totalWagered?.toFixed(2) || '0.00'}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Total Won:</span>
+                                <span className="text-green-400">${userStats[user.id].totalWon?.toFixed(2) || '0.00'}</span>
+                              </div>
+                              <div className="flex justify-between border-t border-white/20 pt-2">
+                                <span className="font-bold">Net P&L:</span>
+                                <span className={`font-bold ${
+                                  (userStats[user.id].totalWon - userStats[user.id].totalWagered) >= 0 
+                                    ? 'text-green-400' : 'text-red-400'
+                                }`}>
+                                  ${((userStats[user.id].totalWon || 0) - (userStats[user.id].totalWagered || 0)).toFixed(2)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* BarboDice Stats */}
+                          <div className="bg-white/5 rounded-lg p-4">
+                            <h5 className="font-bold mb-3 text-green-400">BarboDice</h5>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span>Games Played:</span>
+                                <span>{userStats[user.id].diceGames?.total || 0}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Games Won:</span>
+                                <span className="text-green-400">{userStats[user.id].diceGames?.won || 0}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Games Lost:</span>
+                                <span className="text-red-400">{userStats[user.id].diceGames?.lost || 0}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Total Wagered:</span>
+                                <span className="text-orange-400">${userStats[user.id].diceGames?.wagered?.toFixed(2) || '0.00'}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Total Won:</span>
+                                <span className="text-green-400">${userStats[user.id].diceGames?.won_amount?.toFixed(2) || '0.00'}</span>
+                              </div>
+                              <div className="flex justify-between border-t border-white/20 pt-2">
+                                <span className="font-bold">Casino Profit:</span>
+                                <span className="text-yellow-400 font-bold">
+                                  ${userStats[user.id].diceGames?.casino_profit?.toFixed(2) || '0.00'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* DiceBattle Stats */}
+                          <div className="bg-white/5 rounded-lg p-4">
+                            <h5 className="font-bold mb-3 text-red-400">DiceBattle</h5>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span>Battles Played:</span>
+                                <span>{userStats[user.id].battleGames?.total || 0}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Battles Won:</span>
+                                <span className="text-green-400">{userStats[user.id].battleGames?.won || 0}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Battles Lost:</span>
+                                <span className="text-red-400">{userStats[user.id].battleGames?.lost || 0}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Battles Tied:</span>
+                                <span className="text-yellow-400">{userStats[user.id].battleGames?.tied || 0}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Total Wagered:</span>
+                                <span className="text-orange-400">${userStats[user.id].battleGames?.wagered?.toFixed(2) || '0.00'}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Total Won:</span>
+                                <span className="text-green-400">${userStats[user.id].battleGames?.won_amount?.toFixed(2) || '0.00'}</span>
+                              </div>
+                              <div className="flex justify-between border-t border-white/20 pt-2">
+                                <span className="font-bold">Casino Profit:</span>
+                                <span className="text-yellow-400 font-bold">
+                                  ${userStats[user.id].battleGames?.casino_profit?.toFixed(2) || '0.00'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Recent Games */}
+                        <div className="bg-white/5 rounded-lg p-4">
+                          <h5 className="font-bold mb-3 text-blue-400">Recent Games (Last 10)</h5>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="border-b border-white/20">
+                                  <th className="text-left p-2">Date</th>
+                                  <th className="text-left p-2">Game</th>
+                                  <th className="text-left p-2">Stake</th>
+                                  <th className="text-left p-2">Result</th>
+                                  <th className="text-left p-2">Payout</th>
+                                  <th className="text-left p-2">Casino P&L</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {userStats[user.id].recentGames?.map((game: any, index: number) => (
+                                  <tr key={index} className="border-b border-white/10">
+                                    <td className="p-2">{new Date(game.createdAt).toLocaleDateString()}</td>
+                                    <td className="p-2">
+                                      <span className={`px-2 py-1 rounded text-xs ${
+                                        game.gameType === 'dice' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                                      }`}>
+                                        {game.gameType === 'dice' ? 'BarboDice' : 'DiceBattle'}
+                                      </span>
+                                    </td>
+                                    <td className="p-2">${game.stake?.toFixed(2)}</td>
+                                    <td className="p-2">
+                                      <span className={`px-2 py-1 rounded text-xs ${
+                                        game.status === 'cashed_out' ? 'bg-green-500/20 text-green-400' :
+                                        game.status === 'tie' ? 'bg-yellow-500/20 text-yellow-400' :
+                                        'bg-red-500/20 text-red-400'
+                                      }`}>
+                                        {game.status === 'cashed_out' ? 'Won' : 
+                                         game.status === 'tie' ? 'Tie' : 'Lost'}
+                                      </span>
+                                    </td>
+                                    <td className="p-2">
+                                      ${game.finalPot?.toFixed(2) || '0.00'}
+                                    </td>
+                                    <td className="p-2">
+                                      <span className={`font-bold ${
+                                        game.casinoProfit > 0 ? 'text-green-400' : 
+                                        game.casinoProfit < 0 ? 'text-red-400' : 'text-gray-400'
+                                      }`}>
+                                        ${game.casinoProfit?.toFixed(2) || '0.00'}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
               ))}
             </tbody>
           </table>
