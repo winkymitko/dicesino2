@@ -6,7 +6,6 @@ interface User {
   username?: string;
   name?: string;
   phone?: string;
-  cryptoWallet?: string;
   realBalance: number;
   virtualBalance: number;
   isAdmin: boolean;

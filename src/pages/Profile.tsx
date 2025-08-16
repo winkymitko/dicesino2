@@ -28,7 +28,6 @@ const Profile: React.FC = () => {
   const [gameHistory, setGameHistory] = useState<Game[]>([]);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [cryptoWallet, setCryptoWallet] = useState('');
   const [loading, setLoading] = useState(false);
 
   // Stats shown in UI
@@ -44,7 +43,6 @@ const Profile: React.FC = () => {
     if (!user) return;
     setName(user.name || '');
     setPhone(user.phone || '');
-    setCryptoWallet(user.cryptoWallet || '');
     fetchGameHistory();
   }, [user]);
 
@@ -104,7 +102,7 @@ const Profile: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ name, phone, cryptoWallet }),
+        body: JSON.stringify({ name, phone }),
       });
       if (res.ok) {
         await refreshUser?.();
@@ -162,16 +160,6 @@ const Profile: React.FC = () => {
                 onChange={(e) => setPhone(e.target.value)}
                 className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors"
                 placeholder="+359..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Crypto Wallet</label>
-              <input
-                value={cryptoWallet}
-                onChange={(e) => setCryptoWallet(e.target.value)}
-                className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-colors"
-                placeholder="Enter your crypto wallet address"
               />
             </div>
 

@@ -90,14 +90,13 @@ router.post('/logout', (req, res) => {
 // Update profile
 router.post('/update-profile', authenticateToken, async (req, res) => {
   try {
-    const { name, phone, cryptoWallet } = req.body;
+    const { name, phone } = req.body;
     
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
       data: {
         name: name || null,
-        phone: phone || null,
-        cryptoWallet: cryptoWallet || null
+        phone: phone || null
       }
     });
     
