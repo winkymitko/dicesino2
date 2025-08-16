@@ -91,12 +91,13 @@ router.post('/dice/start', authenticateToken, async (req, res) => {
     const { stake, useVirtual = false } = req.body;
     const validStakes = [5, 10, 20, 50];
     
-    if (!validStakes.includes(stake)) {
+    if (!stake || !validStakes.includes(Number(stake))) {
       return res.status(400).json({ error: 'Invalid stake amount' });
     }
     
+    const numericStake = Number(stake);
     const balance = useVirtual ? req.user.virtualBalance : req.user.realBalance;
-    if (balance < stake) {
+    if (balance < numericStake) {
       return res.status(400).json({ error: 'Insufficient balance' });
     }
     
@@ -105,8 +106,8 @@ router.post('/dice/start', authenticateToken, async (req, res) => {
       data: {
         userId: req.user.id,
         gameType: 'dice',
-        stake,
-        totalPot: stake,
+        stake: numericStake,
+        totalPot: numericStake,
         status: 'active'
       }
     });
@@ -116,8 +117,8 @@ router.post('/dice/start', authenticateToken, async (req, res) => {
     await prisma.user.update({
       where: { id: req.user.id },
       data: {
-        [balanceField]: balance - stake,
-        totalInvested: { increment: stake },
+        [balanceField]: balance - numericStake,
+        totalInvested: { increment: numericStake },
         totalGames: { increment: 1 }
       }
     });
