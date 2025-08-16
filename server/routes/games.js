@@ -63,22 +63,19 @@ function getMultiplier(points) {
 
 // Apply provably fair adjustments (admin can modify win chances)
 function applyFairnessModifier(points, winChanceModifier) {
-  if (points === 0) return 0;
+  // Only apply modifier to losing rolls (0 points) to make them more/less likely
+  if (points > 0) return points; // Don't modify winning combinations
   
-  // If modifier > 1, increase chances of wins
-  // If modifier < 1, decrease chances of wins
+  // For losing rolls, modifier affects whether to convert to a small win
   const random = Math.random();
-  const threshold = 0.1 * winChanceModifier; // Base 10% chance adjustment
+  const threshold = 0.15 * (winChanceModifier - 1); // Only when modifier > 1
   
   if (winChanceModifier > 1 && random < threshold) {
-    // Boost win slightly
-    return Math.max(50, points);
-  } else if (winChanceModifier < 1 && random < (1 - threshold)) {
-    // Reduce win
-    return Math.max(0, Math.floor(points * 0.8));
+    // Convert some losing rolls to small wins
+    return 50; // Give minimum points
   }
   
-  return points;
+  return 0; // Keep as losing roll
 }
 
 // Start new dice game
