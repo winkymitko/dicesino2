@@ -221,9 +221,9 @@ const DiceGame: React.FC = () => {
                 <label className="block text-xs text-gray-400 mb-1">Custom Amount</label>
                 <input
                   type="number"
-                  min="1"
+                  min="0.5"
                   max="1000"
-                  step="0.5"
+                  step="0.1"
                   value={stake}
                   onChange={(e) => setStake(parseFloat(e.target.value) || 1)}
                   className="w-full px-3 py-2 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors text-sm"
