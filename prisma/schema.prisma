@@ -14,7 +14,6 @@ model User {
   password          String
   name              String?
   phone             String?
-  cryptoWallet      String?
   realBalance       Float    @default(0)
   virtualBalance    Float    @default(1000) // Starting virtual money
   isAdmin           Boolean  @default(false)
@@ -37,7 +36,7 @@ model User {
   games       Game[]
   gameRounds  GameRound[]
   bonuses     Bonus[]
-  cryptoWallet CryptoWallet?
+  cryptoWallets CryptoWallet?
   cryptoDeposits CryptoDeposit[]
 
   @@map("users")
