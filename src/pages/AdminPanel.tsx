@@ -113,6 +113,8 @@ const AdminPanel: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         setUserStats(prev => ({ ...prev, [userId]: data }));
+      } else {
+        console.error('Failed to fetch user stats:', response.status);
       }
     } catch (error) {
       console.error('Failed to fetch user stats:', error);
@@ -245,26 +247,26 @@ const AdminPanel: React.FC = () => {
                         <div className="grid md:grid-cols-3 gap-6 mb-6">
                           {/* Money Flow */}
                           <div className="bg-white/5 rounded-lg p-4">
-                            <h5 className="font-bold mb-3 text-blue-400">Money Flow</h5>
+                            <h5 className="font-bold mb-3 text-blue-400">💰 Money Flow Summary</h5>
                             <div className="space-y-2 text-sm">
                               <div className="flex justify-between">
-                                <span>Virtual Deposited:</span>
+                                <span>Virtual Money Added:</span>
                                 <span className="text-green-400">${userStats[user.id].virtualDeposited?.toFixed(2) || '0.00'}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span>Real Deposited:</span>
+                                <span>Real Money Deposited:</span>
                                 <span className="text-yellow-400">${userStats[user.id].realDeposited?.toFixed(2) || '0.00'}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span>Total Wagered:</span>
+                                <span>Total Money Bet:</span>
                                 <span className="text-orange-400">${userStats[user.id].totalWagered?.toFixed(2) || '0.00'}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span>Total Won:</span>
+                                <span>Total Money Won:</span>
                                 <span className="text-green-400">${userStats[user.id].totalWon?.toFixed(2) || '0.00'}</span>
                               </div>
                               <div className="flex justify-between border-t border-white/20 pt-2">
-                                <span className="font-bold">Net P&L:</span>
+                                <span className="font-bold">Player Net Result:</span>
                                 <span className={`font-bold ${
                                   (userStats[user.id].totalWon - userStats[user.id].totalWagered) >= 0 
                                     ? 'text-green-400' : 'text-red-400'
@@ -275,32 +277,32 @@ const AdminPanel: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* BarboDice Stats */}
+                          {/* 3-Dice Game Stats */}
                           <div className="bg-white/5 rounded-lg p-4">
-                            <h5 className="font-bold mb-3 text-green-400">BarboDice</h5>
+                            <h5 className="font-bold mb-3 text-green-400">🎲 BarboDice (3-Dice Game)</h5>
                             <div className="space-y-2 text-sm">
                               <div className="flex justify-between">
-                                <span>Games Played:</span>
+                                <span>Total Games:</span>
                                 <span>{userStats[user.id].diceGames?.total || 0}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span>Games Won:</span>
+                                <span>Games Won (Cashed Out):</span>
                                 <span className="text-green-400">{userStats[user.id].diceGames?.won || 0}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span>Games Lost:</span>
+                                <span>Games Lost (Busted):</span>
                                 <span className="text-red-400">{userStats[user.id].diceGames?.lost || 0}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span>Total Wagered:</span>
+                                <span>Money Bet on BarboDice:</span>
                                 <span className="text-orange-400">${userStats[user.id].diceGames?.wagered?.toFixed(2) || '0.00'}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span>Total Won:</span>
+                                <span>Money Won from BarboDice:</span>
                                 <span className="text-green-400">${userStats[user.id].diceGames?.won_amount?.toFixed(2) || '0.00'}</span>
                               </div>
                               <div className="flex justify-between border-t border-white/20 pt-2">
-                                <span className="font-bold">Casino Profit:</span>
+                                <span className="font-bold">🏦 Casino Profit (BarboDice):</span>
                                 <span className="text-yellow-400 font-bold">
                                   ${userStats[user.id].diceGames?.casino_profit?.toFixed(2) || '0.00'}
                                 </span>
@@ -308,12 +310,12 @@ const AdminPanel: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* DiceBattle Stats */}
+                          {/* PvP Battle Stats */}
                           <div className="bg-white/5 rounded-lg p-4">
-                            <h5 className="font-bold mb-3 text-red-400">DiceBattle</h5>
+                            <h5 className="font-bold mb-3 text-red-400">⚔️ DiceBattle (PvP Game)</h5>
                             <div className="space-y-2 text-sm">
                               <div className="flex justify-between">
-                                <span>Battles Played:</span>
+                                <span>Total Battles:</span>
                                 <span>{userStats[user.id].battleGames?.total || 0}</span>
                               </div>
                               <div className="flex justify-between">
@@ -329,15 +331,15 @@ const AdminPanel: React.FC = () => {
                                 <span className="text-yellow-400">{userStats[user.id].battleGames?.tied || 0}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span>Total Wagered:</span>
+                                <span>Money Bet on DiceBattle:</span>
                                 <span className="text-orange-400">${userStats[user.id].battleGames?.wagered?.toFixed(2) || '0.00'}</span>
                               </div>
                               <div className="flex justify-between">
-                                <span>Total Won:</span>
+                                <span>Money Won from DiceBattle:</span>
                                 <span className="text-green-400">${userStats[user.id].battleGames?.won_amount?.toFixed(2) || '0.00'}</span>
                               </div>
                               <div className="flex justify-between border-t border-white/20 pt-2">
-                                <span className="font-bold">Casino Profit:</span>
+                                <span className="font-bold">🏦 Casino Profit (DiceBattle):</span>
                                 <span className="text-yellow-400 font-bold">
                                   ${userStats[user.id].battleGames?.casino_profit?.toFixed(2) || '0.00'}
                                 </span>
@@ -346,19 +348,19 @@ const AdminPanel: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Recent Games */}
+                        {/* Recent Games History */}
                         <div className="bg-white/5 rounded-lg p-4">
-                          <h5 className="font-bold mb-3 text-blue-400">Recent Games (Last 10)</h5>
+                          <h5 className="font-bold mb-3 text-blue-400">📊 Recent Games History (Last 10)</h5>
                           <div className="overflow-x-auto">
                             <table className="w-full text-xs">
                               <thead>
                                 <tr className="border-b border-white/20">
                                   <th className="text-left p-2">Date</th>
-                                  <th className="text-left p-2">Game</th>
-                                  <th className="text-left p-2">Stake</th>
+                                  <th className="text-left p-2">Game Type</th>
+                                  <th className="text-left p-2">Bet Amount</th>
                                   <th className="text-left p-2">Result</th>
-                                  <th className="text-left p-2">Payout</th>
-                                  <th className="text-left p-2">Casino P&L</th>
+                                  <th className="text-left p-2">Player Won</th>
+                                  <th className="text-left p-2">Casino Profit</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -369,7 +371,7 @@ const AdminPanel: React.FC = () => {
                                       <span className={`px-2 py-1 rounded text-xs ${
                                         game.gameType === 'dice' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
                                       }`}>
-                                        {game.gameType === 'dice' ? 'BarboDice' : 'DiceBattle'}
+                                        {game.gameType === 'dice' ? '🎲 BarboDice' : '⚔️ DiceBattle'}
                                       </span>
                                     </td>
                                     <td className="p-2">${game.stake?.toFixed(2)}</td>
@@ -379,8 +381,8 @@ const AdminPanel: React.FC = () => {
                                         game.status === 'tie' ? 'bg-yellow-500/20 text-yellow-400' :
                                         'bg-red-500/20 text-red-400'
                                       }`}>
-                                        {game.status === 'cashed_out' ? 'Won' : 
-                                         game.status === 'tie' ? 'Tie' : 'Lost'}
+                                        {game.status === 'cashed_out' ? '✅ Won' : 
+                                         game.status === 'tie' ? '🤝 Tie' : '❌ Lost'}
                                       </span>
                                     </td>
                                     <td className="p-2">
@@ -391,7 +393,7 @@ const AdminPanel: React.FC = () => {
                                         game.casinoProfit > 0 ? 'text-green-400' : 
                                         game.casinoProfit < 0 ? 'text-red-400' : 'text-gray-400'
                                       }`}>
-                                        ${game.casinoProfit?.toFixed(2) || '0.00'}
+                                        {game.casinoProfit > 0 ? '+' : ''}${game.casinoProfit?.toFixed(2) || '0.00'}
                                       </span>
                                     </td>
                                   </tr>
