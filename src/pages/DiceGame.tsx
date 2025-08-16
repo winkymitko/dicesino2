@@ -259,13 +259,13 @@ const DiceGame: React.FC = () => {
 
           {/* Dice Display */}
           <div className="flex justify-center space-x-4 mb-6">
-            {lastRoll ? (
+            {(lastRoll || (rolling && gameActive)) ? (
               [lastRoll.dice1, lastRoll.dice2, lastRoll.dice3].map((die, index) => {
                 const DiceComponent = diceComponents[die - 1];
                 return (
                   <div key={index} className="relative">
                     <div className="w-20 h-20 bg-white rounded-lg flex items-center justify-center shadow-lg">
-                      <DiceComponent className="h-12 w-12 text-black" />
+                      rolling && !lastRoll ? 'animate-spin' : ''
                     </div>
                   </div>
                 );
@@ -286,11 +286,13 @@ const DiceGame: React.FC = () => {
           {lastRoll && (
             <div className="text-center mb-6 p-4 bg-black/30 rounded-lg">
               <div className="text-lg font-bold mb-2">
-                {getScoreExplanation(lastRoll)}
+                {lastRoll.points > 0 ? getScoreExplanation(lastRoll) : 'No winning combination - Game Over!'}
               </div>
-              <div className="text-sm text-gray-400">
-                Multiplier: {lastRoll.multiplier}x | Pot: ${lastRoll.potBefore.toFixed(2)} → ${lastRoll.potAfter.toFixed(2)}
-              </div>
+              {lastRoll.points > 0 && (
+                <div className="text-sm text-gray-400">
+                  Multiplier: {lastRoll.multiplier}x | Pot: ${lastRoll.potBefore.toFixed(2)} → ${lastRoll.potAfter.toFixed(2)}
+                </div>
+              )}
             </div>
           )}
 

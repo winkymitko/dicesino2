@@ -193,11 +193,13 @@ router.post('/dice/roll', authenticateToken, async (req, res) => {
         }
       });
       
+      // Update casino profit from player loss
       await prisma.user.update({
         where: { id: req.user.id },
         data: {
           totalLosses: { increment: 1 },
-          currentWinStreak: 0
+          currentWinStreak: 0,
+          casinoProfitDice: { increment: game.stake }
         }
       });
       
@@ -523,9 +525,26 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
     if (winner === 'player') {
       winnings = game.totalPot * 0.95; // 95% of pot (5% house edge)
       finalStatus = 'cashed_out';
+      
+      // Casino profit from 5% house edge
+      const houseEdge = game.totalPot * 0.05;
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: {
+          casinoProfitBattle: { increment: houseEdge }
+        }
+      });
     } else if (winner === 'tie') {
       winnings = game.stake; // Return player's stake on tie
       finalStatus = 'tie';
+    } else {
+      // Player lost to bot - casino gets full stake
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: {
+          casinoProfitBattle: { increment: game.stake }
+        }
+      });
     }
     
     // Create game round

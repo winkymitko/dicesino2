@@ -25,6 +25,8 @@ model User {
   totalLosses       Int      @default(0)
   currentWinStreak  Int      @default(0)
   maxWinStreak      Int      @default(0)
+  casinoProfitDice     Float    @default(0) // Casino profit from BarboDice
+  casinoProfitBattle   Float    @default(0) // Casino profit from DiceBattle
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

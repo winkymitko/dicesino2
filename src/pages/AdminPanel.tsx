@@ -149,6 +149,7 @@ const AdminPanel: React.FC = () => {
                 <th className="text-left p-3">Real Balance</th>
                 <th className="text-left p-3">Games</th>
                 <th className="text-left p-3">Win Rate</th>
+                <th className="text-left p-3">Casino Profit</th>
                 <th className="text-left p-3">Dice/Battle Mod</th>
                 <th className="text-left p-3">Actions</th>
               </tr>
@@ -163,6 +164,13 @@ const AdminPanel: React.FC = () => {
                   <td className="p-3">{user.totalGames}</td>
                   <td className="p-3">
                     {user.totalGames > 0 ? `${(user.totalWins / user.totalGames * 100).toFixed(1)}%` : '0%'}
+                  </td>
+                  <td className="p-3">
+                    <div className="text-xs">
+                      <div className="text-green-400">Dice: ${(user.casinoProfitDice || 0).toFixed(2)}</div>
+                      <div className="text-blue-400">Battle: ${(user.casinoProfitBattle || 0).toFixed(2)}</div>
+                      <div className="text-yellow-400 font-bold">Total: ${((user.casinoProfitDice || 0) + (user.casinoProfitBattle || 0)).toFixed(2)}</div>
+                    </div>
                   </td>
                   <td className="p-3">
                     <span className={`px-2 py-1 rounded text-xs ${

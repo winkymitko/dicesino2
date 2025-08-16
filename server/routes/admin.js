@@ -25,6 +25,8 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
         totalLosses: true,
         currentWinStreak: true,
         maxWinStreak: true,
+        casinoProfitDice: true,
+        casinoProfitBattle: true,
         createdAt: true
       },
       orderBy: { createdAt: 'desc' }
