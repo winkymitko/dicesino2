@@ -43,7 +43,7 @@ const DiceBattle: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ stake, useVirtual, playerGuess: confirmedGuess })
+        body: JSON.stringify({ stake, useVirtual, playerGuess })
       });
 
       if (!response.ok) {
