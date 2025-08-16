@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  password          String
+  name              String?
+  phone             String?
+  cryptoWallet      String?
+  realBalance       Float    @default(0)
+  virtualBalance    Float    @default(1000) // Starting virtual money
+  isAdmin           Boolean  @default(false)
+  winChanceModifier Float    @default(1.0) // Admin can adjust win chances
+  totalInvested     Float    @default(0)
+  totalGames        Int      @default(0)
+  totalWins         Int      @default(0)
+  totalLosses       Int      @default(0)
+  currentWinStreak  Int      @default(0)
+  maxWinStreak      Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  games       Game[]
+  gameRounds  GameRound[]
+  bonuses     Bonus[]
+
+  @@map("users")
+}
+
+model Game {
+  id        String   @id @default(cuid())
+  userId    String
+  gameType  String   // "dice", "slots", etc for future games
+  stake     Float
+  totalPot  Float
+  finalPot  Float?
+  status    String   // "active", "cashed_out", "lost"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User        @relation(fields: [userId], references: [id])
+  rounds GameRound[]
+
+  @@map("games")
+}
+
+model GameRound {
+  id          String   @id @default(cuid())
+  gameId      String
+  userId      String
+  roundNumber Int
+  dice1       Int
+  dice2       Int
+  dice3       Int
+  points      Int
+  multiplier  Float
+  potBefore   Float
+  potAfter    Float
+  serverSeed  String   // For provably fair
+  clientSeed  String   // For provably fair
+  nonce       Int      // For provably fair
+  createdAt   DateTime @default(now())
+
+  game Game @relation(fields: [gameId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("game_rounds")
+}
+
+model Bonus {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Float
+  type        String   // "admin_bonus", "welcome", etc
+  description String?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("bonuses")
+}
