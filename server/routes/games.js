@@ -89,13 +89,12 @@ function applyFairnessModifier(dice, points, winChanceModifier) {
 router.post('/dice/start', authenticateToken, async (req, res) => {
   try {
     const { stake, useVirtual = false } = req.body;
-    const validStakes = [5, 10, 20, 50];
-    
-    if (!stake || !validStakes.includes(Number(stake))) {
-      return res.status(400).json({ error: 'Invalid stake amount' });
-    }
     
     const numericStake = Number(stake);
+    if (!stake || numericStake < 0.5 || numericStake > 1000) {
+      return res.status(400).json({ error: 'Stake must be between $0.50 and $1000' });
+    }
+    
     const balance = useVirtual ? req.user.virtualBalance : req.user.realBalance;
     if (balance < numericStake) {
       return res.status(400).json({ error: 'Insufficient balance' });
@@ -419,10 +418,10 @@ function generateBotOpponent(stake) {
 router.post('/dicebattle/start', authenticateToken, async (req, res) => {
   try {
     const { stake, useVirtual = false, playerGuess } = req.body;
-    const validStakes = [5, 10, 20, 50];
     
-    if (!validStakes.includes(stake)) {
-      return res.status(400).json({ error: 'Invalid stake amount' });
+    const numericStake = Number(stake);
+    if (!stake || numericStake < 0.5 || numericStake > 1000) {
+      return res.status(400).json({ error: 'Stake must be between $0.50 and $1000' });
     }
     
     if (playerGuess < 3 || playerGuess > 18) {
@@ -442,8 +441,8 @@ router.post('/dicebattle/start', authenticateToken, async (req, res) => {
       data: {
         userId: req.user.id,
         gameType: 'dicebattle',
-        stake,
-        totalPot: stake * 2, // Player + opponent stake
+        stake: numericStake,
+        totalPot: numericStake * 2, // Player + opponent stake
         status: 'active',
         metadata: JSON.stringify({
           playerGuess,
@@ -458,8 +457,8 @@ router.post('/dicebattle/start', authenticateToken, async (req, res) => {
     await prisma.user.update({
       where: { id: req.user.id },
       data: {
-        [balanceField]: balance - stake,
-        totalInvested: { increment: stake },
+        [balanceField]: balance - numericStake,
+        totalInvested: { increment: numericStake },
         totalGames: { increment: 1 }
       }
     });
