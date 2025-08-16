@@ -198,23 +198,6 @@ const DiceBattle: React.FC = () => {
                 </button>
               </div>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Your Guess (3-18)</label>
-              <div className="relative">
-                <input
-                  type="range"
-                  min="3"
-                  max="18"
-                  value={playerGuess}
-                  onChange={(e) => setPlayerGuess(parseInt(e.target.value))}
-                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
-                />
-                <div className="text-center mt-2">
-                  <span className="text-2xl font-bold text-blue-400">{playerGuess}</span>
-                </div>
-              </div>
-            </div>
           </div>
           
           <button
@@ -249,8 +232,29 @@ const DiceBattle: React.FC = () => {
               <div className="text-lg font-bold text-blue-400 mb-2">You</div>
               <div className="text-sm text-gray-400 mb-2">Your Guess</div>
               <div className="text-3xl font-bold">{playerGuess}</div>
-              <div className="text-xs text-gray-500 mt-2">Ready to battle!</div>
+              <div className="text-xs text-gray-500 mt-2">Adjust your guess below</div>
             </div>
+          </div>
+
+          {/* Guess Slider - Now shown after opponent is found */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium mb-2 text-center">Adjust Your Guess (3-18)</label>
+            <div className="relative max-w-md mx-auto">
+              <input
+                type="range"
+                min="3"
+                max="18"
+                value={playerGuess}
+                onChange={(e) => setPlayerGuess(parseInt(e.target.value))}
+                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+              />
+              <div className="text-center mt-2">
+                <span className="text-2xl font-bold text-blue-400">{playerGuess}</span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 text-center mt-2">
+              You can see your opponent guessed {opponent.guess} - adjust your strategy!
+            </p>
           </div>
 
           {/* Dice Display */}
