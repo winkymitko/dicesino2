@@ -309,7 +309,7 @@ const AdminPanel: React.FC = () => {
                   </tr>
                   {expandedUser === user.id && userStats[user.id] && (
                     <tr>
-                    <td colSpan={9} className="p-0">
+                    <td colSpan={10} className="p-0">
                       <div className="bg-black/30 p-6 border-t border-white/10">
                         <h4 className="text-lg font-bold mb-4 text-purple-400">
                           Detailed Statistics for {user.email}
@@ -489,6 +489,7 @@ const AdminPanel: React.FC = () => {
                               })()}
                             </div>
                           </div>
+                        </div>
 
                         {/* Recent Games History */}
                         <div className="bg-white/5 rounded-lg p-4">
@@ -555,12 +556,11 @@ const AdminPanel: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      </div>
                     </td>
                     </tr>
                   )}
                 </React.Fragment>
-                      <td colSpan={10} className="p-0">
+              ))}
             </tbody>
           </table>
         </div>
@@ -660,7 +660,7 @@ const AdminPanel: React.FC = () => {
       )}
 
       {/* Recent Games */}
-      <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+      <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 mb-8">
         <h2 className="text-2xl font-bold mb-6">Recent Games</h2>
         
         <div className="overflow-x-auto">
