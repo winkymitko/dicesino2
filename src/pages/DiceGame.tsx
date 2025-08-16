@@ -390,7 +390,7 @@ const DiceGame: React.FC = () => {
           
           <div>
             <h4 className="font-bold mb-3">Multipliers</h4>
-            <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="grid grid-cols-3 gap-2 text-sm">
               <div className="flex justify-between">
                 <span>50pts:</span><span className="text-green-400">1.1x</span>
               </div>
@@ -402,6 +402,21 @@ const DiceGame: React.FC = () => {
               </div>
               <div className="flex justify-between">
                 <span>200pts:</span><span className="text-yellow-400">1.4x</span>
+              </div>
+              <div className="flex justify-between">
+                <span>250pts:</span><span className="text-orange-400">1.6x</span>
+              </div>
+              <div className="flex justify-between">
+                <span>300pts:</span><span className="text-orange-400">1.8x</span>
+              </div>
+              <div className="flex justify-between">
+                <span>400pts:</span><span className="text-red-400">2.0x</span>
+              </div>
+              <div className="flex justify-between">
+                <span>500pts:</span><span className="text-red-400">2.1x</span>
+              </div>
+              <div className="flex justify-between">
+                <span>600pts:</span><span className="text-purple-400">2.2x</span>
               </div>
             </div>
           </div>
