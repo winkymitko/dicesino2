@@ -344,14 +344,42 @@ const DiceGame: React.FC = () => {
                 className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 rounded-lg transition-all flex items-center justify-center space-x-2"
               >
                 <DollarSign className="h-5 w-5" />
-                <span>Cash Out</span>
+        {lastRoll && (
               </button>
+            {gameActive ? (
+              <>
+                <div className="text-lg font-bold mb-2">
+                  {getScoreExplanation(lastRoll)}
+                </div>
+                <div className="text-sm text-gray-400">
+                  Multiplier: {lastRoll.multiplier}x | Pot: ${lastRoll.potBefore.toFixed(2)} → ${lastRoll.potAfter.toFixed(2)}
+                </div>
+              </>
+            ) : lastRoll.points === 0 ? (
+              <>
+                <div className="text-lg font-bold mb-2 text-red-400">
+                  Game Over! No winning combination
+                </div>
+                <div className="text-sm text-gray-400 mb-2">
+                  {getScoreExplanation(lastRoll)}
+                </div>
+                <div className="text-sm text-gray-400">
+                  Pot Lost: ${lastRoll.potBefore.toFixed(2)}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-lg font-bold mb-2 text-green-400">
+                  You cashed out successfully!
+                </div>
+                <div className="text-sm text-gray-400 mb-2">
+                  {getScoreExplanation(lastRoll)}
+                </div>
+                <div className="text-sm text-gray-400">
+                  Multiplier: {lastRoll.multiplier}x | Pot: ${lastRoll.potBefore.toFixed(2)} → ${lastRoll.potAfter.toFixed(2)}
+                </div>
+              </>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* Multiplier Table */}
       <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
         <h3 className="text-xl font-bold mb-4 text-center">Scoring & Multipliers</h3>
         
@@ -360,53 +388,39 @@ const DiceGame: React.FC = () => {
             <h4 className="font-bold mb-3">Scoring Rules</h4>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span>Each 1:</span><span className="text-green-400">100 pts</span>
-              </div>
+        {gameActive && (
+          <div className="flex space-x-4">
               <div className="flex justify-between">
-                <span>Each 5:</span><span className="text-green-400">50 pts</span>
-              </div>
+              onClick={rollDice}
+              disabled={rolling}
+              className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-all flex items-center justify-center space-x-2"
               <div className="flex justify-between">
-                <span>Straight (1-3-5, 2-4-6):</span><span className="text-yellow-400">100 pts</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Triple n-n-n:</span><span className="text-purple-400">n × 100 pts</span>
-              </div>
+              <Play className="h-5 w-5" />
+              <span>{rolling ? 'Rolling...' : 'Roll Dice'}</span>
             </div>
+            
+            {canCashOut && (
+              <button
+                onClick={cashOut}
+                className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 rounded-lg transition-all flex items-center justify-center space-x-2"
+              >
+                <DollarSign className="h-5 w-5" />
+                <span>Cash Out</span>
+              </button>
+            )}
           </div>
-          
-          <div>
-            <h4 className="font-bold mb-3">Multipliers</h4>
-            <div className="grid grid-cols-2 gap-1 text-sm">
-              <div className="flex justify-between">
-                <span>50pts:</span><span className="text-green-400">1.1x</span>
-              </div>
-              <div className="flex justify-between">
-                <span>100pts:</span><span className="text-green-400">1.2x</span>
-              </div>
-              <div className="flex justify-between">
-                <span>150pts:</span><span className="text-yellow-400">1.3x</span>
-              </div>
-              <div className="flex justify-between">
-                <span>200pts:</span><span className="text-yellow-400">1.4x</span>
-              </div>
-              <div className="flex justify-between">
-                <span>250pts:</span><span className="text-orange-400">1.6x</span>
-              </div>
-              <div className="flex justify-between">
-                <span>300pts:</span><span className="text-orange-400">1.8x</span>
-              </div>
-              <div className="flex justify-between">
-                <span>400pts:</span><span className="text-red-400">2.0x</span>
-              </div>
-              <div className="flex justify-between">
-                <span>500pts:</span><span className="text-red-400">2.1x</span>
-              </div>
-              <div className="flex justify-between">
-                <span>600pts:</span><span className="text-purple-400">2.2x</span>
-              </div>
-            </div>
+        )}
+        
+        {!gameActive && (
+          <div className="text-center">
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-bold py-3 px-6 rounded-lg transition-all"
+            >
+              Play Again
+            </button>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
