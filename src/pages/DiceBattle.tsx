@@ -17,6 +17,7 @@ const DiceBattle: React.FC = () => {
   const [opponent, setOpponent] = useState<any>(null);
   const [battleResult, setBattleResult] = useState<any>(null);
   const [rolling, setRolling] = useState(false);
+  const [guessConfirmed, setGuessConfirmed] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -104,9 +105,13 @@ const DiceBattle: React.FC = () => {
     setBattleResult(null);
     setMatchmaking(false);
     setRolling(false);
+    setGuessConfirmed(false);
     setError('');
   };
 
+  const confirmGuess = () => {
+    setGuessConfirmed(true);
+  };
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Game Header */}
@@ -198,6 +203,23 @@ const DiceBattle: React.FC = () => {
                 </button>
               </div>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Your Guess (3-18)</label>
+              <div className="relative">
+                <input
+                  type="range"
+                  min="3"
+                  max="18"
+                  value={playerGuess}
+                  onChange={(e) => setPlayerGuess(parseInt(e.target.value))}
+                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                />
+                <div className="text-center mt-2">
+                  <span className="text-2xl font-bold text-blue-400">{playerGuess}</span>
+                </div>
+              </div>
+            </div>
           </div>
           
           <button
@@ -223,61 +245,82 @@ const DiceBattle: React.FC = () => {
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-center">
               <div className="text-lg font-bold text-red-400 mb-2">{opponent.name}</div>
-              <div className="text-sm text-gray-400 mb-2">Opponent's Guess</div>
-              <div className="text-3xl font-bold">{opponent.guess}</div>
+              <div className="text-sm text-gray-400 mb-2">
+                {guessConfirmed ? "Opponent's Guess" : "Waiting for your guess..."}
+              </div>
+              <div className="text-3xl font-bold">
+                {guessConfirmed ? opponent.guess : "?"}
+              </div>
               <div className="text-xs text-gray-500 mt-2">Level {opponent.level} • {opponent.wins}W/{opponent.losses}L</div>
             </div>
             
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-center">
               <div className="text-lg font-bold text-blue-400 mb-2">You</div>
               <div className="text-sm text-gray-400 mb-2">Your Guess</div>
-              <div className="text-3xl font-bold">{playerGuess}</div>
-              <div className="text-xs text-gray-500 mt-2">Adjust your guess below</div>
-            </div>
-          </div>
-
-          {/* Guess Slider - Now shown after opponent is found */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2 text-center">Adjust Your Guess (3-18)</label>
-            <div className="relative max-w-md mx-auto">
-              <input
-                type="range"
-                min="3"
-                max="18"
-                value={playerGuess}
-                onChange={(e) => setPlayerGuess(parseInt(e.target.value))}
-                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
-              />
-              <div className="text-center mt-2">
-                <span className="text-2xl font-bold text-blue-400">{playerGuess}</span>
+              <div className="text-3xl font-bold">
+                {guessConfirmed ? playerGuess : "?"}
+              </div>
+              <div className="text-xs text-gray-500 mt-2">
+                {guessConfirmed ? "Guess confirmed!" : "Set your guess below"}
               </div>
             </div>
-            <p className="text-xs text-gray-400 text-center mt-2">
-              You can see your opponent guessed {opponent.guess} - adjust your strategy!
-            </p>
           </div>
 
-          {/* Dice Display */}
-          <div className="flex justify-center space-x-4 mb-6">
-            {[1, 2, 3].map((index) => (
-              <div key={index} className="relative">
-                <div className={`w-20 h-20 bg-white rounded-lg flex items-center justify-center shadow-lg ${
-                  rolling ? 'animate-spin' : ''
-                }`}>
-                  <Dice1 className="h-12 w-12 text-black" />
+          {!guessConfirmed ? (
+            <>
+              {/* Guess Slider */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2 text-center">Set Your Guess (3-18)</label>
+                <div className="relative max-w-md mx-auto">
+                  <input
+                    type="range"
+                    min="3"
+                    max="18"
+                    value={playerGuess}
+                    onChange={(e) => setPlayerGuess(parseInt(e.target.value))}
+                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                  <div className="text-center mt-2">
+                    <span className="text-2xl font-bold text-blue-400">{playerGuess}</span>
+                  </div>
                 </div>
+                <p className="text-xs text-gray-400 text-center mt-2">
+                  Choose wisely - you can't change it after confirming!
+                </p>
               </div>
-            ))}
-          </div>
 
-          <button
-            onClick={rollDice}
-            disabled={rolling}
-            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-all flex items-center justify-center space-x-2"
-          >
-            <Swords className="h-5 w-5" />
-            <span>{rolling ? 'Rolling Dice...' : 'Roll for Battle!'}</span>
-          </button>
+              <button
+                onClick={confirmGuess}
+                className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-3 rounded-lg transition-all mb-6"
+              >
+                Confirm Guess: {playerGuess}
+              </button>
+            </>
+          ) : (
+            <>
+              {/* Dice Display */}
+              <div className="flex justify-center space-x-4 mb-6">
+                {[1, 2, 3].map((index) => (
+                  <div key={index} className="relative">
+                    <div className={`w-20 h-20 bg-white rounded-lg flex items-center justify-center shadow-lg ${
+                      rolling ? 'animate-spin' : ''
+                    }`}>
+                      <Dice1 className="h-12 w-12 text-black" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={rollDice}
+                disabled={rolling}
+                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-all flex items-center justify-center space-x-2"
+              >
+                <Swords className="h-5 w-5" />
+                <span>{rolling ? 'Rolling Dice...' : 'Roll for Battle!'}</span>
+              </button>
+            </>
+          )}
         </div>
       )}
 
