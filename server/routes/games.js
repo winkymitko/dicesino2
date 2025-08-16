@@ -483,7 +483,6 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
     let opponentDistance = Math.abs(total - opponent.guess);
     
     // Apply fairness modifier (subtle adjustment)
-    // Apply win chance modifier (subtle adjustment)
     const modifier = req.user.diceBattleModifier;
     const gameCoefficient = 0.9 + (Math.random() * 0.2); // 0.9 to 1.1
     const effectiveModifier = modifier * gameCoefficient;
@@ -500,8 +499,14 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
     }
     
     // Determine winner based on distance
-    const winner = playerDistance < opponentDistance ? 'player' : 
-                   playerDistance > opponentDistance ? 'opponent' : 'tie';
+    let winner;
+    if (playerDistance < opponentDistance) {
+      winner = 'player';
+    } else if (playerDistance > opponentDistance) {
+      winner = 'opponent';
+    } else {
+      winner = 'tie';
+    }
     
     let winnings = 0;
     let finalStatus = 'lost';
