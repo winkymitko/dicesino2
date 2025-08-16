@@ -36,6 +36,9 @@ const DiceBattle: React.FC = () => {
       setMatchmaking(true);
       setGuessConfirmed(false); // Reset guess confirmation
       
+      // Use the current playerGuess value at the time of calling
+      const currentGuess = playerGuess;
+      
       // Simulate matchmaking delay
       await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
       
@@ -43,7 +46,7 @@ const DiceBattle: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ stake, useVirtual, playerGuess })
+        body: JSON.stringify({ stake, useVirtual, playerGuess: currentGuess })
       });
 
       if (!response.ok) {
@@ -56,7 +59,8 @@ const DiceBattle: React.FC = () => {
       setOpponent(data.opponent);
       setGameActive(true);
       setMatchmaking(false);
-      // Don't reset playerGuess here - keep the current guess
+      // Update playerGuess to match what was actually sent to server
+      setPlayerGuess(currentGuess);
       await refreshUser();
     } catch (err: any) {
       setError(err.message);
