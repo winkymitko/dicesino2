@@ -360,8 +360,12 @@ const AdminPanel: React.FC = () => {
                               {(statsViewMode[user.id] || 'virtual') === 'virtual' ? (
                                 <>
                                   <div className="flex justify-between">
-                                    <span>Virtual Money Added:</span>
+                                    <span>Initial Virtual + Bonuses:</span>
                                     <span className="text-green-400">${userStats[user.id].virtual?.deposited?.toFixed(2) || '0.00'}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Signup Bonuses Granted:</span>
+                                    <span className="text-blue-400">${userStats[user.id].virtual?.totalBonusesGranted?.toFixed(2) || '0.00'}</span>
                                   </div>
                                   <div className="flex justify-between">
                                     <span>Total Virtual Money Bet:</span>
@@ -374,10 +378,10 @@ const AdminPanel: React.FC = () => {
                                   <div className="flex justify-between border-t border-white/20 pt-2">
                                     <span className="font-bold">Virtual Net Result:</span>
                                     <span className={`font-bold ${
-                                      ((userStats[user.id].virtual?.won || 0) - (userStats[user.id].virtual?.wagered || 0)) >= 0 
+                                      (userStats[user.id].virtual?.netResult || 0) >= 0 
                                         ? 'text-green-400' : 'text-red-400'
                                     }`}>
-                                      ${((userStats[user.id].virtual?.won || 0) - (userStats[user.id].virtual?.wagered || 0)).toFixed(2)}
+                                      ${(userStats[user.id].virtual?.netResult || 0).toFixed(2)}
                                     </span>
                                   </div>
                                 </>
@@ -386,6 +390,14 @@ const AdminPanel: React.FC = () => {
                                   <div className="flex justify-between">
                                     <span>Real Money Deposited:</span>
                                     <span className="text-yellow-400">${userStats[user.id].real?.deposited?.toFixed(2) || '0.00'}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Deposit Bonuses Granted:</span>
+                                    <span className="text-blue-400">${userStats[user.id].real?.depositBonuses?.toFixed(2) || '0.00'}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Gross Gaming Revenue (GGR):</span>
+                                    <span className="text-purple-400">${userStats[user.id].real?.grossGamingRevenue?.toFixed(2) || '0.00'}</span>
                                   </div>
                                   <div className="flex justify-between">
                                     <span>Total Real Money Bet:</span>
@@ -398,10 +410,10 @@ const AdminPanel: React.FC = () => {
                                   <div className="flex justify-between border-t border-white/20 pt-2">
                                     <span className="font-bold">Real Net Result:</span>
                                     <span className={`font-bold ${
-                                      ((userStats[user.id].real?.won || 0) - (userStats[user.id].real?.wagered || 0)) >= 0 
+                                      (userStats[user.id].real?.netResult || 0) >= 0 
                                         ? 'text-green-400' : 'text-red-400'
                                     }`}>
-                                      ${((userStats[user.id].real?.won || 0) - (userStats[user.id].real?.wagered || 0)).toFixed(2)}
+                                      ${(userStats[user.id].real?.netResult || 0).toFixed(2)}
                                     </span>
                                   </div>
                                 </>
@@ -518,13 +530,9 @@ const AdminPanel: React.FC = () => {
                                 </tr>
                               </thead>
                               <tbody>
-                              <span>Initial Virtual + Bonuses:</span>
+                                {(userStats[user.id][(statsViewMode[user.id] || 'virtual')]?.recentGames || []).map((game: any, index: number) => (
                                   <tr key={index} className="border-b border-white/10">
                                     <td className="p-2">{new Date(game.createdAt).toLocaleDateString()}</td>
-                            <div className="flex justify-between">
-                              <span>Signup Bonuses Granted:</span>
-                              <span className="text-blue-400">${userStats[user.id].virtual?.totalBonusesGranted?.toFixed(2) || '0.00'}</span>
-                            </div>
                                     <td className="p-2">
                                       <span className={`px-2 py-1 rounded text-xs ${
                                         game.gameType === 'dice' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
@@ -536,10 +544,12 @@ const AdminPanel: React.FC = () => {
                                     <td className="p-2">
                                       <span className={`px-2 py-1 rounded text-xs ${
                                         game.status === 'cashed_out' ? 'bg-green-500/20 text-green-400' :
-                                (userStats[user.id].virtual?.netResult || 0) >= 0 
+                                        game.status === 'won' ? 'bg-green-500/20 text-green-400' :
+                                        game.status === 'tie' ? 'bg-yellow-500/20 text-yellow-400' :
                                         'bg-red-500/20 text-red-400'
                                       }`}>
-                                ${(userStats[user.id].virtual?.netResult || 0).toFixed(2)}
+                                        {game.status === 'cashed_out' ? '💰 Cashed Out' :
+                                         game.status === 'won' ? '🎉 Won' :
                                          game.status === 'tie' ? '🤝 Tie' : '❌ Lost'}
                                       </span>
                                     </td>
@@ -549,29 +559,21 @@ const AdminPanel: React.FC = () => {
                                     <td className="p-2">
                                       <span className={`font-bold ${
                                         game.casinoProfit > 0 ? 'text-green-400' : 
-                            <div className="flex justify-between">
-                              <span>Deposit Bonuses Granted:</span>
-                              <span className="text-blue-400">${userStats[user.id].real?.depositBonuses?.toFixed(2) || '0.00'}</span>
-                            </div>
                                         game.casinoProfit < 0 ? 'text-red-400' : 'text-gray-400'
                                       }`}>
                                         {game.casinoProfit > 0 ? '+' : ''}${game.casinoProfit?.toFixed(2) || '0.00'}
                                       </span>
                                     </td>
                                   </tr>
-                                )) || []}
+                                ))}
                                 {(!userStats[user.id][(statsViewMode[user.id] || 'virtual')]?.recentGames || 
-                            <div className="flex justify-between">
-                              <span>Gross Gaming Revenue (GGR):</span>
-                              <span className="text-purple-400">${userStats[user.id].real?.grossGamingRevenue?.toFixed(2) || '0.00'}</span>
-                            </div>
                                   userStats[user.id][(statsViewMode[user.id] || 'virtual')]?.recentGames?.length === 0) && (
                                   <tr>
                                     <td colSpan={6} className="p-4 text-center text-gray-400">
-                                (userStats[user.id].real?.netResult || 0) >= 0 
+                                      No recent games found
                                     </td>
                                   </tr>
-                                ${(userStats[user.id].real?.netResult || 0).toFixed(2)}
+                                )}
                               </tbody>
                             </table>
                           </div>
