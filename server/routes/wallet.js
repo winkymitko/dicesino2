@@ -441,4 +441,88 @@ router.post('/webhook', async (req, res) => {
   }
 });
 
+// Request withdrawal
+router.post('/withdraw', authenticateToken, async (req, res) => {
+  try {
+    const { amount, toAddress } = req.body;
+    
+    if (!amount || amount < 10) {
+      return res.status(400).json({ error: 'Minimum withdrawal is $10' });
+    }
+    
+    if (!toAddress || !isValidTronAddress(toAddress)) {
+      return res.status(400).json({ error: 'Invalid TRON address' });
+    }
+    
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id }
+    });
+    
+    if (user.cashBalance < amount) {
+      return res.status(400).json({ error: 'Insufficient cash balance' });
+    }
+    
+    // Create withdrawal request
+    const withdrawal = await prisma.cryptoWithdrawal.create({
+      data: {
+        userId: req.user.id,
+        amount,
+        currency: 'USDT',
+        toAddress,
+        status: 'pending'
+      }
+    });
+    
+    // Deduct from user balance
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        cashBalance: { decrement: amount }
+      }
+    });
+    
+    // Create transaction record
+    const updatedUser = await prisma.user.findUnique({ where: { id: req.user.id } });
+    await prisma.transaction.create({
+      data: {
+        userId: req.user.id,
+        type: 'withdrawal',
+        amount: -amount,
+        cashChange: -amount,
+        cashBalanceAfter: updatedUser.cashBalance,
+        bonusBalanceAfter: updatedUser.bonusBalance,
+        lockedBalanceAfter: updatedUser.lockedBalance,
+        virtualBalanceAfter: updatedUser.virtualBalance,
+        description: `USDT withdrawal to ${toAddress.substring(0, 8)}...`,
+        reference: withdrawal.id
+      }
+    });
+    
+    res.json({ 
+      success: true, 
+      message: 'Withdrawal request submitted. Processing time: 1-24 hours.',
+      withdrawalId: withdrawal.id
+    });
+  } catch (error) {
+    console.error('Withdrawal error:', error);
+    res.status(500).json({ error: 'Failed to process withdrawal' });
+  }
+});
+
+// Get withdrawal history
+router.get('/withdrawals', authenticateToken, async (req, res) => {
+  try {
+    const withdrawals = await prisma.cryptoWithdrawal.findMany({
+      where: { userId: req.user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 20
+    });
+
+    res.json({ withdrawals });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 export default router;

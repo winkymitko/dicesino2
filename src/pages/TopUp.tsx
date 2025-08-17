@@ -13,6 +13,11 @@ const TopUp: React.FC = () => {
   const [checking, setChecking] = useState(false);
   const [walletStatus, setWalletStatus] = useState<any>({});
   const [deposits, setDeposits] = useState<any[]>([]);
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawAddress, setWithdrawAddress] = useState('');
+  const [withdrawing, setWithdrawing] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Safe balance calculations with fallbacks
@@ -26,6 +31,7 @@ const TopUp: React.FC = () => {
     }
     fetchWalletInfo();
     fetchDeposits();
+    fetchWithdrawals();
   }, [user, navigate]);
 
   const fetchWalletInfo = async () => {
@@ -86,6 +92,68 @@ const TopUp: React.FC = () => {
     }
   };
 
+  const fetchWithdrawals = async () => {
+    try {
+      const response = await fetch('/api/wallet/withdrawals', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setWithdrawals(data.withdrawals);
+      }
+    } catch (error) {
+      console.error('Failed to fetch withdrawals:', error);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    if (!withdrawAmount || !withdrawAddress) {
+      alert('Please fill in all fields');
+      return;
+    }
+    
+    const amount = parseFloat(withdrawAmount);
+    if (amount < 10) {
+      alert('Minimum withdrawal is $10');
+      return;
+    }
+    
+    if ((user?.cashBalance || 0) < amount) {
+      alert('Insufficient cash balance');
+      return;
+    }
+    
+    setWithdrawing(true);
+    try {
+      const response = await fetch('/api/wallet/withdraw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          amount,
+          toAddress: withdrawAddress
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        alert(data.message);
+        setShowWithdrawModal(false);
+        setWithdrawAmount('');
+        setWithdrawAddress('');
+        await refreshUser();
+        await fetchWithdrawals();
+      } else {
+        const error = await response.json();
+        alert(error.error);
+      }
+    } catch (error) {
+      console.error('Withdrawal error:', error);
+      alert('Failed to process withdrawal');
+    } finally {
+      setWithdrawing(false);
+    }
+  };
   const copyAddress = async () => {
     try {
       await navigator.clipboard.writeText(walletAddress);
@@ -267,7 +335,7 @@ const TopUp: React.FC = () => {
             {/* Withdraw Button */}
             <div className="mt-4 text-center">
               <button
-                onClick={() => alert('Withdraw feature coming soon! Contact support for manual withdrawals.')}
+                onClick={() => setShowWithdrawModal(true)}
                 disabled={(user?.cashBalance || 0) < 10}
                 className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2 px-6 rounded-lg transition-all"
               >
@@ -279,41 +347,43 @@ const TopUp: React.FC = () => {
             </div>
           </div>
 
-          {/* Deposit History */}
+          {/* Transaction History */}
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
             <div className="flex items-center space-x-2 mb-4">
               <History className="h-5 w-5 text-blue-400" />
-              <h3 className="text-xl font-bold">Deposit History</h3>
+              <h3 className="text-xl font-bold">Transaction History</h3>
             </div>
             
-            <div className="space-y-3 max-h-64 overflow-y-auto">
-              {deposits.length > 0 ? (
-                deposits.map((deposit, index) => (
+            <div className="space-y-3 max-h-80 overflow-y-auto">
+              {/* Combine deposits and withdrawals, sort by date */}
+              {[...deposits.map(d => ({...d, type: 'deposit'})), ...withdrawals.map(w => ({...w, type: 'withdrawal'}))].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).length > 0 ? (
+                [...deposits.map(d => ({...d, type: 'deposit'})), ...withdrawals.map(w => ({...w, type: 'withdrawal'}))].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((transaction, index) => (
                   <div key={index} className="flex justify-between items-center p-3 bg-black/30 rounded-lg">
                     <div>
-                      <div className="font-medium">${deposit.amount.toFixed(2)} USDT</div>
+                      <div className="font-medium">
+                        {transaction.type === 'deposit' ? '+' : '-'}${transaction.amount.toFixed(2)} USDT
+                      </div>
                       <div className="text-sm text-gray-400">
-                        {new Date(deposit.createdAt).toLocaleDateString()} at{' '}
-                        {new Date(deposit.createdAt).toLocaleTimeString()}
+                        {transaction.type === 'deposit' ? 'Deposit' : 'Withdrawal'} - {new Date(transaction.createdAt).toLocaleDateString()}
                       </div>
                     </div>
                     <div className="text-right">
                       <div className={`px-2 py-1 rounded text-xs font-bold ${
-                        deposit.status === 'confirmed' ? 'bg-green-500/20 text-green-400' :
-                        deposit.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                        transaction.status === 'confirmed' || transaction.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                        transaction.status === 'pending' || transaction.status === 'processing' ? 'bg-yellow-500/20 text-yellow-400' :
                         'bg-red-500/20 text-red-400'
                       }`}>
-                        {deposit.status}
+                        {transaction.status}
                       </div>
-                      {deposit.txHash && (
+                      {transaction.txHash && (
                         <div className="text-xs text-gray-500 mt-1">
                           <a 
-                            href={`https://tronscan.org/#/transaction/${deposit.txHash}`}
+                            href={`https://tronscan.org/#/transaction/${transaction.txHash}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-blue-400 hover:text-blue-300"
                           >
-                            TX: {deposit.txHash.substring(0, 8)}...
+                            TX: {transaction.txHash.substring(0, 8)}...
                           </a>
                         </div>
                       )}
@@ -323,14 +393,75 @@ const TopUp: React.FC = () => {
               ) : (
                 <div className="text-center text-gray-400 py-8">
                   <QrCode className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>No deposits yet</p>
-                  <p className="text-sm">Send USDT to your wallet address above</p>
+                  <p>No transactions yet</p>
+                  <p className="text-sm">Deposit or withdraw USDT</p>
                 </div>
               )}
             </div>
           </div>
         </div>
       </div>
+      
+      {/* Withdraw Modal */}
+      {showWithdrawModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-2xl border border-white/20 p-6 w-full max-w-md mx-4">
+            <h3 className="text-xl font-bold mb-4">Withdraw USDT</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Amount (Min $10)</label>
+                <input
+                  type="number"
+                  min="10"
+                  step="0.01"
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+                  placeholder="Enter amount"
+                />
+                <div className="text-xs text-gray-400 mt-1">
+                  Available: ${(user?.cashBalance || 0).toFixed(2)}
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">TRON Address (TRC20)</label>
+                <input
+                  type="text"
+                  value={withdrawAddress}
+                  onChange={(e) => setWithdrawAddress(e.target.value)}
+                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+                  placeholder="Enter TRON address"
+                />
+              </div>
+              
+              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
+                <p className="text-xs text-yellow-400">
+                  ⚠️ Withdrawals are processed manually within 1-24 hours. 
+                  Double-check your address - transactions cannot be reversed!
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={handleWithdraw}
+                disabled={withdrawing}
+                className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-all"
+              >
+                {withdrawing ? 'Processing...' : 'Withdraw'}
+              </button>
+              <button
+                onClick={() => setShowWithdrawModal(false)}
+                className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
