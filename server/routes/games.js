@@ -62,9 +62,30 @@ function getMultiplier(points) {
 }
 
 // Apply house edge
-function applyHouseEdge(winAmount, houseEdgePercent) {
-  const edgeMultiplier = (100 - houseEdgePercent) / 100;
-  return winAmount * edgeMultiplier;
+function applyHouseEdgeLuck(points, houseEdgePercent) {
+  // House edge as "luck manipulation" - higher edge = more likely to get 0 points
+  // Standard house edge is 5%, anything above/below manipulates luck
+  if (points === 0) return 0; // Already busted, no manipulation needed
+  
+  const luckRoll = Math.random() * 100;
+  
+  // If house edge > 5%, increase chance of bad luck (turning winning roll into bust)
+  if (houseEdgePercent > 5) {
+    const extraBadLuck = (houseEdgePercent - 5) * 2; // 2x multiplier for effect
+    if (luckRoll < extraBadLuck) {
+      return 0; // Turn winning roll into bust (bad luck)
+    }
+  }
+  
+  // If house edge < 5%, decrease chance of bad luck (more wins)
+  if (houseEdgePercent < 5) {
+    const extraGoodLuck = (5 - houseEdgePercent) * 1.5; // 1.5x multiplier for effect
+    if (luckRoll < extraGoodLuck && points === 0) {
+      return 50; // Turn bust into small win (good luck)
+    }
+  }
+  
+  return points; // No luck manipulation
 }
 
 // Determine bet source and amounts
@@ -301,12 +322,9 @@ router.post('/dice/roll', authenticateToken, async (req, res) => {
     // Calculate points
     let points = calculatePoints(dice1, dice2, dice3);
     
-    // Apply house edge
+    // Apply house edge as luck manipulation
     const houseEdge = req.user.diceGameEdge;
-    const edgeRoll = Math.random() * 100;
-    if (edgeRoll < houseEdge && points > 0) {
-      points = 0; // House edge kicks in
-    }
+    points = applyHouseEdgeLuck(points, houseEdge);
     
     const multiplier = getMultiplier(points);
     const potBefore = game.totalPot;
@@ -564,6 +582,292 @@ router.get('/stats', authenticateToken, async (req, res) => {
 });
 
 // DiceBattle routes (simplified for space - similar pattern)
+
+// Start DiceBattle matchmaking
+router.post('/dicebattle/start', authenticateToken, async (req, res) => {
+  try {
+    const { stake, useVirtual = false, playerGuess } = req.body;
+    
+    const numericStake = Number(stake);
+    if (!stake || numericStake < 0.5 || numericStake > 1000) {
+      return res.status(400).json({ error: 'Stake must be between $0.50 and $1000' });
+    }
+    
+    // Determine bet source
+    const { source, bonusUsed, cashUsed, virtualUsed } = await determineBetSource(
+      req.user.id, 
+      numericStake, 
+      useVirtual
+    );
+    
+    // Generate bot opponent
+    const botNames = ['DiceKing', 'RollMaster', 'LuckyPlayer', 'DiceNinja', 'BattleBot'];
+    const botName = botNames[Math.floor(Math.random() * botNames.length)];
+    const botGuess = Math.floor(Math.random() * 16) + 3; // 3-18
+    const botLevel = Math.floor(Math.random() * 50) + 1;
+    const botWins = Math.floor(Math.random() * 100);
+    const botLosses = Math.floor(Math.random() * 80);
+    
+    const opponent = {
+      name: botName,
+      guess: botGuess,
+      level: botLevel,
+      wins: botWins,
+      losses: botLosses
+    };
+    
+    // Create new game
+    const game = await prisma.game.create({
+      data: {
+        userId: req.user.id,
+        gameType: 'dicebattle',
+        stake: numericStake,
+        totalPot: numericStake,
+        status: 'active',
+        betSource: source,
+        bonusUsed,
+        cashUsed,
+        metadata: JSON.stringify({ 
+          useVirtual, 
+          opponent,
+          playerGuess: 10 // Temporary, real guess sent in roll
+        })
+      }
+    });
+    
+    // Update user balances
+    const updateData = { totalBets: { increment: numericStake } };
+    if (useVirtual) {
+      updateData.virtualBalance = { decrement: virtualUsed };
+    } else {
+      if (bonusUsed > 0) updateData.bonusBalance = { decrement: bonusUsed };
+      if (cashUsed > 0) updateData.cashBalance = { decrement: cashUsed };
+    }
+    
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: updateData
+    });
+    
+    // Create transaction record
+    if (!useVirtual) {
+      const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+      await prisma.transaction.create({
+        data: {
+          userId: req.user.id,
+          type: 'bet',
+          amount: numericStake,
+          cashChange: -cashUsed,
+          bonusChange: -bonusUsed,
+          cashBalanceAfter: user.cashBalance,
+          bonusBalanceAfter: user.bonusBalance,
+          lockedBalanceAfter: user.lockedBalance,
+          virtualBalanceAfter: user.virtualBalance,
+          description: `DiceBattle bet - ${source}`,
+          reference: game.id
+        }
+      });
+    }
+    
+    res.json({ gameId: game.id, opponent });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message || 'Server error' });
+  }
+});
+
+// Roll dice for DiceBattle
+router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
+  try {
+    const { gameId, playerGuess } = req.body;
+    
+    const game = await prisma.game.findUnique({
+      where: { id: gameId }
+    });
+    
+    if (!game || game.userId !== req.user.id || game.status !== 'active') {
+      return res.status(400).json({ error: 'Invalid game' });
+    }
+    
+    const metadata = JSON.parse(game.metadata || '{}');
+    const opponent = metadata.opponent;
+    const useVirtual = metadata.useVirtual;
+    
+    // Generate dice using provably fair
+    const serverSeed = generateServerSeed();
+    const clientSeed = Math.random().toString(36).substring(2, 15);
+    const [dice1, dice2, dice3] = generateDiceRoll(serverSeed, clientSeed, 1);
+    const total = dice1 + dice2 + dice3;
+    
+    // Calculate distances
+    const playerDistance = Math.abs(total - playerGuess);
+    const opponentDistance = Math.abs(total - opponent.guess);
+    
+    // Apply house edge as luck manipulation for DiceBattle
+    const houseEdge = req.user.diceBattleEdge || 5;
+    let winner = 'player';
+    
+    if (playerDistance < opponentDistance) {
+      winner = 'player';
+    } else if (playerDistance > opponentDistance) {
+      winner = 'opponent';
+    } else {
+      winner = 'tie';
+    }
+    
+    // Apply luck manipulation based on house edge
+    if (houseEdge > 5 && winner === 'player') {
+      const badLuckChance = (houseEdge - 5) * 2; // 2% per 1% edge above 5%
+      if (Math.random() * 100 < badLuckChance) {
+        winner = 'opponent'; // Bad luck - player loses even if they should win
+      }
+    } else if (houseEdge < 5 && winner === 'opponent') {
+      const goodLuckChance = (5 - houseEdge) * 1.5; // 1.5% per 1% edge below 5%
+      if (Math.random() * 100 < goodLuckChance) {
+        winner = 'player'; // Good luck - player wins even if they should lose
+      }
+    }
+    
+    // Calculate winnings (official 5% house edge always applies to prize pool)
+    const totalPot = game.stake * 2;
+    const houseCommission = totalPot * 0.05; // Always 5% official commission
+    const prizePool = totalPot - houseCommission;
+    
+    let winnings = 0;
+    let finalPot = 0;
+    let gameStatus = 'lost';
+    
+    if (winner === 'player') {
+      winnings = prizePool;
+      finalPot = winnings;
+      gameStatus = 'cashed_out';
+    } else if (winner === 'tie') {
+      winnings = game.stake; // Return stake on tie
+      finalPot = winnings;
+      gameStatus = 'tie';
+    }
+    
+    // Update game
+    await prisma.game.update({
+      where: { id: gameId },
+      data: {
+        status: gameStatus,
+        finalPot,
+        metadata: JSON.stringify({
+          ...metadata,
+          playerGuess,
+          dice1, dice2, dice3, total,
+          playerDistance, opponentDistance,
+          winner, winnings
+        })
+      }
+    });
+    
+    // Create game round for record keeping
+    await prisma.gameRound.create({
+      data: {
+        gameId,
+        userId: req.user.id,
+        roundNumber: 1,
+        dice1, dice2, dice3,
+        points: winner === 'player' ? 100 : (winner === 'tie' ? 50 : 0),
+        multiplier: 1.0,
+        potBefore: game.stake,
+        potAfter: finalPot,
+        serverSeed,
+        clientSeed,
+        nonce: 1,
+        wageringContribution: game.betSource !== 'cash' ? game.stake : 0,
+        metadata: JSON.stringify({ playerGuess, opponentGuess: opponent.guess, total, winner })
+      }
+    });
+    
+    if (winnings > 0) {
+      if (useVirtual) {
+        // Virtual game - simple balance update
+        await prisma.user.update({
+          where: { id: req.user.id },
+          data: {
+            virtualBalance: { increment: winnings },
+            totalGameWins: { increment: 1 },
+            currentWinStreak: { increment: 1 }
+          }
+        });
+      } else {
+        // Real money game - complex balance handling
+        const { cashWin, lockedWin } = await processWinnings(
+          req.user.id,
+          winnings,
+          game.betSource,
+          game.bonusUsed,
+          game.cashUsed
+        );
+        
+        // Update user balance and stats
+        const updateData = {
+          totalWins: { increment: winnings },
+          totalGameWins: { increment: 1 },
+          currentWinStreak: { increment: 1 }
+        };
+        
+        if (cashWin > 0) updateData.cashBalance = { increment: cashWin };
+        if (lockedWin > 0) updateData.lockedBalance = { increment: lockedWin };
+        
+        await prisma.user.update({
+          where: { id: req.user.id },
+          data: updateData
+        });
+        
+        // Update wagering progress
+        await updateWageringProgress(req.user.id, game.stake);
+        
+        // Create transaction record
+        const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+        await prisma.transaction.create({
+          data: {
+            userId: req.user.id,
+            type: 'win',
+            amount: winnings,
+            cashChange: cashWin,
+            lockedChange: lockedWin,
+            cashBalanceAfter: user.cashBalance,
+            bonusBalanceAfter: user.bonusBalance,
+            lockedBalanceAfter: user.lockedBalance,
+            virtualBalanceAfter: user.virtualBalance,
+            description: `DiceBattle win - ${game.betSource}`,
+            reference: game.id
+          }
+        });
+      }
+    } else {
+      // Player lost
+      if (game.betSource !== 'cash' && !useVirtual) {
+        await updateWageringProgress(req.user.id, game.stake);
+      }
+      
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: {
+          totalGameLosses: { increment: 1 },
+          currentWinStreak: 0
+        }
+      });
+    }
+    
+    await refreshUser();
+    
+    res.json({
+      dice1, dice2, dice3, total,
+      playerGuess, playerDistance,
+      opponent: { ...opponent, distance: opponentDistance },
+      winner, winnings
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // ... (DiceBattle implementation would follow similar pattern with new wallet system)
 
 export default router;

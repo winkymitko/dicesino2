@@ -254,7 +254,7 @@ const AdminPanel: React.FC = () => {
                 <th className="text-left p-3">Games</th>
                 <th className="text-left p-3">Win Rate</th>
                 <th className="text-left p-3">Casino Profit</th>
-                <th className="text-left p-3">Dice/Battle Mod</th>
+                <th className="text-left p-3">House Edge %</th>
                 <th className="text-left p-3">Actions</th>
               </tr>
             </thead>
@@ -285,6 +285,9 @@ const AdminPanel: React.FC = () => {
                     }`}>
                       {(user.diceGameEdge || 5).toFixed(1)}%/{(user.diceBattleEdge || 5).toFixed(1)}%
                     </span>
+                    <div className="text-xs text-gray-400 mt-1">
+                      {(user.diceGameEdge || 5) > 5 ? 'Bad Luck' : (user.diceGameEdge || 5) < 5 ? 'Good Luck' : 'Normal'}
+                    </div>
                   </td>
                   <td className="p-3">
                     <button
@@ -593,7 +596,7 @@ const AdminPanel: React.FC = () => {
                   className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
                 />
                 <p className="text-xs text-gray-400 mt-1">
-                  5.0% = normal house edge, higher = more house advantage
+                  5.0% = normal luck, higher = more bad luck for user, lower = more good luck
                 </p>
               </div>
               
@@ -609,7 +612,7 @@ const AdminPanel: React.FC = () => {
                   className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
                 />
                 <p className="text-xs text-gray-400 mt-1">
-                  5.0% = normal house edge, higher = more house advantage
+                  5.0% = normal luck, higher = more bad luck for user, lower = more good luck
                 </p>
               </div>
 

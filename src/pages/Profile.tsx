@@ -89,17 +89,6 @@ const Profile: React.FC = () => {
       setTotalSuccessfulRolls(0);
       setTotalGames(0);
     }
-    
-    // Fetch DiceBattle stats
-    try {
-      const battleRes = await fetch('/api/games/dicebattle/stats', { credentials: 'include' });
-      if (battleRes.ok) {
-        const battleData = await battleRes.json();
-        setBattleStats(battleData);
-      }
-    } catch (e) {
-      console.error('Failed to fetch battle stats', e);
-    }
   };
 
   const handleSave = async () => {

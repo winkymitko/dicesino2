@@ -135,12 +135,12 @@ const DiceBattle: React.FC = () => {
         
         <div className="flex justify-center items-center space-x-8 mb-6">
           <div className="text-center">
-            <div className="text-green-400 font-bold text-xl">${user.virtualBalance.toFixed(2)}</div>
+            <div className="text-green-400 font-bold text-xl">${(user.virtualBalance || 0).toFixed(2)}</div>
             <div className="text-gray-400">Virtual</div>
           </div>
           <div className="text-center">
-            <div className="text-yellow-400 font-bold text-xl">${user.realBalance.toFixed(2)}</div>
-            <div className="text-gray-400">Real</div>
+            <div className="text-yellow-400 font-bold text-xl">${((user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0)).toFixed(2)}</div>
+            <div className="text-gray-400">Main</div>
           </div>
         </div>
       </div>
