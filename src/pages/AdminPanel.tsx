@@ -299,28 +299,12 @@ const AdminPanel: React.FC = () => {
                     <div className="font-bold">{user.username}</div>
                     <div className="text-sm text-gray-400">{user.email}</div>
                   </div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => {
-                        setSelectedUser(user);
-                        setDiceGameEdge(user.diceGameEdge?.toString() || '5.0');
-                        setDiceBattleEdge(user.diceBattleEdge?.toString() || '5.0');
-                        setDiceRouletteEdge(user.diceRouletteEdge?.toString() || '5.0');
-                        setMaxBetWhileBonus(user.maxBetWhileBonus?.toString() || '50');
-                        setMaxBonusCashout(user.maxBonusCashout?.toString() || '1000');
-                        setWageringMultiplier(user.wageringMultiplier?.toString() || '20');
-                      }}
-                      className="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded text-sm hover:bg-yellow-500/30 transition-colors"
-                    >
-                      Settings
-                    </button>
-                    <button
-                      onClick={() => toggleUserStats(user.id)}
-                      className="bg-blue-500/20 text-blue-400 px-3 py-1 rounded text-sm hover:bg-blue-500/30 transition-colors"
-                    >
-                      {expandedUser === user.id ? 'Hide' : 'Stats'}
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => toggleUserStats(user.id)}
+                    className="bg-blue-500/20 text-blue-400 px-3 py-1 rounded text-sm hover:bg-blue-500/30 transition-colors"
+                  >
+                    {expandedUser === user.id ? 'Hide' : 'Manage'}
+                  </button>
                 </div>
                 
                 {/* Balance Overview */}
@@ -386,9 +370,138 @@ const AdminPanel: React.FC = () => {
                 )}
               </div>
 
-              {/* Expanded Stats Section */}
+              {/* Expanded Management Section */}
               {expandedUser === user.id && (
                 <div className="mt-4 pt-4 border-t border-white/10 space-y-4">
+                  {/* Quick Settings */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">House Edge %</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        max="50"
+                        defaultValue={user.diceGameEdge || 5}
+                        className="w-full px-2 py-1 bg-black/30 border border-white/20 rounded text-sm focus:border-yellow-500 outline-none"
+                        id={`edge-${user.id}`}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Max Bet $</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="1000"
+                        defaultValue={user.maxBetWhileBonus || 50}
+                        className="w-full px-2 py-1 bg-black/30 border border-white/20 rounded text-sm focus:border-yellow-500 outline-none"
+                        id={`maxbet-${user.id}`}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Bonus & Wagering */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="Bonus $"
+                      className="px-2 py-1 bg-black/30 border border-white/20 rounded text-sm focus:border-green-500 outline-none"
+                      id={`bonus-${user.id}`}
+                    />
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="Add Wagering $"
+                      className="px-2 py-1 bg-black/30 border border-white/20 rounded text-sm focus:border-blue-500 outline-none"
+                      id={`add-wagering-${user.id}`}
+                    />
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="Reduce Wagering $"
+                      className="px-2 py-1 bg-black/30 border border-white/20 rounded text-sm focus:border-red-500 outline-none"
+                      id={`reduce-wagering-${user.id}`}
+                    />
+                  </div>
+                  
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <button
+                      onClick={async () => {
+                        const edgeInput = document.getElementById(`edge-${user.id}`) as HTMLInputElement;
+                        const maxBetInput = document.getElementById(`maxbet-${user.id}`) as HTMLInputElement;
+                        
+                        try {
+                          const response = await fetch(`/api/admin/users/${user.id}/settings`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ 
+                              diceGameEdge: parseFloat(edgeInput.value),
+                              diceBattleEdge: parseFloat(edgeInput.value),
+                              diceRouletteEdge: parseFloat(edgeInput.value),
+                              maxBetWhileBonus: parseFloat(maxBetInput.value)
+                            })
+                          });
+                          if (response.ok) {
+                            fetchUsers();
+                            alert('Settings updated');
+                          }
+                        } catch (error) {
+                          console.error('Failed to update settings:', error);
+                        }
+                      }}
+                      className="px-2 py-1 bg-yellow-500 hover:bg-yellow-600 text-black rounded text-xs font-bold transition-colors"
+                    >
+                      Settings
+                    </button>
+                    
+                    <button
+                      onClick={async () => {
+                        const bonusInput = document.getElementById(`bonus-${user.id}`) as HTMLInputElement;
+                        const amount = parseFloat(bonusInput.value);
+                        if (amount > 0) {
+                          try {
+                            const response = await fetch(`/api/admin/users/${user.id}/real-bonus`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              credentials: 'include',
+                              body: JSON.stringify({ amount, description: 'Admin bonus' })
+                            });
+                            if (response.ok) {
+                              fetchUsers();
+                              bonusInput.value = '';
+                              alert(`$${amount} bonus granted`);
+                            }
+                          } catch (error) {
+                            console.error('Failed to grant bonus:', error);
+                          }
+                        }
+                      }}
+                      className="px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-xs font-bold transition-colors"
+                    >
+                      Bonus
+                    </button>
+                    
+                    <button
+                      onClick={() => adjustWagering(user.id, 'add')}
+                      className="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs font-bold transition-colors"
+                    >
+                      +Wager
+                    </button>
+                    
+                    <button
+                      onClick={() => adjustWagering(user.id, 'reduce')}
+                      className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-bold transition-colors"
+                    >
+                      -Wager
+                    </button>
+                  </div>
+                  
                   {/* User Stats Display */}
                   {userStats[user.id] && (
                     <div className="bg-black/20 rounded p-3">
@@ -416,155 +529,6 @@ const AdminPanel: React.FC = () => {
           ))}
         </div>
       </div>
-
-      {/* Settings Modal - Made Slimmer */}
-      {selectedUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-2xl border border-white/20 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="p-4">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-bold">Settings: {selectedUser.username}</h3>
-                <button
-                  onClick={() => setSelectedUser(null)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                {/* House Edges */}
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1">Dice %</label>
-                    <input
-                      type="number"
-                      step="0.5"
-                      value={diceGameEdge}
-                      onChange={(e) => setDiceGameEdge(e.target.value)}
-                      className="w-full px-2 py-1 bg-black/30 border border-white/20 rounded text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1">Battle %</label>
-                    <input
-                      type="number"
-                      step="0.5"
-                      value={diceBattleEdge}
-                      onChange={(e) => setDiceBattleEdge(e.target.value)}
-                      className="w-full px-2 py-1 bg-black/30 border border-white/20 rounded text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1">Roulette %</label>
-                    <input
-                      type="number"
-                      step="0.5"
-                      value={diceRouletteEdge}
-                      onChange={(e) => setDiceRouletteEdge(e.target.value)}
-                      className="w-full px-2 py-1 bg-black/30 border border-white/20 rounded text-sm"
-                    />
-                  </div>
-                </div>
-
-                {/* Limits */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1">Max Bet $</label>
-                    <input
-                      type="number"
-                      value={maxBetWhileBonus}
-                      onChange={(e) => setMaxBetWhileBonus(e.target.value)}
-                      className="w-full px-2 py-1 bg-black/30 border border-white/20 rounded text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1">Max Cashout $</label>
-                    <input
-                      type="number"
-                      value={maxBonusCashout}
-                      onChange={(e) => setMaxBonusCashout(e.target.value)}
-                      className="w-full px-2 py-1 bg-black/30 border border-white/20 rounded text-sm"
-                    />
-                  </div>
-                </div>
-
-                {/* Bonus Section */}
-                <div className="border-t border-white/10 pt-3">
-                  <h4 className="text-sm font-bold mb-2">Grant Real Bonus</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="number"
-                      placeholder="Amount $"
-                      value={bonusAmount}
-                      onChange={(e) => setBonusAmount(e.target.value)}
-                      className="px-2 py-1 bg-black/30 border border-white/20 rounded text-sm"
-                    />
-                    <input
-                      type="number"
-                      placeholder="Wagering Coefficient"
-                      value={wageringMultiplier}
-                      onChange={(e) => setWageringMultiplier(e.target.value)}
-                      className="px-2 py-1 bg-black/30 border border-white/20 rounded text-sm"
-                    />
-                  </div>
-                </div>
-
-                {/* Wagering Adjustment */}
-                <div className="border-t border-white/10 pt-3">
-                  <h4 className="text-sm font-bold mb-2">Adjust Wagering</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="number"
-                      placeholder="Add $"
-                      className="px-2 py-1 bg-black/30 border border-white/20 rounded text-sm"
-                      id={`add-wagering-${selectedUser.id}`}
-                    />
-                    <input
-                      type="number"
-                      placeholder="Reduce $"
-                      className="px-2 py-1 bg-black/30 border border-white/20 rounded text-sm"
-                      id={`reduce-wagering-${selectedUser.id}`}
-                    />
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="grid grid-cols-2 gap-2 pt-3">
-                  <button
-                    onClick={() => updateSettings(selectedUser.id)}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 rounded text-sm"
-                  >
-                    Save Settings
-                  </button>
-                  <button
-                    onClick={() => grantRealBonus(selectedUser.id)}
-                    disabled={!bonusAmount}
-                    className="bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-bold py-2 rounded text-sm"
-                  >
-                    Grant Bonus
-                  </button>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => adjustWagering(selectedUser.id, 'add')}
-                    className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded text-sm"
-                  >
-                    Add Wagering
-                  </button>
-                  <button
-                    onClick={() => adjustWagering(selectedUser.id, 'reduce')}
-                    className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 rounded text-sm"
-                  >
-                    Reduce Wagering
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Bot Management */}
       <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
