@@ -59,12 +59,18 @@ router.get('/stats', authenticateToken, async (req, res) => {
     // Calculate total profit from referrals (real money only)
     const referralStats = referrals.map(referral => ({
       ...referral,
-      totalProfit: (referral.totalBets || 0) - (referral.totalWins || 0)
+      casinoProfit: (referral.totalBets || 0) - (referral.totalWins || 0)
     }));
+
+    // Calculate total commission earned
+    const totalCasinoProfit = referralStats.reduce((sum, ref) => sum + (ref.casinoProfit || 0), 0);
+    const commissionRate = req.user.affiliateCommission || 0;
+    const totalCommissionEarned = totalCasinoProfit * (commissionRate / 100);
 
     res.json({
       totalReferrals: affiliateStats?.totalReferrals || 0,
       totalCommission: affiliateStats?.totalCommission || 0,
+      totalCommissionEarned,
       pendingCommission: affiliateStats?.pendingCommission || 0,
       referrals: referralStats
     });

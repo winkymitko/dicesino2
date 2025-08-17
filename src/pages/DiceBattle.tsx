@@ -133,13 +133,11 @@ const DiceBattle = () => {
         </div>
         <p className="text-gray-400 mb-6">Challenge opponents in dice prediction battles!</p>
         
-        <div className="flex justify-center items-center space-x-8 mb-6">
-          <div className="text-center">
-            <div className={`font-bold text-xl ${gameMode === 'virtual' ? 'text-purple-400' : 'text-yellow-400'}`}>
-              ${gameMode === 'virtual' ? (user.virtualBalance || 0).toFixed(2) : ((user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0)).toFixed(2)}
-            </div>
-            <div className="text-gray-400">{gameMode === 'virtual' ? 'Virtual' : 'Real'} Balance</div>
+        <div className="text-center mb-6">
+          <div className={`font-bold text-2xl ${gameMode === 'virtual' ? 'text-purple-400' : 'text-yellow-400'}`}>
+            ${gameMode === 'virtual' ? (user.virtualBalance || 0).toFixed(2) : ((user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0)).toFixed(2)}
           </div>
+          <div className="text-gray-400">{gameMode === 'virtual' ? 'Virtual' : 'Real'} Balance</div>
         </div>
       </div>
 
@@ -202,13 +200,13 @@ const DiceBattle = () => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-2">Balance Type</label>
-              <div className="p-3 bg-black/30 border border-white/20 rounded-lg text-center">
-                <span className={`font-bold ${gameMode === 'virtual' ? 'text-purple-400' : 'text-yellow-400'}`}>
-                  {gameMode === 'virtual' ? 'Virtual Mode' : 'Real Money Mode'}
-                </span>
+              <label className="block text-sm font-medium mb-2">Battle Info</label>
+              <div className="p-3 bg-black/30 border border-white/20 rounded-lg">
+                <div className="text-sm text-gray-300">
+                  Predict dice sum (3-18)
+                </div>
                 <div className="text-xs text-gray-400 mt-1">
-                  Change mode in header
+                  Closest guess wins the pot!
                 </div>
               </div>
             </div>
@@ -292,16 +290,12 @@ const DiceBattle = () => {
           ) : (
             <>
               {/* Dice Display */}
-              <div className="flex justify-center space-x-4 mb-6">
-                {[1, 2, 3].map((index) => (
-                  <div key={index} className="relative">
-                    <div className={`w-20 h-20 bg-white rounded-lg flex items-center justify-center shadow-lg ${
-                      rolling ? 'animate-spin' : ''
-                    }`}>
-                      <Dice1 className="h-12 w-12 text-black" />
-                    </div>
-                  </div>
-                ))}
+              <div className="flex justify-center mb-6">
+                <DiceAnimation 
+                  isRolling={rolling}
+                  diceValues={[1, 1, 1]}
+                  size={80}
+                />
               </div>
 
               <button
@@ -325,17 +319,12 @@ const DiceBattle = () => {
           </div>
 
           {/* Final Dice */}
-          <div className="flex justify-center space-x-4 mb-6">
-            {[battleResult.dice1, battleResult.dice2, battleResult.dice3].map((die, index) => {
-              const DiceComponent = diceComponents[die - 1];
-              return (
-                <div key={index} className="relative">
-                  <div className="w-20 h-20 bg-white rounded-lg flex items-center justify-center shadow-lg">
-                    <DiceComponent className="h-12 w-12 text-black" />
-                  </div>
-                </div>
-              );
-            })}
+          <div className="flex justify-center mb-6">
+            <DiceAnimation 
+              isRolling={false}
+              diceValues={[battleResult.dice1, battleResult.dice2, battleResult.dice3]}
+              size={80}
+            />
           </div>
 
           <div className="text-center mb-6">

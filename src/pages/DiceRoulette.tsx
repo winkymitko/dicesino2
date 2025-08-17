@@ -17,7 +17,6 @@ const DiceRoulette: React.FC = () => {
   const [showBetModal, setShowBetModal] = useState<string | null>(null);
   const [betAmount, setBetAmount] = useState(1);
 
-  const diceComponents = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
 
   useEffect(() => {
     if (!user) navigate('/login');
@@ -129,15 +128,11 @@ const DiceRoulette: React.FC = () => {
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold mb-4">Dice Roulette</h1>
-        <div className="flex justify-center items-center space-x-8 mb-6">
-          <div className="text-center">
-            <div className="text-green-400 font-bold text-xl">${(user.virtualBalance || 0).toFixed(2)}</div>
-            <div className="text-gray-400">Virtual</div>
+        <div className="text-center mb-6">
+          <div className={`font-bold text-2xl ${gameMode === 'virtual' ? 'text-purple-400' : 'text-yellow-400'}`}>
+            ${gameMode === 'virtual' ? (user.virtualBalance || 0).toFixed(2) : ((user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0)).toFixed(2)}
           </div>
-          <div className="text-center">
-            <div className="text-yellow-400 font-bold text-xl">${((user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0)).toFixed(2)}</div>
-            <div className="text-gray-400">Real</div>
-          </div>
+          <div className="text-gray-400">{gameMode === 'virtual' ? 'Virtual' : 'Real'} Balance</div>
         </div>
       </div>
 
@@ -150,30 +145,11 @@ const DiceRoulette: React.FC = () => {
       {/* Dice Display */}
       <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 mb-6">
         <div className="flex justify-center mb-6">
-          <div className="flex justify-center space-x-4">
-            {lastRoll ? (
-              [lastRoll.dice1, lastRoll.dice2, lastRoll.dice3].map((die, index) => {
-                const DiceComponent = diceComponents[die - 1];
-                return (
-                  <div key={index} className="relative">
-                    <div className="w-20 h-20 bg-white rounded-lg flex items-center justify-center shadow-lg">
-                      <DiceComponent className="h-12 w-12 text-black" />
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              [1, 2, 3].map((index) => (
-                <div key={index} className="relative">
-                  <div className={`w-20 h-20 bg-white rounded-lg flex items-center justify-center shadow-lg ${
-                    rolling ? 'animate-spin' : ''
-                  }`}>
-                    <Dice1 className="h-12 w-12 text-black" />
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+          <DiceAnimation 
+            isRolling={rolling}
+            diceValues={lastRoll ? [lastRoll.dice1, lastRoll.dice2, lastRoll.dice3] : [1, 1, 1]}
+            size={80}
+          />
         </div>
         
         {lastRoll && (
@@ -190,6 +166,25 @@ const DiceRoulette: React.FC = () => {
             )}
           </div>
         )}
+        
+        {/* Roll Button */}
+        <div className="text-center mt-6">
+          <button
+            onClick={rollDice}
+            disabled={rolling || totalBet === 0}
+            className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 text-white font-bold py-3 px-8 rounded-lg transition-all transform hover:scale-105 disabled:hover:scale-100"
+          >
+            {rolling ? 'Rolling Dice...' : `Roll Dice - $${totalBet.toFixed(2)}`}
+          </button>
+          {totalBet > 0 && (
+            <button
+              onClick={clearBets}
+              className="ml-4 bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition-all"
+            >
+              Clear Bets
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Betting Table */}

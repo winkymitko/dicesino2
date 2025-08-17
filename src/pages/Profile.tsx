@@ -211,14 +211,16 @@ const Profile: React.FC = () => {
   if (user.isAffiliate) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <div className="flex items-center space-x-3 mb-8">
+          <Users className="h-8 w-8 text-blue-500" />
+          <h1 className="text-3xl font-bold">Affiliate Dashboard</h1>
+        </div>
+        
         <div className="grid md:grid-cols-3 gap-8">
           {/* Profile Info */}
           <div className="md:col-span-1 space-y-6">
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-              <div className="flex items-center space-x-3 mb-6">
-                <Users className="h-6 w-6 text-blue-500" />
-                <h2 className="text-2xl font-bold">Affiliate Dashboard</h2>
-              </div>
+              <h2 className="text-2xl font-bold mb-6">Profile Settings</h2>
 
               <div className="space-y-4">
                 <div>
@@ -275,15 +277,17 @@ const Profile: React.FC = () => {
           <div className="md:col-span-2 space-y-6">
             {/* Overview Stats */}
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-              <h3 className="text-xl font-bold mb-6">Affiliate Statistics</h3>
+              <h3 className="text-xl font-bold mb-6">Your Affiliate Performance</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                   <div className="text-2xl font-bold text-blue-400">{affiliateStats.totalReferrals || 0}</div>
                   <div className="text-sm text-gray-400">Total Referrals</div>
                 </div>
                 <div className="text-center p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-                  <div className="text-2xl font-bold text-green-400">${(affiliateStats.totalCommission || 0).toFixed(2)}</div>
-                  <div className="text-sm text-gray-400">Total Earned</div>
+                  <div className="text-2xl font-bold text-green-400">
+                    ${(affiliateStats.totalCommissionEarned || 0).toFixed(2)}
+                  </div>
+                  <div className="text-sm text-gray-400">Commission Earned</div>
                 </div>
                 <div className="text-center p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                   <div className="text-2xl font-bold text-yellow-400">${(affiliateStats.pendingCommission || 0).toFixed(2)}</div>
@@ -296,9 +300,9 @@ const Profile: React.FC = () => {
               </div>
             </div>
 
-            {/* Referral Details */}
+            {/* Referral Performance */}
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-              <h3 className="text-xl font-bold mb-4">Referral Performance</h3>
+              <h3 className="text-xl font-bold mb-4">Your Referrals & Earnings</h3>
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {affiliateStats.referrals && affiliateStats.referrals.length > 0 ? (
                   affiliateStats.referrals.map((referral: any, index: number) => (
@@ -308,10 +312,19 @@ const Profile: React.FC = () => {
                         <div className="text-sm text-gray-400">
                           Joined: {new Date(referral.createdAt).toLocaleDateString()}
                         </div>
+                        <div className="text-xs text-blue-400">
+                          Total Wagered: ${(referral.totalBets || 0).toFixed(2)}
+                        </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-green-400 font-bold">${(referral.totalProfit || 0).toFixed(2)}</div>
-                        <div className="text-xs text-gray-400">Total Profit</div>
+                        <div className="text-green-400 font-bold">
+                          ${(referral.casinoProfit || 0).toFixed(2)}
+                        </div>
+                        <div className="text-xs text-gray-400">Casino Profit</div>
+                        <div className="text-yellow-400 font-bold text-sm">
+                          ${((referral.casinoProfit || 0) * (user.affiliateCommission || 0) / 100).toFixed(2)}
+                        </div>
+                        <div className="text-xs text-gray-400">Your Commission</div>
                       </div>
                     </div>
                   ))

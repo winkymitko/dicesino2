@@ -171,17 +171,11 @@ const DiceGame: React.FC = () => {
       {/* Game Header */}
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold mb-4">BarboDice</h1>
-        <div className="flex justify-center items-center space-x-8 mb-6">
-          <div className="text-center">
-            <div className={`font-bold text-xl ${gameMode === 'virtual' ? 'text-purple-400' : 'text-yellow-400'}`}>
-              ${gameMode === 'virtual' ? (user.virtualBalance || 0).toFixed(2) : ((user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0)).toFixed(2)}
-            </div>
-            <div className="text-gray-400">{gameMode === 'virtual' ? 'Virtual' : 'Real'} Balance</div>
+        <div className="text-center mb-6">
+          <div className={`font-bold text-2xl ${gameMode === 'virtual' ? 'text-purple-400' : 'text-yellow-400'}`}>
+            ${gameMode === 'virtual' ? (user.virtualBalance || 0).toFixed(2) : ((user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0)).toFixed(2)}
           </div>
-          {/* <div className="text-center">
-            <div className="text-blue-400 font-bold text-xl">{user.currentWinStreak}</div>
-            <div className="text-gray-400">Win Streak</div>
-          </div> */}
+          <div className="text-gray-400">{gameMode === 'virtual' ? 'Virtual' : 'Real'} Balance</div>
         </div>
       </div>
 
@@ -260,13 +254,13 @@ const DiceGame: React.FC = () => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-2">Balance Type</label>
-              <div className="p-3 bg-black/30 border border-white/20 rounded-lg text-center">
-                <span className={`font-bold ${gameMode === 'virtual' ? 'text-purple-400' : 'text-yellow-400'}`}>
-                  {gameMode === 'virtual' ? 'Virtual Mode' : 'Real Money Mode'}
-                </span>
+              <label className="block text-sm font-medium mb-2">Game Info</label>
+              <div className="p-3 bg-black/30 border border-white/20 rounded-lg">
+                <div className="text-sm text-gray-300">
+                  Roll for singles, straights, and triples
+                </div>
                 <div className="text-xs text-gray-400 mt-1">
-                  Change mode in header
+                  Cash out anytime or risk it all!
                 </div>
               </div>
             </div>
@@ -292,29 +286,12 @@ const DiceGame: React.FC = () => {
           </div>
 
           {/* Dice Display */}
-          <div className="flex justify-center space-x-4 mb-6">
-            {lastRoll ? (
-              [lastRoll.dice1, lastRoll.dice2, lastRoll.dice3].map((die, index) => {
-                const DiceComponent = diceComponents[die - 1];
-                return (
-                  <div key={index} className="relative">
-                    <div className="w-20 h-20 bg-white rounded-lg flex items-center justify-center shadow-lg">
-                      <DiceComponent className="h-12 w-12 text-black" />
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              [1, 2, 3].map((index) => (
-                <div key={index} className="relative">
-                  <div className={`w-20 h-20 bg-white rounded-lg flex items-center justify-center shadow-lg ${
-                    rolling ? 'animate-spin' : ''
-                  }`}>
-                    <Dice1 className="h-12 w-12 text-black" />
-                  </div>
-                </div>
-              ))
-            )}
+          <div className="flex justify-center mb-6">
+            <DiceAnimation 
+              isRolling={rolling}
+              diceValues={lastRoll ? [lastRoll.dice1, lastRoll.dice2, lastRoll.dice3] : [1, 1, 1]}
+              size={80}
+            />
           </div>
 
           {lastRoll && (
