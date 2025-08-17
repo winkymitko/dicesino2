@@ -81,7 +81,7 @@ router.put('/users/:userId/settings', authenticateToken, requireAdmin, async (re
       diceRouletteEdge,
       maxBetWhileBonus, 
       maxBonusCashout,
-      wageringMultiplier 
+      wageringMultiplier
     } = req.body;
     
     if (diceGameEdge < 0 || diceGameEdge > 50 || 
@@ -136,52 +136,30 @@ router.put('/users/:userId/commission', authenticateToken, requireAdmin, async (
 });
 
 // Add bonus to user
-router.post('/users/:userId/real-bonus', authenticateToken, requireAdmin, async (req, res) => {
+router.post('/users/:userId/bonus', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { userId } = req.params;
-    const { amount, description, wageringMultiplier = 20 } = req.body;
+    const { amount, description } = req.body;
     
     if (amount <= 0) {
       return res.status(400).json({ error: 'Bonus amount must be positive' });
     }
-    
-    const wageringRequired = amount * wageringMultiplier;
     
     // Create bonus record
     await prisma.bonus.create({
       data: {
         userId,
         amount,
-        type: 'admin_real_bonus',
-        description: description || 'Admin granted bonus',
-        wageringRequired,
-        wageringMultiplier
+        type: 'admin_bonus',
+        description
       }
     });
     
-    // Update user bonus balance and wagering requirement
+    // Update user virtual balance
     await prisma.user.update({
       where: { id: userId },
       data: {
-        bonusBalance: { increment: amount },
-        activeWageringRequirement: { increment: wageringRequired }
-      }
-    });
-    
-    // Create transaction record
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    await prisma.transaction.create({
-      data: {
-        userId,
-        type: 'bonus_grant',
-        amount,
-        bonusChange: amount,
-        cashBalanceAfter: user.cashBalance,
-        bonusBalanceAfter: user.bonusBalance,
-        lockedBalanceAfter: user.lockedBalance,
-        virtualBalanceAfter: user.virtualBalance,
-        description: `Admin bonus: ${description || 'Manual grant'}`,
-        reference: 'admin_grant'
+        virtualBalance: { increment: amount }
       }
     });
     
@@ -192,66 +170,6 @@ router.post('/users/:userId/real-bonus', authenticateToken, requireAdmin, async 
   }
 });
 
-// Adjust wagering requirement
-router.post('/users/:userId/adjust-wagering', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { action, amount } = req.body;
-    
-    if (!['add', 'reduce'].includes(action)) {
-      return res.status(400).json({ error: 'Action must be add or reduce' });
-    }
-    
-    if (amount <= 0) {
-      return res.status(400).json({ error: 'Amount must be positive' });
-    }
-    
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    
-    let newWageringRequired = user.activeWageringRequirement;
-    
-    if (action === 'add') {
-      newWageringRequired += amount;
-    } else {
-      newWageringRequired = Math.max(0, newWageringRequired - amount);
-    }
-    
-    // Update user wagering requirement
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        activeWageringRequirement: newWageringRequired
-      }
-    });
-    
-    // Create transaction record for audit
-    await prisma.transaction.create({
-      data: {
-        userId,
-        type: 'wagering_adjustment',
-        amount: action === 'add' ? amount : -amount,
-        cashBalanceAfter: user.cashBalance,
-        bonusBalanceAfter: user.bonusBalance,
-        lockedBalanceAfter: user.lockedBalance,
-        virtualBalanceAfter: user.virtualBalance,
-        description: `Admin ${action === 'add' ? 'increased' : 'reduced'} wagering by $${amount.toFixed(2)}`,
-        reference: 'admin_wagering_adjustment'
-      }
-    });
-    
-    res.json({ 
-      success: true, 
-      newWageringRequired,
-      message: `Wagering ${action === 'add' ? 'increased' : 'reduced'} by $${amount.toFixed(2)}`
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
 // Get game statistics
 router.get('/stats', authenticateToken, requireAdmin, async (req, res) => {
   try {
@@ -367,7 +285,6 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
     
     // Get all games separated by virtual/real
     const virtualGames = await prisma.game.findMany({
-      where: { userId },
       where: {
         userId,
         metadata: { contains: '"useVirtual":true' }
