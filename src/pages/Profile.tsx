@@ -474,7 +474,7 @@ const Profile: React.FC = () => {
                 💳 Top Up
               </Link>
               <button
-                onClick={() => alert('Withdraw feature coming soon! Contact support for manual withdrawals.')}
+                onClick={() => window.location.href = '/topup'}
                 className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-all"
               >
                 💸 Withdraw
