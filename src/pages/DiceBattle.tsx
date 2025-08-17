@@ -204,27 +204,13 @@ const DiceBattle = () => {
             
             <div>
               <label className="block text-sm font-medium mb-2">Balance Type</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setUseVirtual(true)}
-                  className={`p-3 rounded-lg font-bold transition-all ${
-                    useVirtual
-                      ? 'bg-green-500 text-black'
-                      : 'bg-white/10 hover:bg-white/20'
-                  }`}
-                >
-                  Virtual
-                </button>
-                <button
-                  onClick={() => setUseVirtual(false)}
-                  className={`p-3 rounded-lg font-bold transition-all ${
-                    !useVirtual
-                      ? 'bg-yellow-500 text-black'
-                      : 'bg-white/10 hover:bg-white/20'
-                  }`}
-                >
-                  Real
-                </button>
+              <div className="p-3 bg-black/30 border border-white/20 rounded-lg text-center">
+                <span className={`font-bold ${gameMode === 'virtual' ? 'text-purple-400' : 'text-yellow-400'}`}>
+                  {gameMode === 'virtual' ? 'Virtual Mode' : 'Real Money Mode'}
+                </span>
+                <div className="text-xs text-gray-400 mt-1">
+                  Change mode in header
+                </div>
               </div>
             </div>
 
