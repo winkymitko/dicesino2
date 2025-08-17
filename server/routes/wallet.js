@@ -160,8 +160,7 @@ router.post('/check-balance', authenticateToken, async (req, res) => {
           await prisma.user.update({
             where: { id: req.user.id },
             data: {
-              cashBalance: { increment: deposit.amount },
-              totalDeposited: { increment: deposit.amount }
+              cashBalance: { increment: deposit.amount }
             }
           });
           
@@ -364,8 +363,7 @@ router.post('/tron-webhook', async (req, res) => {
       await prisma.user.update({
         where: { id: wallet.userId },
         data: {
-          cashBalance: { increment: amount },
-          totalDeposited: { increment: amount }
+          cashBalance: { increment: amount }
         }
       });
       
@@ -427,8 +425,7 @@ router.post('/webhook', async (req, res) => {
         await prisma.user.update({
           where: { id: wallet.userId },
           data: {
-            cashBalance: { increment: parseFloat(amount) },
-            totalDeposited: { increment: parseFloat(amount) }
+            cashBalance: { increment: parseFloat(amount) }
           }
         });
       }

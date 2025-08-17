@@ -55,14 +55,7 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
         diceBattleEdge: true,
         maxBetWhileBonus: true,
         maxBonusCashout: true,
-        totalDeposited: true,
-        totalWithdrawn: true,
-        totalBets: true,
-        totalWins: true,
-        totalGameWins: true,
-        totalGameLosses: true,
         currentWinStreak: true,
-        maxWinStreak: true,
         createdAt: true
       },
       orderBy: { createdAt: 'desc' }
