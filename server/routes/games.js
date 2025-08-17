@@ -100,7 +100,7 @@ async function determineBetSource(userId, stakeAmount, useVirtual) {
   }
   
   // Check total available balance first
-  const totalAvailable = (user.cashBalance || 0) + (user.bonusBalance || 0);
+  const totalAvailable = (user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0);
   if (totalAvailable < stakeAmount) {
     throw new Error(`Insufficient balance. Available: $${totalAvailable.toFixed(2)}, Required: $${stakeAmount.toFixed(2)}`);
   }
