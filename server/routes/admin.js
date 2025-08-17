@@ -221,62 +221,76 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
   try {
     const { userId } = req.params;
     
-    // Get all games for this user
-    const allGames = await prisma.game.findMany({
+    // Get crypto deposits and withdrawals for real money tracking
+    const deposits = await prisma.cryptoDeposit.findMany({
+      where: { userId, status: 'confirmed' },
+      select: { amount: true }
+    });
+    
+    const withdrawals = await prisma.cryptoWithdrawal.findMany({
+      where: { userId, status: 'completed' },
+      select: { amount: true }
+    });
+    
+    const totalDeposited = deposits.reduce((sum, d) => sum + d.amount, 0);
+    const totalWithdrawn = withdrawals.reduce((sum, w) => sum + w.amount, 0);
+    const casinoProfit = totalDeposited - totalWithdrawn;
+    
+    // Get all games separated by virtual/real
+    const virtualGames = await prisma.game.findMany({
       where: { userId },
-      select: {
-        id: true,
-        gameType: true,
-        stake: true,
-        finalPot: true,
-        status: true,
-        metadata: true,
-        createdAt: true
-      },
-      orderBy: { createdAt: 'desc' }
-    });
-    
-    // Get crypto deposits for real money deposited
-    const cryptoDeposits = await prisma.cryptoDeposit.findMany({
-      where: { userId, status: 'confirmed' }
-    });
-    const realDeposited = cryptoDeposits.reduce((sum, deposit) => sum + (deposit.amount || 0), 0);
-    
-    // Separate games by balance type
-    const virtualGames = allGames.filter(game => {
-      try {
-        const metadata = JSON.parse(game.metadata || '{}');
-        return metadata.useVirtual === true;
-      } catch {
-        return false;
+      where: {
+        userId,
+        metadata: { contains: '"useVirtual":true' }
       }
     });
     
-    const realGames = allGames.filter(game => {
-      try {
-        const metadata = JSON.parse(game.metadata || '{}');
-        return metadata.useVirtual !== true; // Real money games
-      } catch {
-        return true; // Default to real if no metadata
+    const realGames = await prisma.game.findMany({
+      where: {
+        userId,
+        OR: [
+          { metadata: { not: { contains: '"useVirtual":true' } } },
+          { metadata: null }
+        ]
       }
     });
     
     // Helper function to calculate game stats
     const calculateGameStats = (games, gameType) => {
-      const filteredGames = games.filter(g => g.gameType === gameType);
-      const wagered = filteredGames.reduce((sum, game) => sum + (game.stake || 0), 0);
-      const wonAmount = filteredGames.reduce((sum, game) => sum + (game.finalPot || 0), 0);
-      const casinoProfit = wagered - wonAmount;
+      const gameTypeGames = games.filter(g => g.gameType === gameType);
+      
+      const totalGames = gameTypeGames.length;
+      const wins = gameTypeGames.filter(g => g.status === 'cashed_out' || g.status === 'won').length;
+      const losses = gameTypeGames.filter(g => g.status === 'lost').length;
+      const ties = gameTypeGames.filter(g => g.status === 'tie').length;
+      
+      const totalBets = gameTypeGames.reduce((sum, g) => sum + (g.stake || 0), 0);
+      const totalWins = gameTypeGames.reduce((sum, g) => sum + (g.finalPot || 0), 0);
+      const totalLoses = totalBets - totalWins;
       
       return {
-        total: filteredGames.length,
-        won: filteredGames.filter(g => g.status === 'cashed_out' || g.status === 'won').length,
-        lost: filteredGames.filter(g => g.status === 'lost').length,
-        tied: filteredGames.filter(g => g.status === 'tie').length,
-        wagered,
-        wonAmount,
-        casinoProfit
+        totalGames,
+        wins,
+        losses,
+        ties,
+        totalBets,
+        totalWins,
+        totalLoses
       };
+    };
+    
+    // Calculate stats for virtual games
+    const virtualStats = {
+      barboDice: calculateGameStats(virtualGames, 'dice'),
+      diceBattle: calculateGameStats(virtualGames, 'dicebattle'),
+      diceRoulette: calculateGameStats(virtualGames, 'diceroulette')
+    };
+    
+    // Calculate stats for real games
+    const realStats = {
+      barboDice: calculateGameStats(realGames, 'dice'),
+      diceBattle: calculateGameStats(realGames, 'dicebattle'),
+      diceRoulette: calculateGameStats(realGames, 'diceroulette')
     };
     
     // Get current wagering progress (for bonus unlock tracking)
@@ -290,46 +304,19 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
       }
     });
     
-    // Calculate stats for each game type
-    const virtualDiceStats = calculateGameStats(virtualGames, 'dice');
-    const virtualBattleStats = calculateGameStats(virtualGames, 'dicebattle');
-    const virtualRouletteStats = calculateGameStats(virtualGames, 'diceroulette');
-    
-    const realDiceStats = calculateGameStats(realGames, 'dice');
-    const realBattleStats = calculateGameStats(realGames, 'dicebattle');
-    const realRouletteStats = calculateGameStats(realGames, 'diceroulette');
-    
-    // Calculate totals
-    const virtualTotalWagered = virtualDiceStats.wagered + virtualBattleStats.wagered + virtualRouletteStats.wagered;
-    const virtualTotalWon = virtualDiceStats.wonAmount + virtualBattleStats.wonAmount + virtualRouletteStats.wonAmount;
-    const virtualTotalCasinoProfit = virtualDiceStats.casinoProfit + virtualBattleStats.casinoProfit + virtualRouletteStats.casinoProfit;
-    
-    const realTotalWagered = realDiceStats.wagered + realBattleStats.wagered + realRouletteStats.wagered;
-    const realTotalWon = realDiceStats.wonAmount + realBattleStats.wonAmount + realRouletteStats.wonAmount;
-    const realTotalCasinoProfit = realDiceStats.casinoProfit + realBattleStats.casinoProfit + realRouletteStats.casinoProfit;
-    
     res.json({
-      virtual: {
-        dice: virtualDiceStats,
-        battle: virtualBattleStats,
-        roulette: virtualRouletteStats,
-        total: {
-          gamesPlayed: virtualDiceStats.total + virtualBattleStats.total + virtualRouletteStats.total,
-          totalWagered: virtualTotalWagered,
-          casinoProfit: virtualTotalCasinoProfit
-        }
+      // Real money overview
+      realMoney: {
+        totalDeposited,
+        totalWithdrawn,
+        casinoProfit
       },
-      real: {
-        deposited: realDeposited,
-        dice: realDiceStats,
-        battle: realBattleStats,
-        roulette: realRouletteStats,
-        total: {
-          gamesPlayed: realDiceStats.total + realBattleStats.total + realRouletteStats.total,
-          totalWagered: realTotalWagered,
-          casinoProfit: realTotalCasinoProfit
-        }
-      },
+      
+      // Game statistics
+      virtualStats,
+      realStats,
+      
+      // Wagering progress
       wagering: {
         required: user?.activeWageringRequirement || 0,
         progress: user?.currentWageringProgress || 0,

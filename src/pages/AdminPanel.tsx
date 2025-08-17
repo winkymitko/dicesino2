@@ -372,346 +372,256 @@ const AdminPanel: React.FC = () => {
               {/* Expanded User Stats */}
               {expandedUser === user.id && userStats[user.id] && (
                 <div className="border-t border-white/10 p-6 bg-black/20">
-                  <div className="grid md:grid-cols-2 gap-8">
-                    {/* Demo Money Stats */}
-                    <div className="space-y-4">
-                      <h4 className="text-lg font-bold text-purple-400 mb-4">🎮 Demo Money Stats</h4>
-                      
-                      {/* Demo Overview */}
-                      <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
-                        <h5 className="font-bold mb-3">Demo Overview</h5>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <div className="text-purple-400 font-bold">${userStats[user.id].virtual?.deposited?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">Initial + Bonuses</div>
-                          </div>
-                          <div>
-                            <div className="text-purple-400 font-bold">${userStats[user.id].virtual?.wagered?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">Total Wagered</div>
-                          </div>
-                          <div>
-                            <div className="text-purple-400 font-bold">${userStats[user.id].virtual?.won?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">Total Won</div>
-                          </div>
-                          <div>
-                            <div className={`font-bold ${(userStats[user.id].virtual?.netResult || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                              ${(userStats[user.id].virtual?.netResult || 0).toFixed(2)}
-                            </div>
-                            <div className="text-gray-400">Net Result</div>
-                          </div>
+                  {/* Real Money Overview */}
+                  <div className="mb-6 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+                    <h4 className="text-lg font-bold text-yellow-400 mb-4">💰 Real Money Overview</h4>
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-green-400">
+                          ${(userStats[user.id].realMoney?.totalDeposited || 0).toFixed(2)}
                         </div>
+                        <div className="text-gray-400">Total Deposited</div>
                       </div>
-
-                      {/* Demo BarboDice */}
-                      <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                        <h5 className="font-bold mb-3 text-green-400">🎲 Demo BarboDice</h5>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <div className="text-green-400 font-bold">{userStats[user.id].virtual?.diceGames?.total || 0}</div>
-                            <div className="text-gray-400">Games Played</div>
-                          </div>
-                          <div>
-                            <div className="text-green-400 font-bold">{userStats[user.id].virtual?.diceGames?.won || 0}</div>
-                            <div className="text-gray-400">Won (Cashed Out)</div>
-                          </div>
-                          <div>
-                            <div className="text-green-400 font-bold">${userStats[user.id].virtual?.diceGames?.wagered?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">Wagered</div>
-                          </div>
-                          <div>
-                            <div className="text-green-400 font-bold">${userStats[user.id].virtual?.diceGames?.won_amount?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">Won Amount</div>
-                          </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-red-400">
+                          ${(userStats[user.id].realMoney?.totalWithdrawn || 0).toFixed(2)}
                         </div>
+                        <div className="text-gray-400">Total Withdrawn</div>
                       </div>
-
-                      {/* Demo DiceBattle */}
-                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                        <h5 className="font-bold mb-3 text-red-400">⚔️ Demo DiceBattle</h5>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <div className="text-red-400 font-bold">{userStats[user.id].virtual?.battleGames?.total || 0}</div>
-                            <div className="text-gray-400">Battles</div>
-                          </div>
-                          <div>
-                            <div className="text-red-400 font-bold">{userStats[user.id].virtual?.battleGames?.won || 0}W/{userStats[user.id].virtual?.battleGames?.lost || 0}L/{userStats[user.id].virtual?.battleGames?.tied || 0}T</div>
-                            <div className="text-gray-400">W/L/T</div>
-                          </div>
-                          <div>
-                            <div className="text-red-400 font-bold">${userStats[user.id].virtual?.battleGames?.wagered?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">Wagered</div>
-                          </div>
-                          <div>
-                            <div className="text-red-400 font-bold">${userStats[user.id].virtual?.battleGames?.won_amount?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">Won Amount</div>
-                          </div>
+                      <div className="text-center">
+                        <div className={`text-2xl font-bold ${
+                          (userStats[user.id].realMoney?.casinoProfit || 0) >= 0 ? 'text-green-400' : 'text-red-400'
+                        }`}>
+                          ${(userStats[user.id].realMoney?.casinoProfit || 0).toFixed(2)}
                         </div>
+                        <div className="text-gray-400">Casino Profit</div>
                       </div>
-
-                      {/* Virtual BarboDice */}
-                      <div className="mt-6 bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                        <h5 className="font-bold mb-3 text-green-400">🎲 BarboDice</h5>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <div className="text-green-400 font-bold">{userStats[user.id].virtual?.dice?.gamesPlayed || 0}</div>
-                            <div className="text-gray-400">Games Played</div>
-                          </div>
-                          <div>
-                            <div className="text-green-400 font-bold">${userStats[user.id].virtual?.dice?.totalWagered?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">Total Wagered</div>
-                          </div>
-                          <div>
-                            <div className="text-green-400 font-bold">${userStats[user.id].virtual?.dice?.casinoProfit?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">🏦 Casino Profit</div>
-                          </div>
+                    </div>
+                  </div>
+                  
+                  {/* Game Statistics Toggle */}
+                  <div className="mb-4">
+                    <div className="flex items-center space-x-4">
+                      <span className="text-sm font-medium">Game Statistics:</span>
+                      <button
+                        onClick={() => {
+                          const currentMode = userStats[user.id].statsMode || 'real';
+                          setUserStats(prev => ({
+                            ...prev,
+                            [user.id]: {
+                              ...prev[user.id],
+                              statsMode: currentMode === 'real' ? 'virtual' : 'real'
+                            }
+                          }));
+                        }}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          (userStats[user.id].statsMode || 'real') === 'real' ? 'bg-yellow-600' : 'bg-purple-600'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            (userStats[user.id].statsMode || 'real') === 'real' ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                      <span className={`text-sm font-medium ${
+                        (userStats[user.id].statsMode || 'real') === 'real' ? 'text-yellow-400' : 'text-purple-400'
+                      }`}>
+                        {(userStats[user.id].statsMode || 'real') === 'real' ? 'REAL MONEY' : 'VIRTUAL MONEY'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Game Statistics */}
+                  <div className="grid md:grid-cols-3 gap-4">
+                    {/* BarboDice */}
+                    <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                      <h5 className="font-bold mb-3 text-green-400 text-center">🎲 BarboDice</h5>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span>Games:</span>
+                          <span className="font-bold">
+                            {(userStats[user.id].statsMode || 'real') === 'real' 
+                              ? userStats[user.id].realStats?.barboDice?.totalGames || 0
+                              : userStats[user.id].virtualStats?.barboDice?.totalGames || 0
+                            }
+                          </span>
                         </div>
-                      </div>
-
-                      {/* Virtual DiceBattle */}
-                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                        <h5 className="font-bold mb-3 text-red-400">⚔️ DiceBattle</h5>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <div className="text-red-400 font-bold">{userStats[user.id].virtual?.battle?.gamesPlayed || 0}</div>
-                            <div className="text-gray-400">Battles</div>
-                          </div>
-                          <div>
-                            <div className="text-red-400 font-bold">${userStats[user.id].virtual?.battle?.totalWagered?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">Total Wagered</div>
-                          </div>
-                          <div>
-                            <div className="text-red-400 font-bold">${userStats[user.id].virtual?.battle?.casinoProfit?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">🏦 Casino Profit</div>
-                          </div>
+                        <div className="flex justify-between">
+                          <span>Wins:</span>
+                          <span className="text-green-400 font-bold">
+                            {(userStats[user.id].statsMode || 'real') === 'real' 
+                              ? userStats[user.id].realStats?.barboDice?.wins || 0
+                              : userStats[user.id].virtualStats?.barboDice?.wins || 0
+                            }
+                          </span>
                         </div>
-                      </div>
-
-                      {/* Virtual DiceRoulette */}
-                      <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
-                        <h5 className="font-bold mb-3 text-orange-400">🎯 DiceRoulette</h5>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <div className="text-orange-400 font-bold">{userStats[user.id].virtual?.roulette?.gamesPlayed || 0}</div>
-                            <div className="text-gray-400">Games Played</div>
-                          </div>
-                          <div>
-                            <div className="text-orange-400 font-bold">${userStats[user.id].virtual?.roulette?.totalWagered?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">Total Wagered</div>
-                          </div>
-                          <div>
-                            <div className="text-orange-400 font-bold">${userStats[user.id].virtual?.roulette?.casinoProfit?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">🏦 Casino Profit</div>
-                          </div>
+                        <div className="flex justify-between">
+                          <span>Losses:</span>
+                          <span className="text-red-400 font-bold">
+                            {(userStats[user.id].statsMode || 'real') === 'real' 
+                              ? userStats[user.id].realStats?.barboDice?.losses || 0
+                              : userStats[user.id].virtualStats?.barboDice?.losses || 0
+                            }
+                          </span>
                         </div>
-                      </div>
-
-                      {/* Virtual Total */}
-                      <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
-                        <h5 className="font-bold mb-3 text-purple-400">📊 Virtual Total</h5>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <div className="text-purple-400 font-bold">{userStats[user.id].virtual?.total?.gamesPlayed || 0}</div>
-                            <div className="text-gray-400">Total Games</div>
-                          </div>
-                          <div>
-                            <div className="text-purple-400 font-bold">${userStats[user.id].virtual?.total?.totalWagered?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">Total Wagered</div>
-                          </div>
-                          <div>
-                            <div className="text-purple-400 font-bold">${userStats[user.id].virtual?.total?.casinoProfit?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">🏦 Total Casino Profit</div>
-                          </div>
+                        <div className="flex justify-between">
+                          <span>Total Bets:</span>
+                          <span className="font-bold">
+                            ${((userStats[user.id].statsMode || 'real') === 'real' 
+                              ? userStats[user.id].realStats?.barboDice?.totalBets || 0
+                              : userStats[user.id].virtualStats?.barboDice?.totalBets || 0
+                            ).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Total Wins:</span>
+                          <span className="text-green-400 font-bold">
+                            ${((userStats[user.id].statsMode || 'real') === 'real' 
+                              ? userStats[user.id].realStats?.barboDice?.totalWins || 0
+                              : userStats[user.id].virtualStats?.barboDice?.totalWins || 0
+                            ).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Total Loses:</span>
+                          <span className="text-red-400 font-bold">
+                            ${((userStats[user.id].statsMode || 'real') === 'real' 
+                              ? userStats[user.id].realStats?.barboDice?.totalLoses || 0
+                              : userStats[user.id].virtualStats?.barboDice?.totalLoses || 0
+                            ).toFixed(2)}
+                          </span>
                         </div>
                       </div>
                     </div>
-
-                    {/* Real Money Stats */}
-                    <div className="space-y-4">
-                      <h4 className="text-lg font-bold text-yellow-400 mb-4">💰 Real Money Stats</h4>
-                      
-                      {/* Real Money Overview */}
-                      <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-                        <h5 className="font-bold mb-3">Real Money Overview</h5>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <div className="text-yellow-400 font-bold">${userStats[user.id].real?.deposited?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">Deposited</div>
-                          </div>
-                          <div>
-                            <div className="text-yellow-400 font-bold">${userStats[user.id].real?.wagered?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">Total Wagered</div>
-                          </div>
-                          <div>
-                            <div className="text-yellow-400 font-bold">${userStats[user.id].real?.won?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">Total Won</div>
-                          </div>
-                          <div>
-                            <div className="text-green-400 font-bold">${userStats[user.id].real?.totalCasinoProfit?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">🏦 Casino Profit</div>
-                          </div>
+                    
+                    {/* DiceBattle */}
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                      <h5 className="font-bold mb-3 text-red-400 text-center">⚔️ DiceBattle</h5>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span>Games:</span>
+                          <span className="font-bold">
+                            {(userStats[user.id].statsMode || 'real') === 'real' 
+                              ? userStats[user.id].realStats?.diceBattle?.totalGames || 0
+                              : userStats[user.id].virtualStats?.diceBattle?.totalGames || 0
+                            }
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Wins:</span>
+                          <span className="text-green-400 font-bold">
+                            {(userStats[user.id].statsMode || 'real') === 'real' 
+                              ? userStats[user.id].realStats?.diceBattle?.wins || 0
+                              : userStats[user.id].virtualStats?.diceBattle?.wins || 0
+                            }
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Losses:</span>
+                          <span className="text-red-400 font-bold">
+                            {(userStats[user.id].statsMode || 'real') === 'real' 
+                              ? userStats[user.id].realStats?.diceBattle?.losses || 0
+                              : userStats[user.id].virtualStats?.diceBattle?.losses || 0
+                            }
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Ties:</span>
+                          <span className="text-yellow-400 font-bold">
+                            {(userStats[user.id].statsMode || 'real') === 'real' 
+                              ? userStats[user.id].realStats?.diceBattle?.ties || 0
+                              : userStats[user.id].virtualStats?.diceBattle?.ties || 0
+                            }
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Total Bets:</span>
+                          <span className="font-bold">
+                            ${((userStats[user.id].statsMode || 'real') === 'real' 
+                              ? userStats[user.id].realStats?.diceBattle?.totalBets || 0
+                              : userStats[user.id].virtualStats?.diceBattle?.totalBets || 0
+                            ).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Total Wins:</span>
+                          <span className="text-green-400 font-bold">
+                            ${((userStats[user.id].statsMode || 'real') === 'real' 
+                              ? userStats[user.id].realStats?.diceBattle?.totalWins || 0
+                              : userStats[user.id].virtualStats?.diceBattle?.totalWins || 0
+                            ).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Total Loses:</span>
+                          <span className="text-red-400 font-bold">
+                            ${((userStats[user.id].statsMode || 'real') === 'real' 
+                              ? userStats[user.id].realStats?.diceBattle?.totalLoses || 0
+                              : userStats[user.id].virtualStats?.diceBattle?.totalLoses || 0
+                            ).toFixed(2)}
+                          </span>
                         </div>
                       </div>
-
-                      {/* Real BarboDice */}
-                      <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                        <h5 className="font-bold mb-3 text-green-400">🎲 Real BarboDice</h5>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <div className="text-green-400 font-bold">{userStats[user.id].real?.diceGames?.total || 0}</div>
-                            <div className="text-gray-400">Games Played</div>
-                          </div>
-                          <div>
-                            <div className="text-green-400 font-bold">{userStats[user.id].real?.diceGames?.won || 0}</div>
-                            <div className="text-gray-400">Won (Cashed Out)</div>
-                          </div>
-                          <div>
-                            <div className="text-green-400 font-bold">${userStats[user.id].real?.diceGames?.wagered?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">Wagered</div>
-                          </div>
-                          <div>
-                            <div className="text-green-400 font-bold">${userStats[user.id].real?.diceCasinoProfit?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">🏦 Casino Profit</div>
-                          </div>
+                    </div>
+                    
+                    {/* DiceRoulette */}
+                    <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
+                      <h5 className="font-bold mb-3 text-orange-400 text-center">🎯 DiceRoulette</h5>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span>Games:</span>
+                          <span className="font-bold">
+                            {(userStats[user.id].statsMode || 'real') === 'real' 
+                              ? userStats[user.id].realStats?.diceRoulette?.totalGames || 0
+                              : userStats[user.id].virtualStats?.diceRoulette?.totalGames || 0
+                            }
+                          </span>
                         </div>
-                      </div>
-
-                      {/* Real BarboDice */}
-                      <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                        <h5 className="font-bold mb-3 text-green-400">🎲 BarboDice</h5>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <div className="text-green-400 font-bold">{userStats[user.id].real?.dice?.total || 0}</div>
-                            <div className="text-gray-400">Games Played</div>
-                          </div>
-                          <div>
-                            <div className="text-green-400 font-bold">${userStats[user.id].real?.dice?.wagered?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">Total Wagered</div>
-                          </div>
-                          <div>
-                            <div className="text-green-400 font-bold">${userStats[user.id].real?.dice?.casinoProfit?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">🏦 Casino Profit</div>
-                          </div>
+                        <div className="flex justify-between">
+                          <span>Wins:</span>
+                          <span className="text-green-400 font-bold">
+                            {(userStats[user.id].statsMode || 'real') === 'real' 
+                              ? userStats[user.id].realStats?.diceRoulette?.wins || 0
+                              : userStats[user.id].virtualStats?.diceRoulette?.wins || 0
+                            }
+                          </span>
                         </div>
-                      </div>
-
-                      {/* Real DiceBattle */}
-                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                        <h5 className="font-bold mb-3 text-red-400">⚔️ DiceBattle</h5>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <div className="text-red-400 font-bold">{userStats[user.id].real?.battle?.total || 0}</div>
-                            <div className="text-gray-400">Battles</div>
-                          </div>
-                          <div>
-                            <div className="text-red-400 font-bold">${userStats[user.id].real?.battle?.wagered?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">Total Wagered</div>
-                          </div>
-                          <div>
-                            <div className="text-red-400 font-bold">${userStats[user.id].real?.battle?.casinoProfit?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">🏦 Casino Profit</div>
-                          </div>
+                        <div className="flex justify-between">
+                          <span>Losses:</span>
+                          <span className="text-red-400 font-bold">
+                            {(userStats[user.id].statsMode || 'real') === 'real' 
+                              ? userStats[user.id].realStats?.diceRoulette?.losses || 0
+                              : userStats[user.id].virtualStats?.diceRoulette?.losses || 0
+                            }
+                          </span>
                         </div>
-                      </div>
-
-                      {/* Real DiceRoulette */}
-                      <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
-                        <h5 className="font-bold mb-3 text-orange-400">🎯 DiceRoulette</h5>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <div className="text-orange-400 font-bold">{userStats[user.id].real?.roulette?.total || 0}</div>
-                            <div className="text-gray-400">Games Played</div>
-                          </div>
-                          <div>
-                            <div className="text-orange-400 font-bold">${userStats[user.id].real?.roulette?.wagered?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">Total Wagered</div>
-                          </div>
-                          <div>
-                            <div className="text-orange-400 font-bold">${userStats[user.id].real?.roulette?.casinoProfit?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">🏦 Casino Profit</div>
-                          </div>
+                        <div className="flex justify-between">
+                          <span>Total Bets:</span>
+                          <span className="font-bold">
+                            ${((userStats[user.id].statsMode || 'real') === 'real' 
+                              ? userStats[user.id].realStats?.diceRoulette?.totalBets || 0
+                              : userStats[user.id].virtualStats?.diceRoulette?.totalBets || 0
+                            ).toFixed(2)}
+                          </span>
                         </div>
-                      </div>
-
-                      {/* Real Total */}
-                      <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-                        <h5 className="font-bold mb-3 text-yellow-400">📊 Real Money Total</h5>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <div className="text-yellow-400 font-bold">${userStats[user.id].real?.deposited?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">Total Deposited</div>
-                          </div>
-                          <div>
-                            <div className="text-yellow-400 font-bold">{userStats[user.id].real?.total?.gamesPlayed || 0}</div>
-                            <div className="text-gray-400">Total Games</div>
-                          </div>
-                          <div>
-                            <div className="text-yellow-400 font-bold">${userStats[user.id].real?.total?.totalWagered?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">Total Wagered</div>
-                          </div>
-                          <div>
-                            <div className="text-yellow-400 font-bold">${userStats[user.id].real?.total?.casinoProfit?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">Casino Profit</div>
-                          </div>
+                        <div className="flex justify-between">
+                          <span>Total Wins:</span>
+                          <span className="text-green-400 font-bold">
+                            ${((userStats[user.id].statsMode || 'real') === 'real' 
+                              ? userStats[user.id].realStats?.diceRoulette?.totalWins || 0
+                              : userStats[user.id].virtualStats?.diceRoulette?.totalWins || 0
+                            ).toFixed(2)}
+                          </span>
                         </div>
-                      </div>
-
-                      {/* Recent Games */}
-                      <div className="bg-gray-500/10 border border-gray-500/20 rounded-lg p-4">
-                        <h5 className="font-bold mb-3 text-gray-400">🎮 Recent Real Money Games</h5>
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-xs">
-                            <thead>
-                              <tr className="border-b border-white/20">
-                                <th className="text-left p-2">Date</th>
-                                <th className="text-left p-2">Game</th>
-                                <th className="text-left p-2">Bet</th>
-                                <th className="text-left p-2">Result</th>
-                                <th className="text-left p-2">Won</th>
-                                <th className="text-left p-2">Casino Profit</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {userStats[user.id].real?.recentGames?.slice(0, 5).map((game: any) => (
-                                <tr key={game.id} className="border-b border-white/10">
-                                  <td className="p-2">{new Date(game.createdAt).toLocaleDateString()}</td>
-                                  <td className="p-2">
-                                    <span className={`px-2 py-1 rounded text-xs ${
-                                      game.gameType === 'dice' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                                    }`}>
-                                      {game.gameType === 'dice' ? '🎲' : '⚔️'}
-                                    </span>
-                                  </td>
-                                  <td className="p-2">${game.stake?.toFixed(2)}</td>
-                                  <td className="p-2">
-                                    <span className={`px-2 py-1 rounded text-xs ${
-                                      game.status === 'cashed_out' || game.status === 'won' ? 'bg-green-500/20 text-green-400' :
-                                      game.status === 'tie' ? 'bg-yellow-500/20 text-yellow-400' :
-                                      'bg-red-500/20 text-red-400'
-                                    }`}>
-                                      {game.status === 'cashed_out' ? 'Won' : 
-                                       game.status === 'won' ? 'Won' :
-                                       game.status === 'tie' ? 'Tie' : 'Lost'}
-                                    </span>
-                                  </td>
-                                  <td className="p-2">${game.finalPot?.toFixed(2) || '0.00'}</td>
-                                  <td className="p-2">
-                                    <span className={`font-bold ${
-                                      game.casinoProfit > 0 ? 'text-green-400' : 
-                                      game.casinoProfit < 0 ? 'text-red-400' : 'text-gray-400'
-                                    }`}>
-                                      {game.casinoProfit > 0 ? '+' : ''}${game.casinoProfit?.toFixed(2) || '0.00'}
-                                    </span>
-                                  </td>
-                                </tr>
-                              )) || (
-                                <tr>
-                                  <td colSpan={6} className="p-4 text-center text-gray-400">
-                                    No real money games found
-                                  </td>
-                                </tr>
-                              )}
-                            </tbody>
-                          </table>
+                        <div className="flex justify-between">
+                          <span>Total Loses:</span>
+                          <span className="text-red-400 font-bold">
+                            ${((userStats[user.id].statsMode || 'real') === 'real' 
+                              ? userStats[user.id].realStats?.diceRoulette?.totalLoses || 0
+                              : userStats[user.id].virtualStats?.diceRoulette?.totalLoses || 0
+                            ).toFixed(2)}
+                          </span>
                         </div>
                       </div>
                     </div>
