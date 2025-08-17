@@ -259,7 +259,7 @@ router.post('/dice/start', authenticateToken, async (req, res) => {
     });
     
     // Update user balances
-    const updateData = { totalBets: { increment: numericStake } };
+    const updateData = {};
     if (useVirtual) {
       updateData.virtualBalance = { decrement: virtualUsed };
     } else {
@@ -367,7 +367,6 @@ router.post('/dice/roll', authenticateToken, async (req, res) => {
       await prisma.user.update({
         where: { id: req.user.id },
         data: {
-          totalGameLosses: { increment: 1 },
           currentWinStreak: 0
         }
       });
@@ -426,7 +425,6 @@ router.post('/dice/cashout', authenticateToken, async (req, res) => {
         where: { id: req.user.id },
         data: {
           virtualBalance: { increment: game.totalPot },
-          totalGameWins: { increment: 1 },
           currentWinStreak: { increment: 1 }
         }
       });
@@ -442,8 +440,6 @@ router.post('/dice/cashout', authenticateToken, async (req, res) => {
       
       // Update user balance and stats
       const updateData = {
-        totalWins: { increment: game.totalPot },
-        totalGameWins: { increment: 1 },
         currentWinStreak: { increment: 1 }
       };
       
@@ -687,7 +683,7 @@ router.post('/diceroulette/roll', authenticateToken, async (req, res) => {
     });
     
     // Update user balances
-    const updateData = { totalBets: { increment: totalBet } };
+    const updateData = {};
     if (useVirtual) {
       updateData.virtualBalance = { decrement: virtualUsed };
       if (totalWin > 0) updateData.virtualBalance = { increment: totalWin };
@@ -712,8 +708,7 @@ router.post('/diceroulette/roll', authenticateToken, async (req, res) => {
       );
       
       const winUpdateData = {
-        totalWins: { increment: totalWin },
-        totalGameWins: { increment: 1 }
+        currentWinStreak: { increment: 1 }
       };
       
       if (cashWin > 0) winUpdateData.cashBalance = { increment: cashWin };
@@ -813,7 +808,7 @@ router.post('/dicebattle/start', authenticateToken, async (req, res) => {
     });
     
     // Update user balances
-    const updateData = { totalBets: { increment: numericStake } };
+    const updateData = {};
     if (useVirtual) {
       updateData.virtualBalance = { decrement: virtualUsed };
     } else {
@@ -966,7 +961,6 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
           where: { id: req.user.id },
           data: {
             virtualBalance: { increment: winnings },
-            totalGameWins: { increment: 1 },
             currentWinStreak: { increment: 1 }
           }
         });
@@ -982,8 +976,6 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
         
         // Update user balance and stats
         const updateData = {
-          totalWins: { increment: winnings },
-          totalGameWins: { increment: 1 },
           currentWinStreak: { increment: 1 }
         };
         
@@ -1025,7 +1017,6 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
       await prisma.user.update({
         where: { id: req.user.id },
         data: {
-          totalGameLosses: { increment: 1 },
           currentWinStreak: 0
         }
       });
