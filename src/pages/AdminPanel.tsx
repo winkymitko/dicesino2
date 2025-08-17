@@ -18,6 +18,7 @@ const AdminPanel: React.FC = () => {
   const [diceRouletteEdge, setDiceRouletteEdge] = useState('5.0');
   const [maxBetWhileBonus, setMaxBetWhileBonus] = useState('50');
   const [maxBonusCashout, setMaxBonusCashout] = useState('1000');
+  const [wageringMultiplier, setWageringMultiplier] = useState('20');
 
   // Bot management state
   const [botNames, setBotNames] = useState<string[]>([]);
@@ -130,8 +131,10 @@ const AdminPanel: React.FC = () => {
         body: JSON.stringify({ 
           diceGameEdge: parseFloat(diceGameEdge),
           diceBattleEdge: parseFloat(diceBattleEdge),
+          diceRouletteEdge: parseFloat(diceRouletteEdge),
           maxBetWhileBonus: parseFloat(maxBetWhileBonus),
-          maxBonusCashout: parseFloat(maxBonusCashout)
+          maxBonusCashout: parseFloat(maxBonusCashout),
+          wageringMultiplier: parseFloat(wageringMultiplier)
         })
       });
 
@@ -144,19 +147,20 @@ const AdminPanel: React.FC = () => {
         alert(error.error);
       }
     } catch (error) {
-      console.error('Failed to update win chance:', error);
+      console.error('Failed to update settings:', error);
     }
   };
 
-  const addBonus = async (userId: string) => {
+  const grantRealBonus = async (userId: string) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}/bonus`, {
+      const response = await fetch(`/api/admin/users/${userId}/real-bonus`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
           amount: parseFloat(bonusAmount),
-          description: bonusDescription
+          description: bonusDescription,
+          wageringMultiplier: parseFloat(wageringMultiplier)
         })
       });
 
@@ -165,13 +169,47 @@ const AdminPanel: React.FC = () => {
         setBonusAmount('');
         setBonusDescription('');
         setSelectedUser(null);
-        alert('Bonus added successfully');
+        alert('Real money bonus granted successfully');
       } else {
         const error = await response.json();
         alert(error.error);
       }
     } catch (error) {
-      console.error('Failed to add bonus:', error);
+      console.error('Failed to grant bonus:', error);
+    }
+  };
+
+  const adjustWagering = async (userId: string, action: 'add' | 'reduce') => {
+    try {
+      const inputId = `${action}-wagering-${userId}`;
+      const input = document.getElementById(inputId) as HTMLInputElement;
+      const amount = parseFloat(input.value);
+      
+      if (!amount || amount <= 0) {
+        alert('Please enter a valid amount');
+        return;
+      }
+      
+      const response = await fetch(`/api/admin/users/${userId}/adjust-wagering`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          action,
+          amount
+        })
+      });
+
+      if (response.ok) {
+        fetchUsers();
+        input.value = '';
+        alert(`Wagering ${action === 'add' ? 'increased' : 'reduced'} by $${amount.toFixed(2)}`);
+      } else {
+        const error = await response.json();
+        alert(error.error);
+      }
+    } catch (error) {
+      console.error('Failed to adjust wagering:', error);
     }
   };
 
@@ -390,10 +428,8 @@ const AdminPanel: React.FC = () => {
                       setSelectedUser(user);
                       setDiceGameEdge(user.diceGameEdge?.toString() || '5.0');
                       setDiceBattleEdge(user.diceBattleEdge?.toString() || '5.0');
-                      setDiceRouletteEdge(user.diceRouletteEdge?.toString() || '5.0');
                       setMaxBetWhileBonus(user.maxBetWhileBonus?.toString() || '50');
                       setMaxBonusCashout(user.maxBonusCashout?.toString() || '1000');
-                      setWageringMultiplier(user.wageringMultiplier?.toString() || '20');
                     }}
                     className="bg-yellow-500/20 text-yellow-400 px-4 py-2 rounded-lg hover:bg-yellow-500/30 transition-colors"
                   >
