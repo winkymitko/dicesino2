@@ -389,6 +389,52 @@ const Profile: React.FC = () => {
                         <button
                           onClick={async () => {
                             const commissionEarned = (referral.casinoProfit || 0) * (user.affiliateCommission || 0) / 100;
+                            
+                            if (commissionEarned <= 0) {
+                              alert('No commission earned from this referral yet.');
+                              return;
+                            }
+                            
+                            const confirmed = confirm(`Request payout of $${commissionEarned.toFixed(2)} commission from ${referral.email}?`);
+                            if (!confirmed) return;
+                            
+                            try {
+                              const response = await fetch('/api/affiliate/request-referral-payout', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                credentials: 'include',
+                                body: JSON.stringify({ 
+                                  referralId: referral.id,
+                                  amount: commissionEarned
+                                })
+                              });
+                              if (response.ok) {
+                                alert('Per-referral payout request submitted!');
+                                fetchAffiliateStats();
+                              } else {
+                                const error = await response.json();
+                                alert(error.error);
+                              }
+                            } catch (error) {
+                              alert('Failed to submit payout request');
+                            }
+                          }}
+                          className="mt-2 bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded text-xs hover:bg-yellow-500/30 transition-colors"
+                        >
+                          Request Payout
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-gray-400 py-8">
+                    No referrals yet. Share your referral link to start earning!
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
