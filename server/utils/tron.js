@@ -188,15 +188,6 @@ export async function checkNewDeposits(address, lastCheckedTimestamp = 0) {
   }
 }
 
-// Validate TRON address format
-export function isValidTronAddress(address) {
-  try {
-    return tronWeb.isAddress(address);
-  } catch (error) {
-    return false;
-  }
-}
-
 // Get current TRX balance (for gas fees)
 export async function getTRXBalance(address) {
   try {
