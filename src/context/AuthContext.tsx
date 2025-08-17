@@ -29,6 +29,8 @@ interface AuthContextType {
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  gameMode: 'virtual' | 'real';
+  setGameMode: (mode: 'virtual' | 'real') => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -43,6 +45,7 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [gameMode, setGameMode] = useState<'virtual' | 'real'>('virtual');
 
   const login = async (email: string, password: string) => {
     const response = await fetch('/api/auth/login', {
@@ -104,7 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, login, register, logout, refreshUser, gameMode, setGameMode }}>
       {children}
     </AuthContext.Provider>
   );

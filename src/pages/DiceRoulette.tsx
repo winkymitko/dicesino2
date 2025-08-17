@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Target, DollarSign } from 'lucide-react';
+import { Target, DollarSign, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import DiceAnimation from '../components/DiceAnimation';
 
 const DiceRoulette: React.FC = () => {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, gameMode } = useAuth();
   const navigate = useNavigate();
   
   const [bets, setBets] = useState<{[key: string]: number}>({});
   const [totalBet, setTotalBet] = useState(0);
-  const [useVirtual, setUseVirtual] = useState(true);
   const [rolling, setRolling] = useState(false);
   const [lastRoll, setLastRoll] = useState<any>(null);
   const [results, setResults] = useState<any>(null);
   const [error, setError] = useState('');
+  const [showBetModal, setShowBetModal] = useState<string | null>(null);
+  const [betAmount, setBetAmount] = useState(1);
 
   useEffect(() => {
     if (!user) navigate('/login');
@@ -26,13 +28,12 @@ const DiceRoulette: React.FC = () => {
 
   if (!user) return null;
 
-  const diceComponents = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
-
   const placeBet = (betType: string, amount: number) => {
     setBets(prev => ({
       ...prev,
       [betType]: (prev[betType] || 0) + amount
     }));
+    setShowBetModal(null);
   };
 
   const clearBets = () => {
@@ -53,7 +54,7 @@ const DiceRoulette: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ bets, useVirtual })
+        body: JSON.stringify({ bets, useVirtual: gameMode === 'virtual' })
       });
 
       if (!response.ok) {
@@ -63,7 +64,7 @@ const DiceRoulette: React.FC = () => {
 
       const data = await response.json();
       
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 3000));
       
       setLastRoll(data.roll);
       setResults(data.results);
@@ -76,6 +77,51 @@ const DiceRoulette: React.FC = () => {
       setRolling(false);
     }
   };
+
+  const BetModal: React.FC<{ betType: string; label: string; payout: string }> = ({ betType, label, payout }) => (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-gray-900 rounded-2xl border border-white/20 p-6 w-full max-w-md mx-4">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold">{label}</h3>
+          <button onClick={() => setShowBetModal(null)}>
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+        <p className="text-gray-400 text-sm mb-4">Payout: {payout}</p>
+        
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2">Bet Amount</label>
+          <input
+            type="number"
+            min="0.1"
+            step="0.1"
+            value={betAmount}
+            onChange={(e) => setBetAmount(parseFloat(e.target.value) || 1)}
+            className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
+          />
+        </div>
+        
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          {[0.5, 1, 5, 10].map(amount => (
+            <button
+              key={amount}
+              onClick={() => setBetAmount(amount)}
+              className="p-2 bg-blue-500/20 hover:bg-blue-500/30 rounded text-sm"
+            >
+              ${amount}
+            </button>
+          ))}
+        </div>
+        
+        <button
+          onClick={() => placeBet(betType, betAmount)}
+          className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 rounded-lg transition-all"
+        >
+          Place Bet: ${betAmount.toFixed(2)}
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -101,23 +147,12 @@ const DiceRoulette: React.FC = () => {
 
       {/* Dice Display */}
       <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 mb-6">
-        <div className="flex justify-center space-x-4 mb-6">
-          {lastRoll ? (
-            [lastRoll.dice1, lastRoll.dice2, lastRoll.dice3].map((die: number, index: number) => {
-              const DiceComponent = diceComponents[die - 1];
-              return (
-                <div key={index} className="w-20 h-20 bg-white rounded-lg flex items-center justify-center shadow-lg">
-                  <DiceComponent className="h-12 w-12 text-black" />
-                </div>
-              );
-            })
-          ) : (
-            [1, 2, 3].map((index) => (
-              <div key={index} className={`w-20 h-20 bg-white rounded-lg flex items-center justify-center shadow-lg ${rolling ? 'animate-spin' : ''}`}>
-                <Dice1 className="h-12 w-12 text-black" />
-              </div>
-            ))
-          )}
+        <div className="flex justify-center mb-6">
+          <DiceAnimation 
+            isRolling={rolling}
+            diceValues={lastRoll ? [lastRoll.dice1, lastRoll.dice2, lastRoll.dice3] : [1, 1, 1]}
+            size={80}
+          />
         </div>
         
         {lastRoll && (
@@ -140,27 +175,21 @@ const DiceRoulette: React.FC = () => {
       <div className="grid md:grid-cols-2 gap-6 mb-6">
         {/* Number Bets */}
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-          <h3 className="text-xl font-bold mb-4">Number Bets (2.2x)</h3>
-          <div className="grid grid-cols-3 gap-3">
+          <h3 className="text-xl font-bold mb-4">Number Bets</h3>
+          <div className="grid grid-cols-2 gap-3">
             {[1, 2, 3, 4, 5, 6].map(num => (
-              <div key={num} className="text-center">
-                <div className="bg-blue-500/20 rounded-lg p-3 mb-2">
-                  <div className="text-lg font-bold">{num}</div>
-                  <div className="text-xs text-gray-400">Any die shows {num}</div>
-                </div>
-                <div className="text-sm font-bold">${(bets[`number_${num}`] || 0).toFixed(2)}</div>
-                <div className="flex gap-1 mt-1">
-                  {[1, 5, 10].map(amount => (
-                    <button
-                      key={amount}
-                      onClick={() => placeBet(`number_${num}`, amount)}
-                      className="px-2 py-1 bg-blue-500/30 hover:bg-blue-500/50 rounded text-xs"
-                    >
-                      ${amount}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <button
+                key={num}
+                onClick={() => setShowBetModal(`number_${num}`)}
+                className="bg-blue-500/20 hover:bg-blue-500/30 rounded-lg p-4 transition-all"
+              >
+                <div className="text-lg font-bold">{num}</div>
+                <div className="text-xs text-gray-400">Any die shows {num}</div>
+                <div className="text-sm text-green-400">2.2x payout</div>
+                {bets[`number_${num}`] && (
+                  <div className="text-sm font-bold mt-2">${bets[`number_${num}`].toFixed(2)}</div>
+                )}
+              </button>
             ))}
           </div>
         </div>
@@ -168,33 +197,28 @@ const DiceRoulette: React.FC = () => {
         {/* Sum Bets */}
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
           <h3 className="text-xl font-bold mb-4">Sum Bets</h3>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {[
               { type: 'odd', label: 'Odd Sum', payout: '1.9x' },
               { type: 'even', label: 'Even Sum', payout: '1.9x' },
               { type: 'low', label: 'Low (3-9)', payout: '1.9x' },
               { type: 'high', label: 'High (10-18)', payout: '1.9x' }
             ].map(bet => (
-              <div key={bet.type} className="flex items-center justify-between bg-green-500/20 rounded-lg p-3">
-                <div>
-                  <div className="font-bold">{bet.label}</div>
-                  <div className="text-xs text-gray-400">{bet.payout}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-bold">${(bets[bet.type] || 0).toFixed(2)}</div>
-                  <div className="flex gap-1 mt-1">
-                    {[1, 5, 10].map(amount => (
-                      <button
-                        key={amount}
-                        onClick={() => placeBet(bet.type, amount)}
-                        className="px-2 py-1 bg-green-500/30 hover:bg-green-500/50 rounded text-xs"
-                      >
-                        ${amount}
-                      </button>
-                    ))}
+              <button
+                key={bet.type}
+                onClick={() => setShowBetModal(bet.type)}
+                className="w-full bg-green-500/20 hover:bg-green-500/30 rounded-lg p-4 transition-all text-left"
+              >
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="font-bold">{bet.label}</div>
+                    <div className="text-xs text-gray-400">{bet.payout}</div>
                   </div>
+                  {bets[bet.type] && (
+                    <div className="text-sm font-bold">${bets[bet.type].toFixed(2)}</div>
+                  )}
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -202,28 +226,8 @@ const DiceRoulette: React.FC = () => {
 
       {/* Controls */}
       <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-4">
-            <div className="text-lg font-bold">Total Bet: ${totalBet.toFixed(2)}</div>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => setUseVirtual(true)}
-                className={`px-4 py-2 rounded-lg font-bold transition-all ${
-                  useVirtual ? 'bg-green-500 text-black' : 'bg-white/10 hover:bg-white/20'
-                }`}
-              >
-                Virtual
-              </button>
-              <button
-                onClick={() => setUseVirtual(false)}
-                className={`px-4 py-2 rounded-lg font-bold transition-all ${
-                  !useVirtual ? 'bg-yellow-500 text-black' : 'bg-white/10 hover:bg-white/20'
-                }`}
-              >
-                Real
-              </button>
-            </div>
-          </div>
+        <div className="flex items-center justify-between">
+          <div className="text-lg font-bold">Total Bet: ${totalBet.toFixed(2)}</div>
           <div className="flex space-x-3">
             <button
               onClick={clearBets}
@@ -242,6 +246,22 @@ const DiceRoulette: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Bet Modal */}
+      {showBetModal && (
+        <BetModal
+          betType={showBetModal}
+          label={
+            showBetModal.startsWith('number_') 
+              ? `Any die shows ${showBetModal.split('_')[1]}`
+              : showBetModal === 'odd' ? 'Odd Sum'
+              : showBetModal === 'even' ? 'Even Sum'
+              : showBetModal === 'low' ? 'Low (3-9)'
+              : 'High (10-18)'
+          }
+          payout={showBetModal.startsWith('number_') ? '2.2x' : '1.9x'}
+        />
+      )}
     </div>
   );
 };

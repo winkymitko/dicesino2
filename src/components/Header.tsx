@@ -1,13 +1,14 @@
 import React from 'react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Dice6, User, LogOut, Settings, Plus, ChevronDown } from 'lucide-react';
+import { Dice6, User, LogOut, Settings, Plus, ChevronDown, Mail } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Header: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, gameMode, setGameMode } = useAuth();
   const navigate = useNavigate();
   const [showBalanceBreakdown, setShowBalanceBreakdown] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -43,6 +44,29 @@ const Header: React.FC = () => {
               <Link to="/diceroulette" className="text-gray-300 hover:text-white transition-colors">
                 DiceRoulette
               </Link>
+            )}
+            
+            {/* Game Mode Toggle */}
+            {user && !user.isAffiliate && (
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setGameMode(gameMode === 'virtual' ? 'real' : 'virtual')}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    gameMode === 'real' ? 'bg-green-600' : 'bg-purple-600'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      gameMode === 'real' ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+                <span className={`text-xs font-medium ${
+                  gameMode === 'real' ? 'text-green-400' : 'text-purple-400'
+                }`}>
+                  {gameMode === 'real' ? 'REAL' : 'DEMO'}
+                </span>
+              </div>
             )}
           </nav>
 
@@ -99,13 +123,15 @@ const Header: React.FC = () => {
                   </div>
                 )}
                 
-                <Link
+                {!user.isAffiliate && (
+                  <Link
                   to="/topup"
                   className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium px-3 py-2 rounded-lg transition-all flex items-center space-x-1"
-                >
+                  >
                   <Plus className="h-4 w-4" />
                   <span className="hidden sm:inline">Top Up</span>
-                </Link>
+                  </Link>
+                )}
                 
                 <div className="flex items-center space-x-2">
                   <Link
@@ -130,6 +156,13 @@ const Header: React.FC = () => {
                   >
                     <LogOut className="h-5 w-5" />
                   </button>
+                  
+                  <button
+                    onClick={() => setShowReportModal(true)}
+                    className="p-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  >
+                    <Mail className="h-4 w-4" />
+                  </button>
                 </div>
               </>
             ) : (
@@ -151,6 +184,39 @@ const Header: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Report Problem Modal */}
+      {showReportModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-2xl border border-white/20 p-6 w-full max-w-md mx-4">
+            <h3 className="text-xl font-bold mb-4">Report Problem</h3>
+            <p className="text-gray-400 text-sm mb-4">
+              Send us an email with your issue and we'll get back to you soon.
+            </p>
+            <div className="flex space-x-3">
+              <a
+                href="mailto:support@dicesino.com?subject=Problem Report"
+                className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-all text-center"
+              >
+                Send Email
+              </a>
+              <button
+                onClick={() => setShowReportModal(false)}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Game Mode Indicator */}
+      {user && !user.isAffiliate && gameMode === 'virtual' && (
+        <div className="fixed top-20 right-4 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-bold z-40">
+          DEMO MODE
+        </div>
+      )}
     </header>
   );
 };
