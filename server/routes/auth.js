@@ -80,16 +80,29 @@ router.post('/register', async (req, res) => {
       }
     });
     
+    console.log('User created successfully:', user.id);
+    
     // Grant signup bonus
-    await grantSignupBonus(user.id);
+    try {
+      await grantSignupBonus(user.id);
+      console.log('Signup bonus granted successfully');
+    } catch (bonusError) {
+      console.error('Failed to grant signup bonus:', bonusError);
+      // Don't fail registration if bonus fails
+    }
     
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET);
     res.cookie('token', token, { httpOnly: true });
     
-    const { password: _, ...userWithoutPassword } = user;
+    // Fetch updated user with bonus
+    const updatedUser = await prisma.user.findUnique({
+      where: { id: user.id }
+    });
+    
+    const { password: _, ...userWithoutPassword } = updatedUser;
     res.json({ user: userWithoutPassword });
   } catch (error) {
-    console.error(error);
+    console.error('Registration error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
