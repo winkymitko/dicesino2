@@ -265,33 +265,35 @@ const AdminPanel: React.FC = () => {
                   <td className="p-3">{user.email}</td>
                   <td className="p-3 text-blue-400">@{user.username}</td>
                   <td className="p-3">{user.name || '-'}</td>
-                  <td className="p-3 text-green-400">${user.virtualBalance.toFixed(2)}</td>
-                  <td className="p-3 text-yellow-400">${user.realBalance.toFixed(2)}</td>
+                  <td className="p-3 text-green-400">${(user.virtualBalance || 0).toFixed(2)}</td>
+                  <td className="p-3 text-yellow-400">${((user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0)).toFixed(2)}</td>
                   <td className="p-3">{user.totalGames}</td>
                   <td className="p-3">
-                    {user.totalGames > 0 ? `${(user.totalWins / user.totalGames * 100).toFixed(1)}%` : '0%'}
+                    {(user.totalGames || 0) > 0 ? `${((user.totalWins || 0) / (user.totalGames || 1) * 100).toFixed(1)}%` : '0%'}
                   </td>
                   <td className="p-3">
                     <div className="text-xs">
-                      <div className="text-yellow-400 font-bold">${((user.casinoProfitDice || 0) + (user.casinoProfitBattle || 0)).toFixed(2)}</div>
+                      <div className="text-yellow-400 font-bold">${((user.totalBets || 0) - (user.totalWins || 0)).toFixed(2)}</div>
                       <div className="text-gray-400">Casino Profit</div>
                     </div>
                   </td>
                   <td className="p-3">
                     <span className={`px-2 py-1 rounded text-xs ${
-                      user.diceGameModifier > 1 || user.diceBattleModifier > 1 ? 'bg-green-500/20 text-green-400' :
-                      user.diceGameModifier < 1 || user.diceBattleModifier < 1 ? 'bg-red-500/20 text-red-400' :
+                      (user.diceGameEdge || 5) < 5 || (user.diceBattleEdge || 5) < 5 ? 'bg-green-500/20 text-green-400' :
+                      (user.diceGameEdge || 5) > 5 || (user.diceBattleEdge || 5) > 5 ? 'bg-red-500/20 text-red-400' :
                       'bg-gray-500/20 text-gray-400'
                     }`}>
-                      {user.diceGameModifier}x/{user.diceBattleModifier}x
+                      {(user.diceGameEdge || 5).toFixed(1)}%/{(user.diceBattleEdge || 5).toFixed(1)}%
                     </span>
                   </td>
                   <td className="p-3">
                     <button
                       onClick={() => {
                         setSelectedUser(user);
-                        setDiceGameModifier(user.diceGameModifier.toString());
-                        setDiceBattleModifier(user.diceBattleModifier.toString());
+                        setDiceGameEdge((user.diceGameEdge || 5).toString());
+                        setDiceBattleEdge((user.diceBattleEdge || 5).toString());
+                        setMaxBetWhileBonus((user.maxBetWhileBonus || 50).toString());
+                        setMaxBonusCashout((user.maxBonusCashout || 1000).toString());
                       }}
                       className="bg-blue-500/20 text-blue-400 px-3 py-1 rounded text-xs hover:bg-blue-500/30 mr-2"
                     >
@@ -580,34 +582,66 @@ const AdminPanel: React.FC = () => {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Dice Game Modifier</label>
+                <label className="block text-sm font-medium mb-2">Dice Game House Edge (%)</label>
                 <input
                   type="number"
-                  step="0.1"
-                  min="0.1"
-                  max="5.0"
-                  value={diceGameModifier}
-                  onChange={(e) => setDiceGameModifier(e.target.value)}
+                  step="0.5"
+                  min="0"
+                  max="50"
+                  value={diceGameEdge}
+                  onChange={(e) => setDiceGameEdge(e.target.value)}
                   className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
                 />
                 <p className="text-xs text-gray-400 mt-1">
-                  {'1.0 = normal, >1.0 = better luck, <1.0 = worse luck'}
+                  5.0% = normal house edge, higher = more house advantage
                 </p>
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2">DiceBattle Modifier</label>
+                <label className="block text-sm font-medium mb-2">DiceBattle House Edge (%)</label>
                 <input
                   type="number"
-                  step="0.1"
-                  min="0.1"
-                  max="5.0"
-                  value={diceBattleModifier}
-                  onChange={(e) => setDiceBattleModifier(e.target.value)}
+                  step="0.5"
+                  min="0"
+                  max="50"
+                  value={diceBattleEdge}
+                  onChange={(e) => setDiceBattleEdge(e.target.value)}
                   className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
                 />
                 <p className="text-xs text-gray-400 mt-1">
-                  {'1.0 = normal, >1.0 = better luck, <1.0 = worse luck'}
+                  5.0% = normal house edge, higher = more house advantage
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Max Bet While Bonus Active ($)</label>
+                <input
+                  type="number"
+                  step="1"
+                  min="1"
+                  max="1000"
+                  value={maxBetWhileBonus}
+                  onChange={(e) => setMaxBetWhileBonus(e.target.value)}
+                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Maximum bet amount when user has active bonus
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Max Bonus Cashout ($)</label>
+                <input
+                  type="number"
+                  step="10"
+                  min="100"
+                  max="10000"
+                  value={maxBonusCashout}
+                  onChange={(e) => setMaxBonusCashout(e.target.value)}
+                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Maximum amount that can be unlocked from bonus winnings
                 </p>
               </div>
 
@@ -637,10 +671,10 @@ const AdminPanel: React.FC = () => {
 
               <div className="flex space-x-3 pt-4">
                 <button
-                  onClick={() => updateModifiers(selectedUser.id)}
+                  onClick={() => updateSettings(selectedUser.id)}
                   className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-2 rounded-lg transition-all"
                 >
-                  Update Modifiers
+                  Update Settings
                 </button>
                 
                 <button

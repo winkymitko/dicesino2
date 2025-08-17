@@ -151,8 +151,8 @@ router.get('/stats', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const totalUsers = await prisma.user.count();
     const totalGames = await prisma.game.count();
-    const totalRevenue = await prisma.user.aggregate({
-      _sum: { totalInvested: true }
+    const totalBets = await prisma.user.aggregate({
+      _sum: { totalBets: true }
     });
     
     const recentGames = await prisma.game.findMany({
@@ -167,7 +167,7 @@ router.get('/stats', authenticateToken, requireAdmin, async (req, res) => {
     res.json({
       totalUsers,
       totalGames,
-      totalRevenue: totalRevenue._sum.totalInvested || 0,
+      totalRevenue: totalBets._sum.totalBets || 0,
       recentGames
     });
   } catch (error) {
