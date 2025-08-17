@@ -50,25 +50,16 @@ router.get('/stats', authenticateToken, async (req, res) => {
       where: { referredBy: req.user.affiliateCode },
       select: {
         email: true,
-        createdAt: true,
-        totalBets: true,
-        totalWins: true
+        createdAt: true
       }
     });
 
-    // Calculate total profit from referrals (real money only)
-    const referralStats = referrals.map(referral => ({
-      ...referral,
-      casinoProfit: 0 // Will be calculated from actual real money games
-    }));
-    
     // Calculate real casino profit for each referral
-    for (let referral of referralStats) {
+    const referralStats = [];
+    for (let referral of referrals) {
       const realMoneyGames = await prisma.game.findMany({
         where: {
-          user: {
-            referredBy: req.user.affiliateCode
-          },
+          userId: referral.id,
           metadata: {
             not: {
               contains: '"useVirtual":true'
@@ -81,9 +72,16 @@ router.get('/stats', authenticateToken, async (req, res) => {
         }
       });
       
-      referral.casinoProfit = realMoneyGames.reduce((sum, game) => {
+      const casinoProfit = realMoneyGames.reduce((sum, game) => {
         return sum + ((game.stake || 0) - (game.finalPot || 0));
       }, 0);
+      
+      referralStats.push({
+        email: referral.email,
+        createdAt: referral.createdAt,
+        totalBets: realMoneyGames.length,
+        casinoProfit
+      });
     }
 
     // Calculate total commission earned
