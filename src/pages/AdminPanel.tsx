@@ -272,6 +272,27 @@ const AdminPanel: React.FC = () => {
         </div>
       </div>
 
+      {/* Overall Stats */}
+      <div className="grid md:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 text-center">
+          <Users className="h-8 w-8 text-blue-400 mx-auto mb-2" />
+          <div className="text-2xl font-bold">{stats.totalUsers || 0}</div>
+          <div className="text-gray-400">Total Users</div>
+        </div>
+        
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 text-center">
+          <TrendingUp className="h-8 w-8 text-green-400 mx-auto mb-2" />
+          <div className="text-2xl font-bold">${(stats.totalRealMoneyDeposited || 0).toFixed(2)}</div>
+          <div className="text-gray-400">Total Deposits</div>
+        </div>
+        
+        <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 text-center">
+          <TrendingUp className="h-8 w-8 text-purple-400 mx-auto mb-2" />
+          <div className="text-2xl font-bold">${(stats.totalCommissionEarned || 0).toFixed(2)}</div>
+          <div className="text-gray-400">Casino Profit</div>
+        </div>
+      </div>
+
       {/* Users Management */}
       <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 mb-8">
         <div className="flex items-center justify-between mb-6">
