@@ -21,8 +21,8 @@ const Home: React.FC = () => {
   const { user } = useAuth();
 
   // Safe numbers so .toFixed never throws if API gives strings/undefined
+  const mainBal = user ? Number((user.cashBalance ?? 0) + (user.bonusBalance ?? 0) + (user.lockedBalance ?? 0)) : 0;
   const vBal = user ? Number(user.virtualBalance ?? 0) : 0;
-  const rBal = user ? Number(user.realBalance ?? 0) : 0;
   const streak = user ? Number(user.currentWinStreak ?? 0) : 0;
 
   // Random game selection
@@ -59,17 +59,13 @@ const Home: React.FC = () => {
             </Link>
             <div className="flex justify-center items-center space-x-8 text-sm">
               <div className="text-center">
-                <div className="text-green-400 font-bold text-lg">${vBal.toFixed(2)}</div>
-                <div className="text-gray-400">Virtual Balance</div>
+                <div className="text-yellow-400 font-bold text-lg">${mainBal.toFixed(2)}</div>
+                <div className="text-gray-400">Main Balance</div>
               </div>
               <div className="text-center">
-                <div className="text-yellow-400 font-bold text-lg">${rBal.toFixed(2)}</div>
-                <div className="text-gray-400">Real Balance</div>
+                <div className="text-purple-400 font-bold text-lg">${vBal.toFixed(2)}</div>
+                <div className="text-gray-400">Virtual (Demo)</div>
               </div>
-              {/* <div className="text-center">
-                <div className="text-blue-400 font-bold text-lg">{streak}</div>
-                <div className="text-gray-400">Win Streak</div>
-              </div> */}
             </div>
           </div>
         ) : (

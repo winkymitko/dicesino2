@@ -14,8 +14,10 @@ const AdminPanel: React.FC = () => {
   const [statsViewMode, setStatsViewMode] = useState<{[key: string]: 'virtual' | 'real'}>({});
   const [bonusAmount, setBonusAmount] = useState('');
   const [bonusDescription, setBonusDescription] = useState('');
-  const [diceGameModifier, setDiceGameModifier] = useState('1.0');
-  const [diceBattleModifier, setDiceBattleModifier] = useState('1.0');
+  const [diceGameEdge, setDiceGameEdge] = useState('5.0');
+  const [diceBattleEdge, setDiceBattleEdge] = useState('5.0');
+  const [maxBetWhileBonus, setMaxBetWhileBonus] = useState('50');
+  const [maxBonusCashout, setMaxBonusCashout] = useState('1000');
 
   // Bot management state
   const [botNames, setBotNames] = useState<string[]>([]);
@@ -119,22 +121,24 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  const updateModifiers = async (userId: string) => {
+  const updateSettings = async (userId: string) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}/modifiers`, {
+      const response = await fetch(`/api/admin/users/${userId}/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ 
-          diceGameModifier: parseFloat(diceGameModifier),
-          diceBattleModifier: parseFloat(diceBattleModifier)
+          diceGameEdge: parseFloat(diceGameEdge),
+          diceBattleEdge: parseFloat(diceBattleEdge),
+          maxBetWhileBonus: parseFloat(maxBetWhileBonus),
+          maxBonusCashout: parseFloat(maxBonusCashout)
         })
       });
 
       if (response.ok) {
         fetchUsers();
         setSelectedUser(null);
-        alert('Game modifiers updated successfully');
+        alert('User settings updated successfully');
       } else {
         const error = await response.json();
         alert(error.error);

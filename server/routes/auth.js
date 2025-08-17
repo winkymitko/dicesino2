@@ -7,6 +7,51 @@ import { authenticateToken } from '../middleware/auth.js';
 const router = express.Router();
 const prisma = new PrismaClient();
 
+// Grant signup bonus
+async function grantSignupBonus(userId) {
+  const bonusAmount = 50; // $50 signup bonus
+  const wageringMultiplier = 20; // 20x wagering requirement
+  const wageringRequired = bonusAmount * wageringMultiplier;
+  
+  // Create bonus record
+  await prisma.bonus.create({
+    data: {
+      userId,
+      amount: bonusAmount,
+      type: 'signup',
+      description: 'Welcome bonus',
+      wageringRequired,
+      wageringMultiplier
+    }
+  });
+  
+  // Update user balances
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      bonusBalance: { increment: bonusAmount },
+      activeWageringRequirement: { increment: wageringRequired }
+    }
+  });
+  
+  // Create transaction record
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  await prisma.transaction.create({
+    data: {
+      userId,
+      type: 'bonus_grant',
+      amount: bonusAmount,
+      bonusChange: bonusAmount,
+      cashBalanceAfter: user.cashBalance,
+      bonusBalanceAfter: user.bonusBalance,
+      lockedBalanceAfter: user.lockedBalance,
+      virtualBalanceAfter: user.virtualBalance,
+      description: 'Welcome bonus granted',
+      reference: 'signup'
+    }
+  });
+}
+
 // Register
 router.post('/register', async (req, res) => {
   try {
@@ -34,6 +79,9 @@ router.post('/register', async (req, res) => {
         isAdmin: email === process.env.ADMIN_EMAIL
       }
     });
+    
+    // Grant signup bonus
+    await grantSignupBonus(user.id);
     
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET);
     res.cookie('token', token, { httpOnly: true });

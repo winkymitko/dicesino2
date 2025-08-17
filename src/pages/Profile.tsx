@@ -307,22 +307,71 @@ const Profile: React.FC = () => {
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
             <div className="flex items-center space-x-3 mb-6">
               <Wallet className="h-6 w-6 text-green-500" />
-              <h2 className="text-2xl font-bold">Balances</h2>
+              <h2 className="text-2xl font-bold">Wallet Breakdown</h2>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
+              {/* Main Balance Display */}
               <div className="text-center p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-                <div className="text-2xl font-bold text-green-400">
-                  ${Number(user.virtualBalance ?? 0).toFixed(2)}
+                <div className="text-3xl font-bold text-yellow-400">
+                  ${((user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0)).toFixed(2)}
                 </div>
-                <div className="text-sm text-gray-400">Virtual Balance</div>
+                <div className="text-sm text-gray-400">Main Balance</div>
               </div>
-              <div className="text-center p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                <div className="text-2xl font-bold text-yellow-400">
-                  ${Number(user.realBalance ?? 0).toFixed(2)}
+              
+              {/* Breakdown */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                  <div className="text-lg font-bold text-green-400">
+                    ${(user.cashBalance || 0).toFixed(2)}
+                  </div>
+                  <div className="text-xs text-gray-400">💰 Cash</div>
+                  <div className="text-xs text-gray-500">Withdrawable</div>
                 </div>
-                <div className="text-sm text-gray-400">Real Balance</div>
+                <div className="text-center p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <div className="text-lg font-bold text-blue-400">
+                    ${(user.bonusBalance || 0).toFixed(2)}
+                  </div>
+                  <div className="text-xs text-gray-400">🎁 Bonus</div>
+                  <div className="text-xs text-gray-500">Play-only</div>
+                </div>
+                <div className="text-center p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                  <div className="text-lg font-bold text-orange-400">
+                    ${(user.lockedBalance || 0).toFixed(2)}
+                  </div>
+                  <div className="text-xs text-gray-400">🔒 Locked</div>
+                  <div className="text-xs text-gray-500">Pending WR</div>
+                </div>
               </div>
+              
+              {/* Virtual Balance (Separate) */}
+              <div className="text-center p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                <div className="text-2xl font-bold text-purple-400">
+                  ${(user.virtualBalance || 0).toFixed(2)}
+                </div>
+                <div className="text-sm text-gray-400">🎮 Virtual (Demo)</div>
+              </div>
+              
+              {/* Wagering Progress */}
+              {(user.activeWageringRequirement || 0) > 0 && (
+                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <div className="text-sm font-bold text-blue-400 mb-2">Wagering Progress</div>
+                  <div className="w-full bg-gray-700 rounded-full h-3 mb-2">
+                    <div 
+                      className="bg-blue-500 h-3 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${Math.min(100, ((user.currentWageringProgress || 0) / (user.activeWageringRequirement || 1)) * 100)}%` 
+                      }}
+                    ></div>
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    ${(user.currentWageringProgress || 0).toFixed(2)} / ${(user.activeWageringRequirement || 0).toFixed(2)} wagered
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Complete wagering to unlock ${(user.lockedBalance || 0).toFixed(2)} to cash
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

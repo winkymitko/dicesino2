@@ -1,11 +1,13 @@
 import React from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Dice6, User, LogOut, Settings, Plus } from 'lucide-react';
+import { Dice6, User, LogOut, Settings, Plus, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Header: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [showBalanceBreakdown, setShowBalanceBreakdown] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -42,10 +44,55 @@ const Header: React.FC = () => {
           <div className="flex items-center space-x-4">
             {user ? (
               <>
-                <div className="hidden sm:flex flex-col items-end text-sm">
-                  <span className="text-green-400">${user.virtualBalance.toFixed(2)} Virtual</span>
-                  <span className="text-yellow-400">${user.realBalance.toFixed(2)} Real</span>
+                <div className="hidden sm:flex flex-col items-end text-sm cursor-pointer" onClick={() => setShowBalanceBreakdown(!showBalanceBreakdown)}>
+                  <span className="text-yellow-400 font-bold">
+                    ${((user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0)).toFixed(2)} Main
+                  </span>
+                  <span className="text-gray-400 text-xs">Click for breakdown</span>
                 </div>
+                
+                {/* Balance Breakdown Dropdown */}
+                {showBalanceBreakdown && (
+                  <div className="absolute top-16 right-4 bg-gray-900 border border-white/20 rounded-lg p-4 shadow-xl z-50 min-w-64">
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-green-400">💰 Cash (Withdrawable)</span>
+                        <span className="font-bold">${(user.cashBalance || 0).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-blue-400">🎁 Bonus (Play-only)</span>
+                        <span className="font-bold">${(user.bonusBalance || 0).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-orange-400">🔒 Locked (Pending WR)</span>
+                        <span className="font-bold">${(user.lockedBalance || 0).toFixed(2)}</span>
+                      </div>
+                      <hr className="border-white/20" />
+                      <div className="flex justify-between items-center">
+                        <span className="text-purple-400">🎮 Virtual (Demo)</span>
+                        <span className="font-bold">${(user.virtualBalance || 0).toFixed(2)}</span>
+                      </div>
+                      
+                      {/* Wagering Progress */}
+                      {(user.activeWageringRequirement || 0) > 0 && (
+                        <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded">
+                          <div className="text-sm text-blue-400 mb-2">Wagering Progress</div>
+                          <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
+                            <div 
+                              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                              style={{ 
+                                width: `${Math.min(100, ((user.currentWageringProgress || 0) / (user.activeWageringRequirement || 1)) * 100)}%` 
+                              }}
+                            ></div>
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            ${(user.currentWageringProgress || 0).toFixed(2)} / ${(user.activeWageringRequirement || 0).toFixed(2)} wagered
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
                 
                 <Link
                   to="/topup"

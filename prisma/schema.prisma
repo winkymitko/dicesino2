@@ -15,30 +15,46 @@ model User {
   password          String
   name              String?
   phone             String?
-  realBalance       Float    @default(0)
-  virtualBalance    Float    @default(1000) // Starting virtual money
+  
+  // New wallet system
+  cashBalance       Float    @default(0)     // Withdrawable money
+  bonusBalance      Float    @default(0)     // Play-only bonus money
+  lockedBalance     Float    @default(0)     // Bonus winnings pending wagering
+  virtualBalance    Float    @default(1000)  // Demo money (separate)
+  
+  // Wagering requirements
+  activeWageringRequirement Float @default(0)  // Total amount needed to wager
+  currentWageringProgress   Float @default(0)  // Amount already wagered
+  wageringMultiplier        Float @default(20) // WR multiplier (20x default)
+  
   isAdmin           Boolean  @default(false)
-  winChanceModifier Float    @default(1.0) // Admin can adjust win chances
-  totalInvested     Float    @default(0)
+  totalDeposited    Float    @default(0)
+  totalWithdrawn    Float    @default(0)
+  totalBets         Float    @default(0)
+  totalWins         Float    @default(0)
   totalGames        Int      @default(0)
-  totalWins         Int      @default(0)
-  totalLosses       Int      @default(0)
+  totalGameWins     Int      @default(0)
+  totalGameLosses   Int      @default(0)
   currentWinStreak  Int      @default(0)
   maxWinStreak      Int      @default(0)
-  casinoProfitDice     Float    @default(0) // Casino profit from BarboDice
-  casinoProfitBattle   Float    @default(0) // Casino profit from DiceBattle
+  
+  // Enhanced edge control per game
+  diceGameEdge      Float    @default(5.0)   // House edge % for dice game
+  diceBattleEdge    Float    @default(5.0)   // House edge % for dice battle
+  
+  // Risk controls
+  maxBetWhileBonus  Float    @default(50)    // Max bet when bonus active
+  maxBonusCashout   Float    @default(1000)  // Max cashout from bonus flow
+  
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  // Per-game win chance modifiers
-  diceGameModifier     Float @default(1.0)
-  diceBattleModifier   Float @default(1.0)
-
-  games       Game[]
-  gameRounds  GameRound[]
-  bonuses     Bonus[]
-  cryptoWallets CryptoWallet?
-  cryptoDeposits CryptoDeposit[]
+  games           Game[]
+  gameRounds      GameRound[]
+  bonuses         Bonus[]
+  transactions    Transaction[]
+  cryptoWallets   CryptoWallet?
+  cryptoDeposits  CryptoDeposit[]
 
   @@map("users")
 }
@@ -46,11 +62,17 @@ model User {
 model Game {
   id        String   @id @default(cuid())
   userId    String
-  gameType  String   // "dice", "slots", etc for future games
+  gameType  String   // "dice", "dicebattle", etc
   stake     Float
   totalPot  Float
   finalPot  Float?
-  status    String   // "active", "cashed_out", "lost"
+  status    String   // "active", "cashed_out", "lost", "tie"
+  
+  // Bonus tracking
+  betSource String   @default("cash") // "cash", "bonus", "mixed"
+  bonusUsed Float    @default(0)      // Amount of bonus used in this game
+  cashUsed  Float    @default(0)      // Amount of cash used in this game
+  
   metadata  String?  // JSON string for game-specific data
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -76,6 +98,10 @@ model GameRound {
   serverSeed  String   // For provably fair
   clientSeed  String   // For provably fair
   nonce       Int      // For provably fair
+  
+  // Wagering tracking
+  wageringContribution Float @default(0) // How much this round contributed to wagering
+  
   metadata    String?  // JSON string for round-specific data
   createdAt   DateTime @default(now())
 
@@ -89,14 +115,52 @@ model Bonus {
   id          String   @id @default(cuid())
   userId      String
   amount      Float
-  type        String   // "admin_bonus", "welcome", etc
+  type        String   // "signup", "deposit", "admin_bonus", etc
   description String?
+  
+  // Wagering requirements
+  wageringRequired    Float    @default(0)  // Total wagering needed
+  wageringCompleted   Float    @default(0)  // Wagering completed
+  wageringMultiplier  Float    @default(20) // WR multiplier used
+  
+  status      String   @default("active") // "active", "completed", "expired", "voided"
+  expiresAt   DateTime?
+  completedAt DateTime?
   createdAt   DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
 
   @@map("bonuses")
 }
+
+model Transaction {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // "deposit", "withdrawal", "bet", "win", "bonus_grant", "bonus_conversion", etc
+  amount      Float
+  
+  // Balance changes
+  cashChange    Float @default(0)
+  bonusChange   Float @default(0)
+  lockedChange  Float @default(0)
+  virtualChange Float @default(0)
+  
+  // Balances after transaction
+  cashBalanceAfter    Float
+  bonusBalanceAfter   Float
+  lockedBalanceAfter  Float
+  virtualBalanceAfter Float
+  
+  description String?
+  reference   String?  // Game ID, deposit ID, etc
+  metadata    String?  // JSON for additional data
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("transactions")
+}
+
 model CryptoWallet {
   id         String   @id @default(cuid())
   userId     String   @unique
@@ -122,6 +186,11 @@ model CryptoDeposit {
   txHash        String   @unique
   status        String   @default("pending") // pending, confirmed, failed
   confirmations Int      @default(0)
+  
+  // Bonus tracking
+  bonusAwarded  Float    @default(0) // Bonus amount awarded for this deposit
+  bonusType     String?              // Type of bonus awarded
+  
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

@@ -6,13 +6,21 @@ interface User {
   username?: string;
   name?: string;
   phone?: string;
-  realBalance: number;
+  cashBalance: number;
+  bonusBalance: number;
+  lockedBalance: number;
   virtualBalance: number;
+  activeWageringRequirement: number;
+  currentWageringProgress: number;
+  wageringMultiplier: number;
   isAdmin: boolean;
   currentWinStreak: number;
-  totalGames: number;
-  totalWins: number;
-  totalLosses: number;
+  totalGameWins: number;
+  totalGameLosses: number;
+  diceGameEdge: number;
+  diceBattleEdge: number;
+  maxBetWhileBonus: number;
+  maxBonusCashout: number;
 }
 
 interface AuthContextType {

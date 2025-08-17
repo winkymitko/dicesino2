@@ -45,18 +45,24 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
         name: true,
         phone: true,
         cryptoWallets: true,
-        realBalance: true,
+        cashBalance: true,
+        bonusBalance: true,
+        lockedBalance: true,
         virtualBalance: true,
-        diceGameModifier: true,
-        diceBattleModifier: true,
-        totalInvested: true,
-        totalGames: true,
+        activeWageringRequirement: true,
+        currentWageringProgress: true,
+        diceGameEdge: true,
+        diceBattleEdge: true,
+        maxBetWhileBonus: true,
+        maxBonusCashout: true,
+        totalDeposited: true,
+        totalWithdrawn: true,
+        totalBets: true,
         totalWins: true,
-        totalLosses: true,
+        totalGameWins: true,
+        totalGameLosses: true,
         currentWinStreak: true,
         maxWinStreak: true,
-        casinoProfitDice: true,
-        casinoProfitBattle: true,
         createdAt: true
       },
       orderBy: { createdAt: 'desc' }
@@ -69,20 +75,33 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// Update user game modifiers
-router.put('/users/:userId/modifiers', authenticateToken, requireAdmin, async (req, res) => {
+// Update user game settings
+router.put('/users/:userId/settings', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { userId } = req.params;
-    const { diceGameModifier, diceBattleModifier } = req.body;
+    const { 
+      diceGameEdge, 
+      diceBattleEdge, 
+      maxBetWhileBonus, 
+      maxBonusCashout,
+      wageringMultiplier 
+    } = req.body;
     
-    if (diceGameModifier < 0.1 || diceGameModifier > 5.0 || 
-        diceBattleModifier < 0.1 || diceBattleModifier > 5.0) {
-      return res.status(400).json({ error: 'Modifiers must be between 0.1 and 5.0' });
+    if (diceGameEdge < 0 || diceGameEdge > 50 || 
+        diceBattleEdge < 0 || diceBattleEdge > 50) {
+      return res.status(400).json({ error: 'House edge must be between 0% and 50%' });
     }
+    
+    const updateData = {};
+    if (diceGameEdge !== undefined) updateData.diceGameEdge = diceGameEdge;
+    if (diceBattleEdge !== undefined) updateData.diceBattleEdge = diceBattleEdge;
+    if (maxBetWhileBonus !== undefined) updateData.maxBetWhileBonus = maxBetWhileBonus;
+    if (maxBonusCashout !== undefined) updateData.maxBonusCashout = maxBonusCashout;
+    if (wageringMultiplier !== undefined) updateData.wageringMultiplier = wageringMultiplier;
     
     await prisma.user.update({
       where: { id: userId },
-      data: { diceGameModifier, diceBattleModifier }
+      data: updateData
     });
     
     res.json({ success: true });

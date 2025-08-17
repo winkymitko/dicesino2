@@ -6,6 +6,32 @@ import crypto from 'crypto';
 const router = express.Router();
 const prisma = new PrismaClient();
 
+// Grant deposit bonus
+async function grantDepositBonus(userId, depositAmount, bonusAmount) {
+  const wageringMultiplier = 25; // 25x for deposit bonus
+  const wageringRequired = bonusAmount * wageringMultiplier;
+  
+  // Create bonus record
+  await prisma.bonus.create({
+    data: {
+      userId,
+      amount: bonusAmount,
+      type: 'deposit',
+      description: `Deposit bonus for $${depositAmount} deposit`,
+      wageringRequired,
+      wageringMultiplier
+    }
+  });
+  
+  // Update user balances
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      bonusBalance: { increment: bonusAmount },
+      activeWageringRequirement: { increment: wageringRequired }
+    }
+  });
+}
 // Generate USDT wallet address (simplified - in production use proper crypto libraries)
 function generateUSDTAddress() {
   // This is a simplified version - in production, use proper TRON/TRC20 address generation
@@ -104,13 +130,41 @@ router.post('/check-balance', authenticateToken, async (req, res) => {
         await prisma.user.update({
           where: { id: req.user.id },
           data: {
-            realBalance: { increment: amount }
+            cashBalance: { increment: amount },
+            totalDeposited: { increment: amount }
+          }
+        });
+        
+        // Check for deposit bonus (example: 50% up to $100)
+        const depositBonusPercent = 0.5; // 50%
+        const maxDepositBonus = 100;
+        const bonusAmount = Math.min(amount * depositBonusPercent, maxDepositBonus);
+        
+        if (bonusAmount > 0) {
+          await grantDepositBonus(req.user.id, amount, bonusAmount);
+        }
+        
+        // Create transaction record
+        const updatedUser = await prisma.user.findUnique({ where: { id: req.user.id } });
+        await prisma.transaction.create({
+          data: {
+            userId: req.user.id,
+            type: 'deposit',
+            amount,
+            cashChange: amount,
+            bonusChange: bonusAmount,
+            cashBalanceAfter: updatedUser.cashBalance,
+            bonusBalanceAfter: updatedUser.bonusBalance,
+            lockedBalanceAfter: updatedUser.lockedBalance,
+            virtualBalanceAfter: updatedUser.virtualBalance,
+            description: `USDT deposit: ${txHash.substring(0, 8)}...`,
+            reference: txHash
           }
         });
         
         return res.json({ 
           success: true, 
-          message: `New deposit of $${amount} USDT confirmed!`,
+          message: `New deposit of $${amount} USDT confirmed!${bonusAmount > 0 ? ` Bonus: $${bonusAmount}` : ''}`,
           newDeposit: true
         });
       }
