@@ -245,29 +245,6 @@ const DiceRoulette: React.FC = () => {
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-        <div className="flex items-center justify-between">
-          <div className="text-lg font-bold">Total Bet: ${totalBet.toFixed(2)}</div>
-          <div className="flex space-x-3">
-            <button
-              onClick={clearBets}
-              className="px-6 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg transition-all"
-            >
-              Clear Bets
-            </button>
-            <button
-              onClick={rollDice}
-              disabled={rolling || totalBet === 0}
-              className="px-6 py-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 text-white font-bold rounded-lg transition-all flex items-center space-x-2"
-            >
-              <Target className="h-5 w-5" />
-              <span>{rolling ? 'Rolling...' : 'Roll Dice'}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Bet Modal */}
       {showBetModal && (
         <BetModal
