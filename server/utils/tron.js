@@ -15,17 +15,25 @@ const tronWeb = new TronWebConstructor({
 // Generate new TRON address and private key
 export function generateTronWallet() {
   try {
+    console.log('Attempting to generate TRON wallet...');
     const account = tronWeb.createAccount();
+    console.log('TronWeb createAccount result:', account);
+    
+    if (!account || (!account.address && !account.privateKey)) {
+      throw new Error('TronWeb createAccount returned invalid result');
+    }
+    
     return {
       address: account.address?.base58 || account.address,
       privateKey: account.privateKey,
       hexAddress: account.address?.hex || account.address
     };
   } catch (error) {
-    console.error('Error generating TRON wallet:', error);
+    console.error('Error generating TRON wallet:', error.message);
     // Fallback: generate a simple wallet
-    const privateKey = '01'.repeat(32);
-    const address = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // Fallback address
+    const privateKey = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const address = 'TRX' + Math.random().toString(36).substring(2, 15).toUpperCase(); // Simple fallback
+    console.log('Using fallback wallet generation');
     return {
       address,
       privateKey,

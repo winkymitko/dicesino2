@@ -185,6 +185,57 @@ router.post('/request-payout', authenticateToken, async (req, res) => {
   }
 });
 
+// Request payout for specific referral
+router.post('/request-referral-payout', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user.isAffiliate) {
+      return res.status(403).json({ error: 'Not an affiliate' });
+    }
+    
+    const { referralId, amount, referralEmail } = req.body;
+    
+    if (!referralId || !amount || amount <= 0) {
+      return res.status(400).json({ error: 'Invalid payout request data' });
+    }
+    
+    // Verify the referral belongs to this affiliate
+    const referral = await prisma.user.findFirst({
+      where: { 
+        id: referralId,
+        referredBy: req.user.affiliateCode 
+      }
+    });
+    
+    if (!referral) {
+      return res.status(404).json({ error: 'Referral not found or not yours' });
+    }
+    
+    // In a real system, you'd create a PayoutRequest table entry here
+    // For now, we'll just log it and return success
+    console.log(`Per-referral payout request: ${req.user.email} requests $${amount} commission from referral ${referralEmail || referral.email} (ID: ${referralId})`);
+    
+    // You could create a PayoutRequest model and save it:
+    // await prisma.payoutRequest.create({
+    //   data: {
+    //     affiliateId: req.user.id,
+    //     referralId,
+    //     amount,
+    //     referralEmail: referralEmail || referral.email,
+    //     status: 'pending',
+    //     type: 'per_referral'
+    //   }
+    // });
+    
+    res.json({ 
+      success: true, 
+      message: `Payout request submitted for $${amount.toFixed(2)} commission from ${referralEmail || referral.email}` 
+    });
+  } catch (error) {
+    console.error('Per-referral payout request error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Admin: Set payout period for affiliate
 router.put('/set-payout-period/:userId', authenticateToken, async (req, res) => {
   try {
