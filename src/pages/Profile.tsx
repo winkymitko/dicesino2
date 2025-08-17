@@ -32,6 +32,7 @@ const Profile: React.FC = () => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
+  const [payoutRequests, setPayoutRequests] = useState<{[key: string]: boolean}>({});
   
   // Password change state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -318,6 +319,27 @@ const Profile: React.FC = () => {
                   </button>
                 )}
               </div>
+              
+              {/* Payout Wallet */}
+              <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <h4 className="font-bold text-blue-400 mb-2">💳 Payout Wallet</h4>
+                <p className="text-sm text-gray-400 mb-3">
+                  Add your TRON wallet address for commission payouts.
+                </p>
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    placeholder="Enter TRON address (TRC20)"
+                    className="flex-1 px-3 py-2 bg-black/30 border border-white/20 rounded-lg text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+                  />
+                  <button className="bg-blue-500/20 text-blue-400 px-4 py-2 rounded-lg hover:bg-blue-500/30 transition-colors text-sm">
+                    Save
+                  </button>
+                </div>
+                <div className="text-xs text-gray-400 mt-2">
+                  ⚠️ Make sure this is a valid TRON (TRC20) address for USDT payouts
+                </div>
+              </div>
             </div>
           </div>
 
@@ -409,7 +431,8 @@ const Profile: React.FC = () => {
                                 })
                               });
                               if (response.ok) {
-                                alert('Per-referral payout request submitted!');
+                                // Change button state to pending
+                                setPayoutRequests(prev => ({ ...prev, [referral.id]: true }));
                                 fetchAffiliateStats();
                               } else {
                                 const error = await response.json();
@@ -419,9 +442,14 @@ const Profile: React.FC = () => {
                               alert('Failed to submit payout request');
                             }
                           }}
-                          className="mt-2 bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded text-xs hover:bg-yellow-500/30 transition-colors"
+                          disabled={payoutRequests[referral.id]}
+                          className={`mt-2 px-2 py-1 rounded text-xs transition-colors ${
+                            payoutRequests[referral.id] 
+                              ? 'bg-orange-500/20 text-orange-400 cursor-not-allowed'
+                              : 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
+                          }`}
                         >
-                          Request Payout
+                          {payoutRequests[referral.id] ? '⏳ Pending Payout' : '💰 Request Payout'}
                         </button>
                       </div>
                     </div>

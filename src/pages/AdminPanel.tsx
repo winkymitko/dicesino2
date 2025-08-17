@@ -236,7 +236,20 @@ const AdminPanel: React.FC = () => {
 
       {/* Users Management */}
       <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 mb-8">
-        <h2 className="text-2xl font-bold mb-6">Users Management</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold">Users Management</h2>
+          
+          {/* Payout Requests Alert */}
+          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+              <span className="text-red-400 font-bold text-sm">🚨 Pending Payout Requests</span>
+            </div>
+            <div className="text-xs text-gray-400 mt-1">
+              Check affiliate referral sections for payout requests
+            </div>
+          </div>
+        </div>
         
         <div className="space-y-4">
           {users.map((user: any) => (
@@ -390,42 +403,275 @@ const AdminPanel: React.FC = () => {
               {/* Expanded User Stats */}
               {expandedUser === user.id && userStats[user.id] && (
                 <div className="border-t border-white/10 p-6 bg-black/20">
-                  {/* Wagering Progress */}
-                  <div className="mb-6 bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
-                    <h5 className="font-bold mb-2 text-blue-400 text-sm">🎯 Bonus Wagering Progress</h5>
-                    <div className="grid grid-cols-4 gap-3 text-xs">
-                      <div className="text-center">
-                        <div className="text-blue-400 font-bold">${(user.currentWageringProgress || 0).toFixed(2)}</div>
-                        <div className="text-gray-400">Progress</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-blue-400 font-bold">${(user.activeWageringRequirement || 0).toFixed(2)}</div>
-                        <div className="text-gray-400">Required</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-blue-400 font-bold">
-                          {user.activeWageringRequirement > 0 ? 
-                            ((user.currentWageringProgress || 0) / user.activeWageringRequirement * 100).toFixed(1) : 0}%
+                  {/* Only show game stats and wagering for non-affiliates */}
+                  {!user.isAffiliate && (
+                    <>
+                      {/* Wagering Progress */}
+                      <div className="mb-6 bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                        <h5 className="font-bold mb-2 text-blue-400 text-sm">🎯 Bonus Wagering Progress</h5>
+                        <div className="grid grid-cols-4 gap-3 text-xs">
+                          <div className="text-center">
+                            <div className="text-blue-400 font-bold">${(user.currentWageringProgress || 0).toFixed(2)}</div>
+                            <div className="text-gray-400">Progress</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-blue-400 font-bold">${(user.activeWageringRequirement || 0).toFixed(2)}</div>
+                            <div className="text-gray-400">Required</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-blue-400 font-bold">
+                              {user.activeWageringRequirement > 0 ? 
+                                ((user.currentWageringProgress || 0) / user.activeWageringRequirement * 100).toFixed(1) : 0}%
+                            </div>
+                            <div className="text-gray-400">Complete</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-blue-400 font-bold">${(user.lockedBalance || 0).toFixed(2)}</div>
+                            <div className="text-gray-400">Locked</div>
+                          </div>
                         </div>
-                        <div className="text-gray-400">Complete</div>
+                        <div className="mt-2 w-full bg-gray-700 rounded-full h-1">
+                          <div 
+                            className="bg-blue-500 h-1 rounded-full transition-all duration-300"
+                            style={{ 
+                              width: `${Math.min(100, user.activeWageringRequirement > 0 ? 
+                                ((user.currentWageringProgress || 0) / user.activeWageringRequirement * 100) : 0)}%` 
+                            }}
+                          ></div>
+                        </div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-blue-400 font-bold">${(user.lockedBalance || 0).toFixed(2)}</div>
-                        <div className="text-gray-400">Locked</div>
-                      </div>
-                    </div>
-                    <div className="mt-2 w-full bg-gray-700 rounded-full h-1">
-                      <div 
-                        className="bg-blue-500 h-1 rounded-full transition-all duration-300"
-                        style={{ 
-                          width: `${Math.min(100, user.activeWageringRequirement > 0 ? 
-                            ((user.currentWageringProgress || 0) / user.activeWageringRequirement * 100) : 0)}%` 
-                        }}
-                      ></div>
-                    </div>
-                  </div>
 
-                  {/* Real Money Overview */}
+                      {/* Game Statistics Toggle */}
+                      <div className="mb-4">
+                        <div className="flex items-center space-x-4">
+                          <span className="text-sm font-medium">Game Statistics:</span>
+                          <button
+                            onClick={() => {
+                              const currentMode = userStats[user.id].statsMode || 'real';
+                              setUserStats(prev => ({
+                                ...prev,
+                                [user.id]: {
+                                  ...prev[user.id],
+                                  statsMode: currentMode === 'real' ? 'virtual' : 'real'
+                                }
+                              }));
+                            }}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                              (userStats[user.id].statsMode || 'real') === 'real' ? 'bg-yellow-600' : 'bg-purple-600'
+                            }`}
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                (userStats[user.id].statsMode || 'real') === 'real' ? 'translate-x-6' : 'translate-x-1'
+                              }`}
+                            />
+                          </button>
+                          <span className={`text-sm font-medium ${
+                            (userStats[user.id].statsMode || 'real') === 'real' ? 'text-yellow-400' : 'text-purple-400'
+                          }`}>
+                            {(userStats[user.id].statsMode || 'real') === 'real' ? 'REAL MONEY' : 'VIRTUAL MONEY'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Game Statistics */}
+                      <div className="grid md:grid-cols-3 gap-4">
+                        {/* BarboDice */}
+                        <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                          <h5 className="font-bold mb-3 text-green-400 text-center">🎲 BarboDice</h5>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span>Games:</span>
+                              <span className="font-bold">
+                                {(userStats[user.id].statsMode || 'real') === 'real' 
+                                  ? userStats[user.id].realStats?.barboDice?.totalGames || 0
+                                  : userStats[user.id].virtualStats?.barboDice?.totalGames || 0
+                                }
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Wins:</span>
+                              <span className="text-green-400 font-bold">
+                                {(userStats[user.id].statsMode || 'real') === 'real' 
+                                  ? userStats[user.id].realStats?.barboDice?.wins || 0
+                                  : userStats[user.id].virtualStats?.barboDice?.wins || 0
+                                }
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Losses:</span>
+                              <span className="text-red-400 font-bold">
+                                {(userStats[user.id].statsMode || 'real') === 'real' 
+                                  ? userStats[user.id].realStats?.barboDice?.losses || 0
+                                  : userStats[user.id].virtualStats?.barboDice?.losses || 0
+                                }
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Total Bets:</span>
+                              <span className="font-bold">
+                                ${((userStats[user.id].statsMode || 'real') === 'real' 
+                                  ? userStats[user.id].realStats?.barboDice?.totalBets || 0
+                                  : userStats[user.id].virtualStats?.barboDice?.totalBets || 0
+                                ).toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Total Wins:</span>
+                              <span className="text-green-400 font-bold">
+                                ${((userStats[user.id].statsMode || 'real') === 'real' 
+                                  ? userStats[user.id].realStats?.barboDice?.totalWins || 0
+                                  : userStats[user.id].virtualStats?.barboDice?.totalWins || 0
+                                ).toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Total Loses:</span>
+                              <span className="text-red-400 font-bold">
+                                ${((userStats[user.id].statsMode || 'real') === 'real' 
+                                  ? userStats[user.id].realStats?.barboDice?.totalLoses || 0
+                                  : userStats[user.id].virtualStats?.barboDice?.totalLoses || 0
+                                ).toFixed(2)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* DiceBattle */}
+                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                          <h5 className="font-bold mb-3 text-red-400 text-center">⚔️ DiceBattle</h5>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span>Games:</span>
+                              <span className="font-bold">
+                                {(userStats[user.id].statsMode || 'real') === 'real' 
+                                  ? userStats[user.id].realStats?.diceBattle?.totalGames || 0
+                                  : userStats[user.id].virtualStats?.diceBattle?.totalGames || 0
+                                }
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Wins:</span>
+                              <span className="text-green-400 font-bold">
+                                {(userStats[user.id].statsMode || 'real') === 'real' 
+                                  ? userStats[user.id].realStats?.diceBattle?.wins || 0
+                                  : userStats[user.id].virtualStats?.diceBattle?.wins || 0
+                                }
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Losses:</span>
+                              <span className="text-red-400 font-bold">
+                                {(userStats[user.id].statsMode || 'real') === 'real' 
+                                  ? userStats[user.id].realStats?.diceBattle?.losses || 0
+                                  : userStats[user.id].virtualStats?.diceBattle?.losses || 0
+                                }
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Ties:</span>
+                              <span className="text-yellow-400 font-bold">
+                                {(userStats[user.id].statsMode || 'real') === 'real' 
+                                  ? userStats[user.id].realStats?.diceBattle?.ties || 0
+                                  : userStats[user.id].virtualStats?.diceBattle?.ties || 0
+                                }
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Total Bets:</span>
+                              <span className="font-bold">
+                                ${((userStats[user.id].statsMode || 'real') === 'real' 
+                                  ? userStats[user.id].realStats?.diceBattle?.totalBets || 0
+                                  : userStats[user.id].virtualStats?.diceBattle?.totalBets || 0
+                                ).toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Total Wins:</span>
+                              <span className="text-green-400 font-bold">
+                                ${((userStats[user.id].statsMode || 'real') === 'real' 
+                                  ? userStats[user.id].realStats?.diceBattle?.totalWins || 0
+                                  : userStats[user.id].virtualStats?.diceBattle?.totalWins || 0
+                                ).toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Total Loses:</span>
+                              <span className="text-red-400 font-bold">
+                                ${((userStats[user.id].statsMode || 'real') === 'real' 
+                                  ? userStats[user.id].realStats?.diceBattle?.totalLoses || 0
+                                  : userStats[user.id].virtualStats?.diceBattle?.totalLoses || 0
+                                ).toFixed(2)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* DiceRoulette */}
+                        <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
+                          <h5 className="font-bold mb-3 text-orange-400 text-center">🎯 DiceRoulette</h5>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span>Games:</span>
+                              <span className="font-bold">
+                                {(userStats[user.id].statsMode || 'real') === 'real' 
+                                  ? userStats[user.id].realStats?.diceRoulette?.totalGames || 0
+                                  : userStats[user.id].virtualStats?.diceRoulette?.totalGames || 0
+                                }
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Wins:</span>
+                              <span className="text-green-400 font-bold">
+                                {(userStats[user.id].statsMode || 'real') === 'real' 
+                                  ? userStats[user.id].realStats?.diceRoulette?.wins || 0
+                                  : userStats[user.id].virtualStats?.diceRoulette?.wins || 0
+                                }
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Losses:</span>
+                              <span className="text-red-400 font-bold">
+                                {(userStats[user.id].statsMode || 'real') === 'real' 
+                                  ? userStats[user.id].realStats?.diceRoulette?.losses || 0
+                                  : userStats[user.id].virtualStats?.diceRoulette?.losses || 0
+                                }
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Total Bets:</span>
+                              <span className="font-bold">
+                                ${((userStats[user.id].statsMode || 'real') === 'real' 
+                                  ? userStats[user.id].realStats?.diceRoulette?.totalBets || 0
+                                  : userStats[user.id].virtualStats?.diceRoulette?.totalBets || 0
+                                ).toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Total Wins:</span>
+                              <span className="text-green-400 font-bold">
+                                ${((userStats[user.id].statsMode || 'real') === 'real' 
+                                  ? userStats[user.id].realStats?.diceRoulette?.totalWins || 0
+                                  : userStats[user.id].virtualStats?.diceRoulette?.totalWins || 0
+                                ).toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Total Loses:</span>
+                              <span className="text-red-400 font-bold">
+                                ${((userStats[user.id].statsMode || 'real') === 'real' 
+                                  ? userStats[user.id].realStats?.diceRoulette?.totalLoses || 0
+                                  : userStats[user.id].virtualStats?.diceRoulette?.totalLoses || 0
+                                ).toFixed(2)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Real Money Overview - Show for all users */}
                   <div className="mb-6 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
                     <h4 className="text-lg font-bold text-yellow-400 mb-4">💰 Real Money Overview</h4>
                     <div className="grid grid-cols-3 gap-4 text-sm">
@@ -448,234 +694,6 @@ const AdminPanel: React.FC = () => {
                           ${(userStats[user.id].realMoney?.casinoProfit || 0).toFixed(2)}
                         </div>
                         <div className="text-gray-400">Casino Profit</div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Game Statistics Toggle */}
-                  <div className="mb-4">
-                    <div className="flex items-center space-x-4">
-                      <span className="text-sm font-medium">Game Statistics:</span>
-                      <button
-                        onClick={() => {
-                          const currentMode = userStats[user.id].statsMode || 'real';
-                          setUserStats(prev => ({
-                            ...prev,
-                            [user.id]: {
-                              ...prev[user.id],
-                              statsMode: currentMode === 'real' ? 'virtual' : 'real'
-                            }
-                          }));
-                        }}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          (userStats[user.id].statsMode || 'real') === 'real' ? 'bg-yellow-600' : 'bg-purple-600'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            (userStats[user.id].statsMode || 'real') === 'real' ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                      <span className={`text-sm font-medium ${
-                        (userStats[user.id].statsMode || 'real') === 'real' ? 'text-yellow-400' : 'text-purple-400'
-                      }`}>
-                        {(userStats[user.id].statsMode || 'real') === 'real' ? 'REAL MONEY' : 'VIRTUAL MONEY'}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {/* Game Statistics */}
-                  <div className="grid md:grid-cols-3 gap-4">
-                    {/* BarboDice */}
-                    <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                      <h5 className="font-bold mb-3 text-green-400 text-center">🎲 BarboDice</h5>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span>Games:</span>
-                          <span className="font-bold">
-                            {(userStats[user.id].statsMode || 'real') === 'real' 
-                              ? userStats[user.id].realStats?.barboDice?.totalGames || 0
-                              : userStats[user.id].virtualStats?.barboDice?.totalGames || 0
-                            }
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Wins:</span>
-                          <span className="text-green-400 font-bold">
-                            {(userStats[user.id].statsMode || 'real') === 'real' 
-                              ? userStats[user.id].realStats?.barboDice?.wins || 0
-                              : userStats[user.id].virtualStats?.barboDice?.wins || 0
-                            }
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Losses:</span>
-                          <span className="text-red-400 font-bold">
-                            {(userStats[user.id].statsMode || 'real') === 'real' 
-                              ? userStats[user.id].realStats?.barboDice?.losses || 0
-                              : userStats[user.id].virtualStats?.barboDice?.losses || 0
-                            }
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Total Bets:</span>
-                          <span className="font-bold">
-                            ${((userStats[user.id].statsMode || 'real') === 'real' 
-                              ? userStats[user.id].realStats?.barboDice?.totalBets || 0
-                              : userStats[user.id].virtualStats?.barboDice?.totalBets || 0
-                            ).toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Total Wins:</span>
-                          <span className="text-green-400 font-bold">
-                            ${((userStats[user.id].statsMode || 'real') === 'real' 
-                              ? userStats[user.id].realStats?.barboDice?.totalWins || 0
-                              : userStats[user.id].virtualStats?.barboDice?.totalWins || 0
-                            ).toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Total Loses:</span>
-                          <span className="text-red-400 font-bold">
-                            ${((userStats[user.id].statsMode || 'real') === 'real' 
-                              ? userStats[user.id].realStats?.barboDice?.totalLoses || 0
-                              : userStats[user.id].virtualStats?.barboDice?.totalLoses || 0
-                            ).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* DiceBattle */}
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                      <h5 className="font-bold mb-3 text-red-400 text-center">⚔️ DiceBattle</h5>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span>Games:</span>
-                          <span className="font-bold">
-                            {(userStats[user.id].statsMode || 'real') === 'real' 
-                              ? userStats[user.id].realStats?.diceBattle?.totalGames || 0
-                              : userStats[user.id].virtualStats?.diceBattle?.totalGames || 0
-                            }
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Wins:</span>
-                          <span className="text-green-400 font-bold">
-                            {(userStats[user.id].statsMode || 'real') === 'real' 
-                              ? userStats[user.id].realStats?.diceBattle?.wins || 0
-                              : userStats[user.id].virtualStats?.diceBattle?.wins || 0
-                            }
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Losses:</span>
-                          <span className="text-red-400 font-bold">
-                            {(userStats[user.id].statsMode || 'real') === 'real' 
-                              ? userStats[user.id].realStats?.diceBattle?.losses || 0
-                              : userStats[user.id].virtualStats?.diceBattle?.losses || 0
-                            }
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Ties:</span>
-                          <span className="text-yellow-400 font-bold">
-                            {(userStats[user.id].statsMode || 'real') === 'real' 
-                              ? userStats[user.id].realStats?.diceBattle?.ties || 0
-                              : userStats[user.id].virtualStats?.diceBattle?.ties || 0
-                            }
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Total Bets:</span>
-                          <span className="font-bold">
-                            ${((userStats[user.id].statsMode || 'real') === 'real' 
-                              ? userStats[user.id].realStats?.diceBattle?.totalBets || 0
-                              : userStats[user.id].virtualStats?.diceBattle?.totalBets || 0
-                            ).toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Total Wins:</span>
-                          <span className="text-green-400 font-bold">
-                            ${((userStats[user.id].statsMode || 'real') === 'real' 
-                              ? userStats[user.id].realStats?.diceBattle?.totalWins || 0
-                              : userStats[user.id].virtualStats?.diceBattle?.totalWins || 0
-                            ).toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Total Loses:</span>
-                          <span className="text-red-400 font-bold">
-                            ${((userStats[user.id].statsMode || 'real') === 'real' 
-                              ? userStats[user.id].realStats?.diceBattle?.totalLoses || 0
-                              : userStats[user.id].virtualStats?.diceBattle?.totalLoses || 0
-                            ).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* DiceRoulette */}
-                    <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
-                      <h5 className="font-bold mb-3 text-orange-400 text-center">🎯 DiceRoulette</h5>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span>Games:</span>
-                          <span className="font-bold">
-                            {(userStats[user.id].statsMode || 'real') === 'real' 
-                              ? userStats[user.id].realStats?.diceRoulette?.totalGames || 0
-                              : userStats[user.id].virtualStats?.diceRoulette?.totalGames || 0
-                            }
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Wins:</span>
-                          <span className="text-green-400 font-bold">
-                            {(userStats[user.id].statsMode || 'real') === 'real' 
-                              ? userStats[user.id].realStats?.diceRoulette?.wins || 0
-                              : userStats[user.id].virtualStats?.diceRoulette?.wins || 0
-                            }
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Losses:</span>
-                          <span className="text-red-400 font-bold">
-                            {(userStats[user.id].statsMode || 'real') === 'real' 
-                              ? userStats[user.id].realStats?.diceRoulette?.losses || 0
-                              : userStats[user.id].virtualStats?.diceRoulette?.losses || 0
-                            }
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Total Bets:</span>
-                          <span className="font-bold">
-                            ${((userStats[user.id].statsMode || 'real') === 'real' 
-                              ? userStats[user.id].realStats?.diceRoulette?.totalBets || 0
-                              : userStats[user.id].virtualStats?.diceRoulette?.totalBets || 0
-                            ).toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Total Wins:</span>
-                          <span className="text-green-400 font-bold">
-                            ${((userStats[user.id].statsMode || 'real') === 'real' 
-                              ? userStats[user.id].realStats?.diceRoulette?.totalWins || 0
-                              : userStats[user.id].virtualStats?.diceRoulette?.totalWins || 0
-                            ).toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Total Loses:</span>
-                          <span className="text-red-400 font-bold">
-                            ${((userStats[user.id].statsMode || 'real') === 'real' 
-                              ? userStats[user.id].realStats?.diceRoulette?.totalLoses || 0
-                              : userStats[user.id].virtualStats?.diceRoulette?.totalLoses || 0
-                            ).toFixed(2)}
-                          </span>
-                        </div>
                       </div>
                     </div>
                   </div>
