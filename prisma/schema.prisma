@@ -226,6 +226,8 @@ model AffiliateStats {
   requestedPayout   Float    @default(0)
   payoutRequested   Boolean  @default(false)
   payoutRequestDate DateTime?
+  payoutPeriod      String   @default("monthly") // "monthly", "quarterly", "yearly"
+  lastPayoutPeriod  String?  // "2024-01", "2024-Q1", "2024"
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

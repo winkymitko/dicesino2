@@ -282,20 +282,26 @@ const Profile: React.FC = () => {
                     ⏳ Payout request pending: ${(affiliateStats.requestedPayout || 0).toFixed(2)}
                     <br />
                     <span className="text-gray-400">
-                      Requested: {affiliateStats.payoutRequestDate ? new Date(affiliateStats.payoutRequestDate).toLocaleDateString() : 'N/A'}
+                      Period: {affiliateStats.payoutPeriod || 'N/A'} | Requested: {affiliateStats.payoutRequestDate ? new Date(affiliateStats.payoutRequestDate).toLocaleDateString() : 'N/A'}
                     </span>
                   </div>
                 ) : (
                   <button
                     onClick={async () => {
+                      const currentMonth = new Date().toISOString().slice(0, 7); // 2024-01 format
+                      const period = prompt(`Enter period (e.g., ${currentMonth} for current month):`, currentMonth);
                       const amount = prompt('Enter payout amount:');
-                      if (amount && parseFloat(amount) > 0) {
+                      
+                      if (period && amount && parseFloat(amount) > 0) {
                         try {
                           const response = await fetch('/api/affiliate/request-payout', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             credentials: 'include',
-                            body: JSON.stringify({ amount: parseFloat(amount) })
+                            body: JSON.stringify({ 
+                              amount: parseFloat(amount),
+                              period: period
+                            })
                           });
                           if (response.ok) {
                             alert('Payout request submitted!');
