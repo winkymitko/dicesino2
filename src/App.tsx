@@ -21,7 +21,7 @@ function App() {
           <Header />
           <main className="pt-16 pb-20">
             <Routes>
-              <Route path="/" element={user?.isAffiliate ? <Profile /> : <Home />} />
+              <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/dice" element={<DiceGame />} />
