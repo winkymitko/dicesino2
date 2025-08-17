@@ -244,6 +244,11 @@ router.post('/dice/start', authenticateToken, async (req, res) => {
       useVirtual
     );
     
+    // Update wagering progress for all real money bets (regardless of source)
+    if (!useVirtual) {
+      await updateWageringProgress(req.user.id, numericStake);
+    }
+    
     // Create new game
     const game = await prisma.game.create({
       data: {
@@ -359,11 +364,6 @@ router.post('/dice/roll', authenticateToken, async (req, res) => {
         }
       });
       
-      // Update wagering progress if bonus was used
-      if (game.betSource !== 'cash' && !game.metadata?.includes('virtual')) {
-        await updateWageringProgress(req.user.id, numericStake);
-      }
-      
       await prisma.user.update({
         where: { id: req.user.id },
         data: {
@@ -451,9 +451,6 @@ router.post('/dice/cashout', authenticateToken, async (req, res) => {
         data: updateData
       });
       
-      // Update wagering progress
-      const wageringResult = await updateWageringProgress(req.user.id, numericStake);
-      
       // Create transaction record
       const user = await prisma.user.findUnique({ where: { id: req.user.id } });
       await prisma.transaction.create({
@@ -471,16 +468,6 @@ router.post('/dice/cashout', authenticateToken, async (req, res) => {
           reference: game.id
         }
       });
-      
-      if (wageringResult.wageringCompleted) {
-        return res.json({ 
-          success: true, 
-          finalPot: game.totalPot,
-          winStreak: req.user.currentWinStreak + 1,
-          wageringCompleted: true,
-          convertedAmount: wageringResult.convertedAmount
-        });
-      }
     }
     
     res.json({ 
@@ -602,6 +589,11 @@ router.post('/diceroulette/roll', authenticateToken, async (req, res) => {
       useVirtual
     );
     
+    // Update wagering progress for all real money bets
+    if (!useVirtual) {
+      await updateWageringProgress(req.user.id, totalBet);
+    }
+    
     // Generate dice roll
     const serverSeed = generateServerSeed();
     const clientSeed = Math.random().toString(36).substring(2, 15);
@@ -717,8 +709,6 @@ router.post('/diceroulette/roll', authenticateToken, async (req, res) => {
       await prisma.user.update({
         where: { id: req.user.id },
         data: winUpdateData
-      });
-      
       await updateWageringProgress(req.user.id, totalBet);
     }
     
@@ -771,6 +761,11 @@ router.post('/dicebattle/start', authenticateToken, async (req, res) => {
       numericStake, 
       useVirtual
     );
+    
+    // Update wagering progress for all real money bets
+    if (!useVirtual) {
+      await updateWageringProgress(req.user.id, numericStake);
+    }
     
     // Generate bot opponent
     const botNames = ['DiceKing', 'RollMaster', 'LuckyPlayer', 'DiceNinja', 'BattleBot'];
@@ -987,9 +982,6 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
           data: updateData
         });
         
-        // Update wagering progress
-        await updateWageringProgress(req.user.id, game.stake);
-        
         // Create transaction record
         const user = await prisma.user.findUnique({ where: { id: req.user.id } });
         await prisma.transaction.create({
@@ -1010,10 +1002,6 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
       }
     } else {
       // Player lost
-      if (!useVirtual && game.betSource !== 'cash') {
-        await updateWageringProgress(req.user.id, numericStake);
-      }
-      
       await prisma.user.update({
         where: { id: req.user.id },
         data: {
