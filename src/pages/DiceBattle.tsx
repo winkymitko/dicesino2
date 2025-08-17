@@ -136,12 +136,10 @@ const DiceBattle = () => {
         
         <div className="flex justify-center items-center space-x-8 mb-6">
           <div className="text-center">
-            <div className="text-green-400 font-bold text-xl">${(user.virtualBalance || 0).toFixed(2)}</div>
-            <div className="text-gray-400">Virtual</div>
-          </div>
-          <div className="text-center">
-            <div className="text-yellow-400 font-bold text-xl">${((user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0)).toFixed(2)}</div>
-            <div className="text-gray-400">Main</div>
+            <div className={`font-bold text-xl ${gameMode === 'virtual' ? 'text-purple-400' : 'text-yellow-400'}`}>
+              ${gameMode === 'virtual' ? (user.virtualBalance || 0).toFixed(2) : ((user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0)).toFixed(2)}
+            </div>
+            <div className="text-gray-400">{gameMode === 'virtual' ? 'Virtual' : 'Real'} Balance</div>
           </div>
         </div>
       </div>
