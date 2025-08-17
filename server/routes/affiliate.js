@@ -59,8 +59,30 @@ router.get('/stats', authenticateToken, async (req, res) => {
     // Calculate total profit from referrals (real money only)
     const referralStats = referrals.map(referral => ({
       ...referral,
-      casinoProfit: (referral.totalBets || 0) - (referral.totalWins || 0)
+      casinoProfit: 0 // Will be calculated from actual real money games
     }));
+    
+    // Calculate real casino profit for each referral
+    for (let referral of referralStats) {
+      const realMoneyGames = await prisma.game.findMany({
+        where: {
+          userId: referral.id,
+          metadata: {
+            not: {
+              contains: '"useVirtual":true'
+            }
+          }
+        },
+        select: {
+          stake: true,
+          finalPot: true
+        }
+      });
+      
+      referral.casinoProfit = realMoneyGames.reduce((sum, game) => {
+        return sum + ((game.stake || 0) - (game.finalPot || 0));
+      }, 0);
+    }
 
     // Calculate total commission earned
     const totalCasinoProfit = referralStats.reduce((sum, ref) => sum + (ref.casinoProfit || 0), 0);

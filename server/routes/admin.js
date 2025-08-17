@@ -151,24 +151,40 @@ router.get('/stats', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const totalUsers = await prisma.user.count();
     const totalGames = await prisma.game.count();
-    const totalBets = await prisma.user.aggregate({
-      _sum: { totalBets: true }
+    
+    // Get total real money deposited
+    const totalRealMoneyDeposited = await prisma.cryptoDeposit.aggregate({
+      where: { status: 'confirmed' },
+      _sum: { amount: true }
     });
     
-    const recentGames = await prisma.game.findMany({
-      include: {
-        user: { select: { email: true, name: true } },
-        rounds: true
+    // Calculate total casino profit from real money games
+    const realMoneyGames = await prisma.game.findMany({
+      where: {
+        metadata: {
+          not: {
+            contains: '"useVirtual":true'
+          }
+        }
       },
-      orderBy: { createdAt: 'desc' },
-      take: 10
+      select: {
+        stake: true,
+        finalPot: true,
+        status: true
+      }
+    });
+    
+    let totalCasinoProfit = 0;
+    realMoneyGames.forEach(game => {
+      const profit = (game.stake || 0) - (game.finalPot || 0);
+      totalCasinoProfit += profit;
     });
     
     res.json({
       totalUsers,
       totalGames,
-      totalRevenue: totalBets._sum.totalBets || 0,
-      recentGames
+      totalRealMoneyDeposited: totalRealMoneyDeposited._sum.amount || 0,
+      totalCasinoProfit
     });
   } catch (error) {
     console.error(error);
@@ -194,41 +210,39 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
       orderBy: { createdAt: 'desc' }
     });
     
-    // Separate games by balance type (from metadata)
+    // Get crypto deposits for real money deposited
+    const cryptoDeposits = await prisma.cryptoDeposit.findMany({
+      where: { userId, status: 'confirmed' }
+    });
+    const realDeposited = cryptoDeposits.reduce((sum, deposit) => sum + (deposit.amount || 0), 0);
+    
+    // Separate games by balance type (virtual vs real)
     const virtualGames = games.filter(game => {
       try {
         const metadata = JSON.parse(game.metadata || '{}');
-        return metadata.useVirtual !== false; // Default to virtual
+        return metadata.useVirtual === true;
       } catch {
-        return true; // Default to virtual if parsing fails
+        return false;
       }
     });
     
     const realGames = games.filter(game => {
       try {
         const metadata = JSON.parse(game.metadata || '{}');
-        return metadata.useVirtual === false;
+        return metadata.useVirtual !== true; // Real money games
       } catch {
-        return false;
+        return true; // Default to real if no metadata
       }
     });
     
     // Calculate virtual stats
     const virtualWagered = virtualGames.reduce((sum, game) => sum + (game.stake || 0), 0);
     const virtualWon = virtualGames.reduce((sum, game) => sum + (game.finalPot || 0), 0);
-    const virtualDeposited = bonuses.filter(b => b.type === 'signup').reduce((sum, bonus) => sum + (bonus.amount || 0), 0) + 1000; // Initial virtual money + signup bonuses
+    const virtualDeposited = 1000 + bonuses.filter(b => b.type === 'signup').reduce((sum, bonus) => sum + (bonus.amount || 0), 0); // Initial + signup bonuses
     
     // Calculate real stats
     const realWagered = realGames.reduce((sum, game) => sum + (game.stake || 0), 0);
     const realWon = realGames.reduce((sum, game) => sum + (game.finalPot || 0), 0);
-    
-    // Get user's deposit history from crypto deposits
-    const cryptoDeposits = await prisma.cryptoDeposit.findMany({
-      where: { userId, status: 'confirmed' }
-    });
-    const realDeposited = cryptoDeposits.reduce((sum, deposit) => sum + (deposit.amount || 0), 0);
-    
-    // Get deposit bonuses (real money bonuses)
     const depositBonuses = bonuses.filter(b => b.type === 'deposit').reduce((sum, bonus) => sum + (bonus.amount || 0), 0);
     
     // Separate by game type for virtual
@@ -247,7 +261,6 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
       wagered: virtualDiceGames.reduce((sum, game) => sum + (game.stake || 0), 0),
       won_amount: virtualDiceGames.reduce((sum, game) => sum + (game.finalPot || 0), 0)
     };
-    // Casino profit = what players bet - what casino paid out to winners
     const virtualDiceCasinoProfit = virtualDiceStats.wagered - virtualDiceStats.won_amount;
     
     // Virtual DiceBattle stats
@@ -259,7 +272,6 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
       wagered: virtualBattleGames.reduce((sum, game) => sum + (game.stake || 0), 0),
       won_amount: virtualBattleGames.reduce((sum, game) => sum + (game.finalPot || 0), 0)
     };
-    // Casino profit = what players bet - what casino paid out to winners
     const virtualBattleCasinoProfit = virtualBattleStats.wagered - virtualBattleStats.won_amount;
     
     // Real BarboDice stats
@@ -270,7 +282,6 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
       wagered: realDiceGames.reduce((sum, game) => sum + (game.stake || 0), 0),
       won_amount: realDiceGames.reduce((sum, game) => sum + (game.finalPot || 0), 0)
     };
-    // Casino profit = what players bet - what casino paid out to winners  
     const realDiceCasinoProfit = realDiceStats.wagered - realDiceStats.won_amount;
     
     // Real DiceBattle stats
@@ -282,7 +293,6 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
       wagered: realBattleGames.reduce((sum, game) => sum + (game.stake || 0), 0),
       won_amount: realBattleGames.reduce((sum, game) => sum + (game.finalPot || 0), 0)
     };
-    // Casino profit = what players bet - what casino paid out to winners
     const realBattleCasinoProfit = realBattleStats.wagered - realBattleStats.won_amount;
     
     // Recent virtual games with casino profit calculation
@@ -303,7 +313,6 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
         wagered: virtualWagered,
         won: virtualWon,
         netResult: virtualWon - virtualWagered,
-        totalBonusesGranted: bonuses.filter(b => b.type === 'signup').reduce((sum, bonus) => sum + (bonus.amount || 0), 0),
         diceGames: virtualDiceStats,
         battleGames: virtualBattleStats,
         diceCasinoProfit: virtualDiceCasinoProfit,
@@ -317,7 +326,6 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
         wagered: realWagered,
         won: realWon,
         netResult: realWon - realWagered,
-        grossGamingRevenue: realWagered - realWon, // GGR = bets - wins
         diceGames: realDiceStats,
         battleGames: realBattleStats,
         diceCasinoProfit: realDiceCasinoProfit,
