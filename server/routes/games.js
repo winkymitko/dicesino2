@@ -100,7 +100,7 @@ async function determineBetSource(userId, stakeAmount, useVirtual) {
   }
   
   // Check bonus restrictions
-  if (user.bonusBalance > 0 && stakeAmount > user.maxBetWhileBonus) {
+  if ((user.bonusBalance > 0 || user.lockedBalance > 0) && stakeAmount > (user.maxBetWhileBonus || 50)) {
     throw new Error(`Maximum bet while bonus active is $${user.maxBetWhileBonus}`);
   }
   
