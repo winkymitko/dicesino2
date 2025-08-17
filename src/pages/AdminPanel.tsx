@@ -247,49 +247,52 @@ const AdminPanel: React.FC = () => {
                     <div className="font-bold">{user.username}</div>
                     <div className="text-sm text-gray-400">{user.email}</div>
                   </div>
-                  <div className="text-sm">
-                    <div>Virtual: ${(user.virtualBalance || 0).toFixed(2)}</div>
-                    <div>Real: ${(user.realBalance || 0).toFixed(2)}</div>
-                  </div>
-                  <div className="text-sm">
-                    <div className="text-center p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-                      <div className="text-2xl font-bold text-orange-400">${(user.totalCommissionEarned || 0).toFixed(2)}</div>
-                      <div className="text-sm text-gray-400">Total Earned</div>
+                  <div className="flex items-center space-x-6 text-sm">
+                    <div>
+                      <div>Virtual: ${(user.virtualBalance || 0).toFixed(2)}</div>
+                      <div>Real: ${((user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0)).toFixed(2)}</div>
                     </div>
                     
-                    <div className="text-center p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-                      <div className="text-2xl font-bold text-orange-400">{user.totalReferrals || 0}</div>
-                      <div className="text-sm text-gray-400">Total Referrals</div>
-                    </div>
+                    {/* Affiliate Stats - Only show if user is affiliate */}
+                    {user.isAffiliate && (
+                      <div className="flex items-center space-x-4 bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-orange-400">${(user.totalCommissionEarned || 0).toFixed(2)}</div>
+                          <div className="text-xs text-gray-400">Total Earned</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-orange-400">{user.totalReferrals || 0}</div>
+                          <div className="text-xs text-gray-400">Total Referrals</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-orange-400">{user.activeReferrals || 0}</div>
+                          <div className="text-xs text-gray-400">Active Referrals</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-purple-400">{(user.affiliateCommission || 0).toFixed(1)}%</div>
+                          <div className="text-xs text-gray-400">Commission Rate</div>
+                        </div>
+                      </div>
+                    )}
                     
-                    <div className="text-center p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-                      <div className="text-2xl font-bold text-orange-400">{user.activeReferrals || 0}</div>
-                      <div className="text-sm text-gray-400">Active Referrals</div>
-                    </div>
-                    
-                    <div className="text-center p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-                      <div className="text-2xl font-bold text-purple-400">{(user.affiliateCommission || 0).toFixed(1)}%</div>
-                      <div className="text-sm text-gray-400">Commission Rate</div>
-                    </div>
-                    
-                    {/* Add Commission Rate Setting */}
-                    <div className="col-span-4 mt-4">
-                      <label className="block text-sm font-medium mb-2">Set Commission Rate (%)</label>
-                      <div className="flex space-x-2">
+                    {/* Commission Rate Setting - Only show if user is affiliate */}
+                    {user.isAffiliate && (
+                      <div className="flex items-center space-x-2">
+                        <label className="text-xs text-gray-400">Set Rate:</label>
                         <input
                           type="number"
                           step="0.1"
                           min="0"
-                          max="50"
+                          max="100"
                           defaultValue={user.affiliateCommission || 0}
-                          className="flex-1 px-3 py-2 bg-black/30 border border-white/20 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+                          className="w-16 px-2 py-1 bg-black/30 border border-white/20 rounded text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
                           id={`commission-${user.id}`}
                         />
                         <button
                           onClick={async () => {
                             const input = document.getElementById(`commission-${user.id}`) as HTMLInputElement;
                             const newRate = parseFloat(input.value);
-                            if (newRate >= 0 && newRate <= 50) {
+                            if (newRate >= 0 && newRate <= 100) {
                               try {
                                 const response = await fetch(`/api/admin/users/${user.id}/commission`, {
                                   method: 'PUT',
@@ -309,12 +312,12 @@ const AdminPanel: React.FC = () => {
                               }
                             }
                           }}
-                          className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+                          className="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs transition-colors"
                         >
                           Update
                         </button>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
                 
