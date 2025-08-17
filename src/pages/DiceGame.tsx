@@ -121,7 +121,6 @@ const DiceGame: React.FC = () => {
       setCanCashOut(false);
       await refreshUser();
       
-      alert(`Congratulations! You won $${data.finalPot.toFixed(2)}! Win streak: ${data.winStreak}`);
     } catch (err: any) {
       setError(err.message);
     }
@@ -356,14 +355,17 @@ const DiceGame: React.FC = () => {
                 </>
               ) : showResult && lastRoll.points > 0 ? (
                 <>
-                  <div className="text-lg font-bold mb-2 text-green-400">
-                    Winning combination! You cashed out successfully!
+                  <div className="text-2xl font-bold mb-4 text-green-400">
+                    🎉 Congratulations! You won ${totalPot.toFixed(2)}!
                   </div>
                   <div className="text-sm text-gray-400">
                     {getScoreExplanation(lastRoll)}
                   </div>
                   <div className="text-sm text-gray-400">
                     Multiplier: {lastRoll.multiplier}x | Pot: ${lastRoll.potBefore.toFixed(2)} → ${lastRoll.potAfter.toFixed(2)}
+                  </div>
+                  <div className="text-sm text-yellow-400 mt-2">
+                    Win Streak: {user.currentWinStreak}
                   </div>
                 </>
               ) : null}

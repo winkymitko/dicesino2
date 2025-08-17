@@ -99,12 +99,6 @@ async function determineBetSource(userId, stakeAmount, useVirtual) {
     return { source: 'virtual', bonusUsed: 0, cashUsed: 0, virtualUsed: stakeAmount };
   }
   
-  // Check total available balance first
-  const totalAvailable = (user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0);
-  if (totalAvailable < stakeAmount) {
-    throw new Error(`Insufficient balance. Available: $${totalAvailable.toFixed(2)}, Required: $${stakeAmount.toFixed(2)}`);
-  }
-  
   // Check bonus restrictions
   if ((user.bonusBalance > 0 || user.lockedBalance > 0) && stakeAmount > (user.maxBetWhileBonus || 50)) {
     throw new Error(`Maximum bet while bonus active is $${user.maxBetWhileBonus}`);
@@ -122,6 +116,10 @@ async function determineBetSource(userId, stakeAmount, useVirtual) {
   
   // Use cash for remainder
   if (remainingStake > 0) {
+    if (user.cashBalance < remainingStake) {
+      const totalAvailable = (user.cashBalance || 0) + (user.bonusBalance || 0);
+      throw new Error(`Insufficient balance. Available: $${totalAvailable.toFixed(2)}, Required: $${stakeAmount.toFixed(2)}`);
+    }
     cashUsed = remainingStake;
   }
   
