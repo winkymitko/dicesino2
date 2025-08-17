@@ -22,7 +22,7 @@ async function testConnection() {
     console.log('Database connected successfully');
   } catch (error) {
     console.error('Database connection failed:', error);
-    process.exit(1);
+    console.log('Continuing without database connection...');
   }
 }
 
@@ -40,7 +40,19 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/affiliate', affiliateRoutes);
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+});
 app.listen(PORT, async () => {
+  console.log(`🚀 Server starting on port ${PORT}...`);
   await testConnection();
-  console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Server running on http://localhost:${PORT}`);
+  console.log(`📊 Admin panel: http://localhost:5173/admin`);
 });
