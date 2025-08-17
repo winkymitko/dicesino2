@@ -551,8 +551,8 @@ const AdminPanel: React.FC = () => {
                             step="0.1"
                             min="0"
                             max="50"
-                            defaultValue={user.affiliateCommission || 0}
-                            className="flex-1 px-3 py-2 bg-black/30 border border-white/20 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+                            value={selectedUser.diceRouletteEdge || 5}
+                            onChange={(e) => setDiceRouletteEdge(e.target.value)}
                             id={`commission-${user.id}`}
                           />
                           <button
