@@ -66,7 +66,9 @@ router.get('/stats', authenticateToken, async (req, res) => {
     for (let referral of referralStats) {
       const realMoneyGames = await prisma.game.findMany({
         where: {
-          userId: referral.id,
+          user: {
+            referredBy: req.user.affiliateCode
+          },
           metadata: {
             not: {
               contains: '"useVirtual":true'
