@@ -32,6 +32,7 @@ model User {
   // Enhanced edge control per game
   diceGameEdge      Float    @default(5.0)   // House edge % for dice game
   diceBattleEdge    Float    @default(5.0)   // House edge % for dice battle
+  diceRouletteEdge  Float    @default(5.0)   // House edge % for dice roulette
   
   // Risk controls
   maxBetWhileBonus  Float    @default(50)    // Max bet when bonus active

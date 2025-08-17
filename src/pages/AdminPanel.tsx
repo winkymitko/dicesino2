@@ -15,6 +15,7 @@ const AdminPanel: React.FC = () => {
   const [bonusDescription, setBonusDescription] = useState('');
   const [diceGameEdge, setDiceGameEdge] = useState('5.0');
   const [diceBattleEdge, setDiceBattleEdge] = useState('5.0');
+  const [diceRouletteEdge, setDiceRouletteEdge] = useState('5.0');
   const [maxBetWhileBonus, setMaxBetWhileBonus] = useState('50');
   const [maxBonusCashout, setMaxBonusCashout] = useState('1000');
 
