@@ -125,8 +125,13 @@ router.post('/login', async (req, res) => {
 
 // Get current user
 router.get('/me', authenticateToken, (req, res) => {
-  const { password, ...userWithoutPassword } = req.user;
-  res.json({ user: userWithoutPassword });
+  try {
+    const { password, ...userWithoutPassword } = req.user;
+    res.json({ user: userWithoutPassword });
+  } catch (error) {
+    console.error('Error in /me endpoint:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // Logout
