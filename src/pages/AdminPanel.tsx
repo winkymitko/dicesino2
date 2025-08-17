@@ -390,8 +390,10 @@ const AdminPanel: React.FC = () => {
                       setSelectedUser(user);
                       setDiceGameEdge(user.diceGameEdge?.toString() || '5.0');
                       setDiceBattleEdge(user.diceBattleEdge?.toString() || '5.0');
+                      setDiceRouletteEdge(user.diceRouletteEdge?.toString() || '5.0');
                       setMaxBetWhileBonus(user.maxBetWhileBonus?.toString() || '50');
                       setMaxBonusCashout(user.maxBonusCashout?.toString() || '1000');
+                      setWageringMultiplier(user.wageringMultiplier?.toString() || '20');
                     }}
                     className="bg-yellow-500/20 text-yellow-400 px-4 py-2 rounded-lg hover:bg-yellow-500/30 transition-colors"
                   >
@@ -791,27 +793,96 @@ const AdminPanel: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Add Bonus (Virtual Money)</label>
+                <label className="block text-sm font-medium mb-2">Wagering Multiplier</label>
                 <input
                   type="number"
-                  step="0.01"
-                  min="0"
-                  value={bonusAmount}
-                  onChange={(e) => setBonusAmount(e.target.value)}
+                  step="1"
+                  min="1"
+                  max="100"
+                  value={wageringMultiplier}
+                  onChange={(e) => setWageringMultiplier(e.target.value)}
                   className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
-                  placeholder="Bonus amount"
                 />
+                <p className="text-xs text-gray-400 mt-1">
+                  Wagering requirement multiplier (e.g., 20x means $100 bonus = $2000 wagering)
+                </p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Bonus Description</label>
-                <input
-                  type="text"
-                  value={bonusDescription}
-                  onChange={(e) => setBonusDescription(e.target.value)}
-                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
-                  placeholder="e.g., Welcome bonus, Loyalty reward"
-                />
+              <div className="border-t border-white/20 pt-4">
+                <h4 className="text-lg font-bold mb-4 text-green-400">💰 Grant Real Money Bonus</h4>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2">Bonus Amount ($)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={bonusAmount}
+                    onChange={(e) => setBonusAmount(e.target.value)}
+                    className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
+                    placeholder="Enter bonus amount"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Real money bonus (goes to bonus balance with wagering requirement)
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Bonus Description</label>
+                  <input
+                    type="text"
+                    value={bonusDescription}
+                    onChange={(e) => setBonusDescription(e.target.value)}
+                    className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
+                    placeholder="e.g., Welcome bonus, Loyalty reward"
+                  />
+                </div>
+              </div>
+
+              <div className="border-t border-white/20 pt-4">
+                <h4 className="text-lg font-bold mb-4 text-blue-400">⚙️ Wagering Adjustments</h4>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Add to Wagering ($)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      id={`add-wagering-${selectedUser?.id}`}
+                      className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+                      placeholder="Amount to add"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Reduce Wagering ($)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      id={`reduce-wagering-${selectedUser?.id}`}
+                      className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-colors"
+                      placeholder="Amount to reduce"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex space-x-3 mt-4">
+                  <button
+                    onClick={() => adjustWagering(selectedUser.id, 'add')}
+                    className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-2 rounded-lg transition-all"
+                  >
+                    Add Wagering
+                  </button>
+                  
+                  <button
+                    onClick={() => adjustWagering(selectedUser.id, 'reduce')}
+                    className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-2 rounded-lg transition-all"
+                  >
+                    Reduce Wagering
+                  </button>
+                </div>
               </div>
 
               <div className="flex space-x-3 pt-4">
@@ -823,11 +894,11 @@ const AdminPanel: React.FC = () => {
                 </button>
                 
                 <button
-                  onClick={() => addBonus(selectedUser.id)}
+                  onClick={() => grantRealBonus(selectedUser.id)}
                   disabled={!bonusAmount}
                   className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:opacity-50 text-white font-bold py-2 rounded-lg transition-all"
                 >
-                  Add Bonus
+                  Grant Bonus
                 </button>
                 
                 <button
