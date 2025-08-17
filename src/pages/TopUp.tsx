@@ -15,6 +15,10 @@ const TopUp: React.FC = () => {
   const [deposits, setDeposits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Safe balance calculations with fallbacks
+  const realBalance = (user?.cashBalance || 0) + (user?.bonusBalance || 0) + (user?.lockedBalance || 0);
+  const virtualBalance = user?.virtualBalance || 0;
+
   useEffect(() => {
     if (!user) {
       navigate('/login');
@@ -172,16 +176,16 @@ const TopUp: React.FC = () => {
             )}
             
             {/* Wallet Status */}
-            {walletStatus.usdtBalance !== undefined && (
+            {walletStatus?.usdtBalance !== undefined && (
               <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                 <div className="text-sm">
                   <div className="flex justify-between items-center">
                     <span className="text-blue-400">USDT Balance on Blockchain:</span>
-                    <span className="font-bold">${walletStatus.usdtBalance?.toFixed(2) || '0.00'}</span>
+                    <span className="font-bold">${(walletStatus.usdtBalance || 0).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center mt-1">
                     <span className="text-gray-400">TRX Balance (Gas):</span>
-                    <span className="text-sm">{walletStatus.trxBalance?.toFixed(2) || '0.00'} TRX</span>
+                    <span className="text-sm">{(walletStatus.trxBalance || 0).toFixed(2)} TRX</span>
                   </div>
                 </div>
               </div>
@@ -242,13 +246,13 @@ const TopUp: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
                 <div className="text-2xl font-bold text-green-400">
-                  ${user.virtualBalance.toFixed(2)}
+                  ${virtualBalance.toFixed(2)}
                 </div>
                 <div className="text-sm text-gray-400">Virtual Balance</div>
               </div>
               <div className="text-center p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                 <div className="text-2xl font-bold text-yellow-400">
-                  ${user.realBalance.toFixed(2)}
+                  ${realBalance.toFixed(2)}
                 </div>
                 <div className="text-sm text-gray-400">Real Balance</div>
               </div>
