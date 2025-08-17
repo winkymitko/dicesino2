@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Swords, Users, Trophy, Target } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import DiceAnimation from '../components/DiceAnimation';
 
-const DiceBattle = () => {
+const DiceBattle: React.FC = () => {
   const { user, refreshUser, gameMode } = useAuth();
   const navigate = useNavigate();
   
