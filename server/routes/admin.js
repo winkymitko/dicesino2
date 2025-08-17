@@ -81,7 +81,7 @@ router.put('/users/:userId/settings', authenticateToken, requireAdmin, async (re
       diceRouletteEdge,
       maxBetWhileBonus, 
       maxBonusCashout,
-      wageringMultiplier
+      wageringMultiplier 
     } = req.body;
     
     if (diceGameEdge < 0 || diceGameEdge > 50 || 
@@ -285,6 +285,7 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
     
     // Get all games separated by virtual/real
     const virtualGames = await prisma.game.findMany({
+      where: { userId },
       where: {
         userId,
         metadata: { contains: '"useVirtual":true' }

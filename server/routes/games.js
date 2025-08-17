@@ -710,6 +710,8 @@ router.post('/diceroulette/roll', authenticateToken, async (req, res) => {
         where: { id: req.user.id },
         data: winUpdateData
       });
+      
+      await updateWageringProgress(req.user.id, totalBet);
     }
     
     // Create game round for record keeping
