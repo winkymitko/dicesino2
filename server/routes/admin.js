@@ -53,7 +53,6 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
         currentWageringProgress: true,
         diceGameEdge: true,
         diceBattleEdge: true,
-        diceRouletteEdge: true,
         maxBetWhileBonus: true,
         maxBonusCashout: true,
         currentWinStreak: true,
@@ -96,6 +95,31 @@ router.put('/users/:userId/settings', authenticateToken, requireAdmin, async (re
     await prisma.user.update({
       where: { id: userId },
       data: updateData
+    });
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Update affiliate commission rate
+router.put('/users/:userId/commission', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { commission } = req.body;
+    
+    if (commission < 0 || commission > 50) {
+      return res.status(400).json({ error: 'Commission rate must be between 0% and 50%' });
+    }
+    
+    await prisma.user.update({
+      where: { id: userId },
+      data: { 
+        affiliateCommission: commission,
+        isAffiliate: commission > 0 // Auto-enable affiliate if commission > 0
+      }
     });
     
     res.json({ success: true });

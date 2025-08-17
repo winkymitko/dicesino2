@@ -517,6 +517,73 @@ const AdminPanel: React.FC = () => {
                       </table>
                     </div>
                   </div>
+
+                  {/* Affiliate Commission Section */}
+                  <div className="mt-6 bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
+                    <h5 className="font-bold mb-3 text-orange-400">💼 Affiliate Commission</h5>
+                    <div className="grid grid-cols-4 gap-4">
+                      <div className="text-center p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                        <div className="text-2xl font-bold text-orange-400">${(user.totalCommissionEarned || 0).toFixed(2)}</div>
+                        <div className="text-sm text-gray-400">Total Earned</div>
+                      </div>
+                      
+                      <div className="text-center p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                        <div className="text-2xl font-bold text-orange-400">{user.totalReferrals || 0}</div>
+                        <div className="text-sm text-gray-400">Total Referrals</div>
+                      </div>
+                      
+                      <div className="text-center p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                        <div className="text-2xl font-bold text-orange-400">{user.activeReferrals || 0}</div>
+                        <div className="text-sm text-gray-400">Active Referrals</div>
+                      </div>
+                      
+                      <div className="text-center p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                        <div className="text-2xl font-bold text-purple-400">{(user.affiliateCommission || 0).toFixed(1)}%</div>
+                        <div className="text-sm text-gray-400">Commission Rate</div>
+                      </div>
+                      
+                      {/* Add Commission Rate Setting */}
+                      <div className="col-span-4 mt-4">
+                        <label className="block text-sm font-medium mb-2">Set Commission Rate (%)</label>
+                        <div className="flex space-x-2">
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="50"
+                            defaultValue={user.affiliateCommission || 0}
+                            className="flex-1 px-3 py-2 bg-black/30 border border-white/20 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+                            id={`commission-${user.id}`}
+                          />
+                          <button
+                            onClick={async () => {
+                              const input = document.getElementById(`commission-${user.id}`) as HTMLInputElement;
+                              const newRate = parseFloat(input.value);
+                              if (newRate >= 0 && newRate <= 50) {
+                                try {
+                                  const response = await fetch(`/api/admin/users/${user.id}/commission`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    credentials: 'include',
+                                    body: JSON.stringify({ commission: newRate })
+                                  });
+                                  if (response.ok) {
+                                    fetchUsers();
+                                    alert('Commission rate updated successfully');
+                                  }
+                                } catch (error) {
+                                  alert('Failed to update commission rate');
+                                }
+                              }
+                            }}
+                            className="bg-blue-500/20 text-blue-400 px-4 py-2 rounded-lg hover:bg-blue-500/30 transition-colors"
+                          >
+                            Update
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
