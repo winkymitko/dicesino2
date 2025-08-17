@@ -30,9 +30,31 @@ const DiceRoulette: React.FC = () => {
   if (!user) return null;
 
   const placeBet = (betType: string, amount: number) => {
+    const currentBalance = gameMode === 'virtual' ? 
+      (user.virtualBalance || 0) : 
+      ((user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0));
+    
+    const newBetAmount = (bets[betType] || 0) + amount;
+    const newTotalBet = Object.values(bets).reduce((sum, bet) => sum + bet, 0) - (bets[betType] || 0) + newBetAmount;
+    
+    // Check if user has enough balance
+    if (newTotalBet > currentBalance) {
+      alert(`Insufficient balance. Available: $${currentBalance.toFixed(2)}`);
+      return;
+    }
+    
+    // Check max bet limit if bonus is active
+    if ((user.bonusBalance || 0) > 0 || (user.lockedBalance || 0) > 0) {
+      const maxBet = user.maxBetWhileBonus || 50;
+      if (newBetAmount > maxBet) {
+        alert(`Maximum bet while bonus active is $${maxBet}`);
+        return;
+      }
+    }
+    
     setBets(prev => ({
       ...prev,
-      [betType]: (prev[betType] || 0) + amount
+      [betType]: newBetAmount
     }));
     setShowBetModal(null);
   };

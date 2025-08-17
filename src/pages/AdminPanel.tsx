@@ -292,662 +292,243 @@ const AdminPanel: React.FC = () => {
         <div className="space-y-4">
           {users.map((user: any) => (
             <div key={user.id} className="bg-black/30 rounded-lg p-4 border border-white/10">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
+              <div className="space-y-4">
+                {/* User Header */}
+                <div className="flex items-center justify-between">
                   <div>
                     <div className="font-bold">{user.username}</div>
                     <div className="text-sm text-gray-400">{user.email}</div>
                   </div>
-                  <div className="flex items-center space-x-6 text-sm">
-                    <div>
-                      <div>Virtual: ${(user.virtualBalance || 0).toFixed(2)}</div>
-                      <div>Real: ${((user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0)).toFixed(2)}</div>
-                    </div>
-                    
-                    {/* Affiliate Stats - Only show if user is affiliate */}
-                    {user.isAffiliate && (
-                      <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <h5 className="font-bold text-orange-400 text-sm">👥 Affiliate Stats</h5>
-                          <div className="text-purple-400 font-bold">{(user.affiliateCommission || 0).toFixed(1)}% Commission</div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-3 text-xs">
-                          <div className="text-center">
-                            <div className="text-orange-400 font-bold">
-                              ${(userStats[user.id]?.realMoney?.casinoProfit || 0) > 0 ? 
-                                ((userStats[user.id]?.realMoney?.casinoProfit || 0) * (user.affiliateCommission || 0) / 100).toFixed(2) : 
-                                '0.00'}
-                            </div>
-                            <div className="text-gray-400">Commission Earned</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-orange-400 font-bold">{userStats[user.id]?.affiliateStats?.totalReferrals || 0}</div>
-                            <div className="text-gray-400">Total Referrals</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-orange-400 font-bold">{userStats[user.id]?.affiliateStats?.activeReferrals || 0}</div>
-                            <div className="text-gray-400">Active Referrals</div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Commission Rate Setting - Only show if user is affiliate */}
-                    {user.isAffiliate && (
-                      <div className="flex items-center space-x-2">
-                        <label className="text-xs text-gray-400">Set Rate:</label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          max="100"
-                          defaultValue={user.affiliateCommission || 0}
-                          className="w-16 px-2 py-1 bg-black/30 border border-white/20 rounded text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
-                          id={`commission-${user.id}`}
-                        />
-                        <button
-                          onClick={async () => {
-                            const input = document.getElementById(`commission-${user.id}`) as HTMLInputElement;
-                            const newRate = parseFloat(input.value);
-                            if (newRate >= 0 && newRate <= 100) {
-                              try {
-                                const response = await fetch(`/api/admin/users/${user.id}/commission`, {
-                                  method: 'PUT',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  credentials: 'include',
-                                  body: JSON.stringify({ commission: newRate })
-                                });
-                                if (response.ok) {
-                                  fetchUsers();
-                                  alert('Commission rate updated successfully');
-                                } else {
-                                  const error = await response.json();
-                                  alert(error.error || 'Failed to update commission rate');
-                                }
-                              } catch (error) {
-                                console.error('Failed to update commission rate:', error);
-                              }
-                            }
-                          }}
-                          className="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs transition-colors"
-                        >
-                          Update
-                        </button>
-                        
-                        {/* Payout Period Setting */}
-                        <select
-                          defaultValue={userStats[user.id]?.affiliateStats?.payoutPeriod || 'Monthly'}
-                          className="px-2 py-1 bg-black/30 border border-white/20 rounded text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
-                          id={`period-${user.id}`}
-                        >
-                          <option value="Weekly">Weekly</option>
-                          <option value="Bi-weekly">Bi-weekly</option>
-                          <option value="Monthly">Monthly</option>
-                          <option value="Quarterly">Quarterly</option>
-                        </select>
-                        <button
-                          onClick={async () => {
-                            const select = document.getElementById(`period-${user.id}`) as HTMLSelectElement;
-                            const newPeriod = select.value;
-                            try {
-                              const response = await fetch(`/api/affiliate/set-payout-period/${user.id}`, {
-                                method: 'PUT',
-                                headers: { 'Content-Type': 'application/json' },
-                                credentials: 'include',
-                                body: JSON.stringify({ payoutPeriod: newPeriod })
-                              });
-                              if (response.ok) {
-                                fetchUsers();
-                                alert(`Payout period set to ${newPeriod}`);
-                              } else {
-                                const error = await response.json();
-                                alert(error.error || 'Failed to update payout period');
-                              }
-                            } catch (error) {
-                              console.error('Failed to update payout period:', error);
-                            }
-                          }}
-                          className="px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-xs transition-colors"
-                        >
-                          Set Period
-                        </button>
-                      </div>
-                    )}
+                  <button
+                    onClick={() => toggleUserStats(user.id)}
+                    className="bg-blue-500/20 text-blue-400 px-3 py-1 rounded text-sm hover:bg-blue-500/30 transition-colors"
+                  >
+                    {expandedUser === user.id ? 'Hide' : 'Manage'}
+                  </button>
+                </div>
+                
+                {/* Balance Overview */}
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="bg-purple-500/10 border border-purple-500/20 rounded p-2 text-center">
+                    <div className="text-purple-400 font-bold">${(user.virtualBalance || 0).toFixed(2)}</div>
+                    <div className="text-gray-400 text-xs">Virtual</div>
+                  </div>
+                  <div className="bg-green-500/10 border border-green-500/20 rounded p-2 text-center">
+                    <div className="text-green-400 font-bold">${((user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0)).toFixed(2)}</div>
+                    <div className="text-gray-400 text-xs">Real Money</div>
                   </div>
                 </div>
                 
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => toggleUserStats(user.id)}
-                    className="bg-blue-500/20 text-blue-400 px-4 py-2 rounded-lg hover:bg-blue-500/30 transition-colors"
-                  >
-                    {expandedUser === user.id ? <ChevronUp /> : <ChevronDown />}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedUser(user);
-                      setDiceGameEdge(user.diceGameEdge?.toString() || '5.0');
-                      setDiceBattleEdge(user.diceBattleEdge?.toString() || '5.0');
-                      setMaxBetWhileBonus(user.maxBetWhileBonus?.toString() || '50');
-                      setMaxBonusCashout(user.maxBonusCashout?.toString() || '1000');
-                    }}
-                    className="bg-yellow-500/20 text-yellow-400 px-4 py-2 rounded-lg hover:bg-yellow-500/30 transition-colors"
-                  >
-                    <Settings className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Expanded User Stats */}
-              {expandedUser === user.id && userStats[user.id] && (
-                <div className="border-t border-white/10 p-6 bg-black/20">
-                  {/* Only show game stats and wagering for non-affiliates */}
-                  {!user.isAffiliate && (
-                    <>
-                      {/* Wagering Progress */}
-                      <div className="mb-6 bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
-                        <h5 className="font-bold mb-2 text-blue-400 text-sm">🎯 Bonus Wagering Progress</h5>
-                        <div className="grid grid-cols-4 gap-3 text-xs">
-                          <div className="text-center">
-                            <div className="text-blue-400 font-bold">${(user.currentWageringProgress || 0).toFixed(2)}</div>
-                            <div className="text-gray-400">Progress</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-blue-400 font-bold">${(user.activeWageringRequirement || 0).toFixed(2)}</div>
-                            <div className="text-gray-400">Required</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-blue-400 font-bold">
-                              {user.activeWageringRequirement > 0 ? 
-                                ((user.currentWageringProgress || 0) / user.activeWageringRequirement * 100).toFixed(1) : 0}%
-                            </div>
-                            <div className="text-gray-400">Complete</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-blue-400 font-bold">${(user.lockedBalance || 0).toFixed(2)}</div>
-                            <div className="text-gray-400">Locked</div>
-                          </div>
-                        </div>
-                        <div className="mt-2 w-full bg-gray-700 rounded-full h-1">
-                          <div 
-                            className="bg-blue-500 h-1 rounded-full transition-all duration-300"
-                            style={{ 
-                              width: `${Math.min(100, user.activeWageringRequirement > 0 ? 
-                                ((user.currentWageringProgress || 0) / user.activeWageringRequirement * 100) : 0)}%` 
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-
-                      {/* Game Statistics Toggle */}
-                      <div className="mb-4">
-                        <div className="flex items-center space-x-4">
-                          <span className="text-sm font-medium">Game Statistics:</span>
-                          <button
-                            onClick={() => {
-                              const currentMode = userStats[user.id].statsMode || 'real';
-                              setUserStats(prev => ({
-                                ...prev,
-                                [user.id]: {
-                                  ...prev[user.id],
-                                  statsMode: currentMode === 'real' ? 'virtual' : 'real'
-                                }
-                              }));
-                            }}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                              (userStats[user.id].statsMode || 'real') === 'real' ? 'bg-yellow-600' : 'bg-purple-600'
-                            }`}
-                          >
-                            <span
-                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                (userStats[user.id].statsMode || 'real') === 'real' ? 'translate-x-6' : 'translate-x-1'
-                              }`}
-                            />
-                          </button>
-                          <span className={`text-sm font-medium ${
-                            (userStats[user.id].statsMode || 'real') === 'real' ? 'text-yellow-400' : 'text-purple-400'
-                          }`}>
-                            {(userStats[user.id].statsMode || 'real') === 'real' ? 'REAL MONEY' : 'VIRTUAL MONEY'}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      {/* Game Statistics */}
-                      <div className="grid md:grid-cols-3 gap-4">
-                        {/* BarboDice */}
-                        <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                          <h5 className="font-bold mb-3 text-green-400 text-center">🎲 BarboDice</h5>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                              <span>Games:</span>
-                              <span className="font-bold">
-                                {(userStats[user.id].statsMode || 'real') === 'real' 
-                                  ? userStats[user.id].realStats?.barboDice?.totalGames || 0
-                                  : userStats[user.id].virtualStats?.barboDice?.totalGames || 0
-                                }
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Wins:</span>
-                              <span className="text-green-400 font-bold">
-                                {(userStats[user.id].statsMode || 'real') === 'real' 
-                                  ? userStats[user.id].realStats?.barboDice?.wins || 0
-                                  : userStats[user.id].virtualStats?.barboDice?.wins || 0
-                                }
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Losses:</span>
-                              <span className="text-red-400 font-bold">
-                                {(userStats[user.id].statsMode || 'real') === 'real' 
-                                  ? userStats[user.id].realStats?.barboDice?.losses || 0
-                                  : userStats[user.id].virtualStats?.barboDice?.losses || 0
-                                }
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Total Bets:</span>
-                              <span className="font-bold">
-                                ${((userStats[user.id].statsMode || 'real') === 'real' 
-                                  ? userStats[user.id].realStats?.barboDice?.totalBets || 0
-                                  : userStats[user.id].virtualStats?.barboDice?.totalBets || 0
-                                ).toFixed(2)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Total Wins:</span>
-                              <span className="text-green-400 font-bold">
-                                ${((userStats[user.id].statsMode || 'real') === 'real' 
-                                  ? userStats[user.id].realStats?.barboDice?.totalWins || 0
-                                  : userStats[user.id].virtualStats?.barboDice?.totalWins || 0
-                                ).toFixed(2)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Total Loses:</span>
-                              <span className="text-red-400 font-bold">
-                                ${((userStats[user.id].statsMode || 'real') === 'real' 
-                                  ? userStats[user.id].realStats?.barboDice?.totalLoses || 0
-                                  : userStats[user.id].virtualStats?.barboDice?.totalLoses || 0
-                                ).toFixed(2)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* DiceBattle */}
-                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                          <h5 className="font-bold mb-3 text-red-400 text-center">⚔️ DiceBattle</h5>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                              <span>Games:</span>
-                              <span className="font-bold">
-                                {(userStats[user.id].statsMode || 'real') === 'real' 
-                                  ? userStats[user.id].realStats?.diceBattle?.totalGames || 0
-                                  : userStats[user.id].virtualStats?.diceBattle?.totalGames || 0
-                                }
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Wins:</span>
-                              <span className="text-green-400 font-bold">
-                                {(userStats[user.id].statsMode || 'real') === 'real' 
-                                  ? userStats[user.id].realStats?.diceBattle?.wins || 0
-                                  : userStats[user.id].virtualStats?.diceBattle?.wins || 0
-                                }
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Losses:</span>
-                              <span className="text-red-400 font-bold">
-                                {(userStats[user.id].statsMode || 'real') === 'real' 
-                                  ? userStats[user.id].realStats?.diceBattle?.losses || 0
-                                  : userStats[user.id].virtualStats?.diceBattle?.losses || 0
-                                }
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Ties:</span>
-                              <span className="text-yellow-400 font-bold">
-                                {(userStats[user.id].statsMode || 'real') === 'real' 
-                                  ? userStats[user.id].realStats?.diceBattle?.ties || 0
-                                  : userStats[user.id].virtualStats?.diceBattle?.ties || 0
-                                }
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Total Bets:</span>
-                              <span className="font-bold">
-                                ${((userStats[user.id].statsMode || 'real') === 'real' 
-                                  ? userStats[user.id].realStats?.diceBattle?.totalBets || 0
-                                  : userStats[user.id].virtualStats?.diceBattle?.totalBets || 0
-                                ).toFixed(2)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Total Wins:</span>
-                              <span className="text-green-400 font-bold">
-                                ${((userStats[user.id].statsMode || 'real') === 'real' 
-                                  ? userStats[user.id].realStats?.diceBattle?.totalWins || 0
-                                  : userStats[user.id].virtualStats?.diceBattle?.totalWins || 0
-                                ).toFixed(2)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Total Loses:</span>
-                              <span className="text-red-400 font-bold">
-                                ${((userStats[user.id].statsMode || 'real') === 'real' 
-                                  ? userStats[user.id].realStats?.diceBattle?.totalLoses || 0
-                                  : userStats[user.id].virtualStats?.diceBattle?.totalLoses || 0
-                                ).toFixed(2)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* DiceRoulette */}
-                        <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
-                          <h5 className="font-bold mb-3 text-orange-400 text-center">🎯 DiceRoulette</h5>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                              <span>Games:</span>
-                              <span className="font-bold">
-                                {(userStats[user.id].statsMode || 'real') === 'real' 
-                                  ? userStats[user.id].realStats?.diceRoulette?.totalGames || 0
-                                  : userStats[user.id].virtualStats?.diceRoulette?.totalGames || 0
-                                }
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Wins:</span>
-                              <span className="text-green-400 font-bold">
-                                {(userStats[user.id].statsMode || 'real') === 'real' 
-                                  ? userStats[user.id].realStats?.diceRoulette?.wins || 0
-                                  : userStats[user.id].virtualStats?.diceRoulette?.wins || 0
-                                }
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Losses:</span>
-                              <span className="text-red-400 font-bold">
-                                {(userStats[user.id].statsMode || 'real') === 'real' 
-                                  ? userStats[user.id].realStats?.diceRoulette?.losses || 0
-                                  : userStats[user.id].virtualStats?.diceRoulette?.losses || 0
-                                }
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Total Bets:</span>
-                              <span className="font-bold">
-                                ${((userStats[user.id].statsMode || 'real') === 'real' 
-                                  ? userStats[user.id].realStats?.diceRoulette?.totalBets || 0
-                                  : userStats[user.id].virtualStats?.diceRoulette?.totalBets || 0
-                                ).toFixed(2)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Total Wins:</span>
-                              <span className="text-green-400 font-bold">
-                                ${((userStats[user.id].statsMode || 'real') === 'real' 
-                                  ? userStats[user.id].realStats?.diceRoulette?.totalWins || 0
-                                  : userStats[user.id].virtualStats?.diceRoulette?.totalWins || 0
-                                ).toFixed(2)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Total Loses:</span>
-                              <span className="text-red-400 font-bold">
-                                ${((userStats[user.id].statsMode || 'real') === 'real' 
-                                  ? userStats[user.id].realStats?.diceRoulette?.totalLoses || 0
-                                  : userStats[user.id].virtualStats?.diceRoulette?.totalLoses || 0
-                                ).toFixed(2)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Real Money Overview - Show for all users */}
-                  <div className="mb-6 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-                    <h4 className="text-lg font-bold text-yellow-400 mb-4">💰 Real Money Overview</h4>
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-green-400">
-                          ${(userStats[user.id].realMoney?.totalDeposited || 0).toFixed(2)}
-                        </div>
-                        <div className="text-gray-400">Total Deposited</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-red-400">
-                          ${(userStats[user.id].realMoney?.totalWithdrawn || 0).toFixed(2)}
-                        </div>
-                        <div className="text-gray-400">Total Withdrawn</div>
-                      </div>
-                      <div className="text-center">
-                        <div className={`text-2xl font-bold ${
-                          (userStats[user.id].realMoney?.casinoProfit || 0) >= 0 ? 'text-green-400' : 'text-red-400'
-                        }`}>
-                          ${(userStats[user.id].realMoney?.casinoProfit || 0).toFixed(2)}
-                        </div>
-                        <div className="text-gray-400">Casino Profit</div>
-                      </div>
+                {/* Affiliate Info - Only show if user is affiliate */}
+                {user.isAffiliate && (
+                  <div className="bg-orange-500/10 border border-orange-500/20 rounded p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-orange-400 font-bold text-sm">👥 Affiliate</span>
+                      <span className="text-purple-400 font-bold">{(user.affiliateCommission || 0).toFixed(1)}%</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        defaultValue={user.affiliateCommission || 0}
+                        className="px-2 py-1 bg-black/30 border border-white/20 rounded text-xs focus:border-blue-500 outline-none"
+                        id={`commission-${user.id}`}
+                        placeholder="Rate %"
+                      />
+                      <button
+                        onClick={async () => {
+                          const input = document.getElementById(`commission-${user.id}`) as HTMLInputElement;
+                          const newRate = parseFloat(input.value);
+                          if (newRate >= 0 && newRate <= 100) {
+                            try {
+                              const response = await fetch(`/api/admin/users/${user.id}/commission`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                credentials: 'include',
+                                body: JSON.stringify({ commission: newRate })
+                              });
+                              if (response.ok) {
+                                fetchUsers();
+                                alert('Commission updated');
+                              } else {
+                                const error = await response.json();
+                                alert(error.error);
+                              }
+                            } catch (error) {
+                              console.error('Failed to update commission:', error);
+                            }
+                          }
+                        }}
+                        className="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs transition-colors"
+                      >
+                        Update
+                      </button>
                     </div>
                   </div>
+                )}
+              </div>
+
+              {/* Expanded Management Section */}
+              {expandedUser === user.id && (
+                <div className="mt-4 pt-4 border-t border-white/10 space-y-4">
+                  {/* Quick Settings */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">House Edge %</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        max="50"
+                        defaultValue={user.diceGameEdge || 5}
+                        className="w-full px-2 py-1 bg-black/30 border border-white/20 rounded text-sm focus:border-yellow-500 outline-none"
+                        id={`edge-${user.id}`}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1">Max Bet $</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="1000"
+                        defaultValue={user.maxBetWhileBonus || 50}
+                        className="w-full px-2 py-1 bg-black/30 border border-white/20 rounded text-sm focus:border-yellow-500 outline-none"
+                        id={`maxbet-${user.id}`}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Bonus & Wagering */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="Bonus $"
+                      className="px-2 py-1 bg-black/30 border border-white/20 rounded text-sm focus:border-green-500 outline-none"
+                      id={`bonus-${user.id}`}
+                    />
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="Add Wagering $"
+                      className="px-2 py-1 bg-black/30 border border-white/20 rounded text-sm focus:border-blue-500 outline-none"
+                      id={`add-wagering-${user.id}`}
+                    />
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="Reduce Wagering $"
+                      className="px-2 py-1 bg-black/30 border border-white/20 rounded text-sm focus:border-red-500 outline-none"
+                      id={`reduce-wagering-${user.id}`}
+                    />
+                  </div>
+                  
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <button
+                      onClick={async () => {
+                        const edgeInput = document.getElementById(`edge-${user.id}`) as HTMLInputElement;
+                        const maxBetInput = document.getElementById(`maxbet-${user.id}`) as HTMLInputElement;
+                        
+                        try {
+                          const response = await fetch(`/api/admin/users/${user.id}/settings`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ 
+                              diceGameEdge: parseFloat(edgeInput.value),
+                              diceBattleEdge: parseFloat(edgeInput.value),
+                              diceRouletteEdge: parseFloat(edgeInput.value),
+                              maxBetWhileBonus: parseFloat(maxBetInput.value)
+                            })
+                          });
+                          if (response.ok) {
+                            fetchUsers();
+                            alert('Settings updated');
+                          }
+                        } catch (error) {
+                          console.error('Failed to update settings:', error);
+                        }
+                      }}
+                      className="px-2 py-1 bg-yellow-500 hover:bg-yellow-600 text-black rounded text-xs font-bold transition-colors"
+                    >
+                      Settings
+                    </button>
+                    
+                    <button
+                      onClick={async () => {
+                        const bonusInput = document.getElementById(`bonus-${user.id}`) as HTMLInputElement;
+                        const amount = parseFloat(bonusInput.value);
+                        if (amount > 0) {
+                          try {
+                            const response = await fetch(`/api/admin/users/${user.id}/real-bonus`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              credentials: 'include',
+                              body: JSON.stringify({ amount, description: 'Admin bonus' })
+                            });
+                            if (response.ok) {
+                              fetchUsers();
+                              bonusInput.value = '';
+                              alert(`$${amount} bonus granted`);
+                            }
+                          } catch (error) {
+                            console.error('Failed to grant bonus:', error);
+                          }
+                        }
+                      }}
+                      className="px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-xs font-bold transition-colors"
+                    >
+                      Bonus
+                    </button>
+                    
+                    <button
+                      onClick={() => adjustWagering(user.id, 'add')}
+                      className="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs font-bold transition-colors"
+                    >
+                      +Wager
+                    </button>
+                    
+                    <button
+                      onClick={() => adjustWagering(user.id, 'reduce')}
+                      className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-bold transition-colors"
+                    >
+                      -Wager
+                    </button>
+                  </div>
+                  
+                  {/* User Stats Display */}
+                  {userStats[user.id] && (
+                    <div className="bg-black/20 rounded p-3">
+                      <div className="grid grid-cols-3 gap-4 text-xs">
+                        <div className="text-center">
+                          <div className="text-green-400 font-bold">${(userStats[user.id].realMoney?.totalDeposited || 0).toFixed(2)}</div>
+                          <div className="text-gray-400">Deposited</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-red-400 font-bold">${(userStats[user.id].realMoney?.totalWithdrawn || 0).toFixed(2)}</div>
+                          <div className="text-gray-400">Withdrawn</div>
+                        </div>
+                        <div className="text-center">
+                          <div className={`font-bold ${(userStats[user.id].realMoney?.casinoProfit || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            ${(userStats[user.id].realMoney?.casinoProfit || 0).toFixed(2)}
+                          </div>
+                          <div className="text-gray-400">Casino Profit</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           ))}
         </div>
       </div>
-
-      {/* User Settings Modal */}
-      {selectedUser && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-2xl p-8 max-w-md w-full mx-4 border border-white/20">
-            <h3 className="text-2xl font-bold mb-6">User Settings: {selectedUser.username}</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">BarboDice House Edge (%)</label>
-                <input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  max="50"
-                  value={diceGameEdge}
-                  onChange={(e) => setDiceGameEdge(e.target.value)}
-                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  5.0% = normal luck, higher = more bad luck for user, lower = more good luck
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">DiceBattle House Edge (%)</label>
-                <input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  max="50"
-                  value={diceBattleEdge}
-                  onChange={(e) => setDiceBattleEdge(e.target.value)}
-                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  5.0% = normal luck, higher = more bad luck for user, lower = more good luck
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">DiceRoulette House Edge (%)</label>
-                <input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  max="50"
-                  value={diceRouletteEdge}
-                  onChange={(e) => setDiceRouletteEdge(e.target.value)}
-                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  5.0% = normal luck, higher = more bad luck for user, lower = more good luck
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Max Bet While Bonus Active ($)</label>
-                <input
-                  type="number"
-                  step="1"
-                  min="1"
-                  max="1000"
-                  value={maxBetWhileBonus}
-                  onChange={(e) => setMaxBetWhileBonus(e.target.value)}
-                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  Maximum bet amount when user has active bonus
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Max Bonus Cashout ($)</label>
-                <input
-                  type="number"
-                  step="10"
-                  min="100"
-                  max="10000"
-                  value={maxBonusCashout}
-                  onChange={(e) => setMaxBonusCashout(e.target.value)}
-                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  Maximum amount that can be unlocked from bonus winnings
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Wagering Multiplier</label>
-                <input
-                  type="number"
-                  step="1"
-                  min="1"
-                  max="100"
-                  value={wageringMultiplier}
-                  onChange={(e) => setWageringMultiplier(e.target.value)}
-                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  Wagering requirement multiplier (e.g., 20x means $100 bonus = $2000 wagering)
-                </p>
-              </div>
-
-              <div className="border-t border-white/20 pt-4">
-                <h4 className="text-lg font-bold mb-4 text-green-400">💰 Grant Real Money Bonus</h4>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-2">Bonus Amount ($)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={bonusAmount}
-                    onChange={(e) => setBonusAmount(e.target.value)}
-                    className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
-                    placeholder="Enter bonus amount"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">
-                    Real money bonus (goes to bonus balance with wagering requirement)
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">Bonus Description</label>
-                  <input
-                    type="text"
-                    value={bonusDescription}
-                    onChange={(e) => setBonusDescription(e.target.value)}
-                    className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
-                    placeholder="e.g., Welcome bonus, Loyalty reward"
-                  />
-                </div>
-              </div>
-
-              <div className="border-t border-white/20 pt-4">
-                <h4 className="text-lg font-bold mb-4 text-blue-400">⚙️ Wagering Adjustments</h4>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Add to Wagering ($)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      id={`add-wagering-${selectedUser?.id}`}
-                      className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
-                      placeholder="Amount to add"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Reduce Wagering ($)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      id={`reduce-wagering-${selectedUser?.id}`}
-                      className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-colors"
-                      placeholder="Amount to reduce"
-                    />
-                  </div>
-                </div>
-                
-                <div className="flex space-x-3 mt-4">
-                  <button
-                    onClick={() => adjustWagering(selectedUser.id, 'add')}
-                    className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-2 rounded-lg transition-all"
-                  >
-                    Add Wagering
-                  </button>
-                  
-                  <button
-                    onClick={() => adjustWagering(selectedUser.id, 'reduce')}
-                    className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-2 rounded-lg transition-all"
-                  >
-                    Reduce Wagering
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex space-x-3 pt-4">
-                <button
-                  onClick={() => updateSettings(selectedUser.id)}
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-2 rounded-lg transition-all"
-                >
-                  Update Settings
-                </button>
-                
-                <button
-                  onClick={() => grantRealBonus(selectedUser.id)}
-                  disabled={!bonusAmount}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:opacity-50 text-white font-bold py-2 rounded-lg transition-all"
-                >
-                  Grant Bonus
-                </button>
-                
-                <button
-                  onClick={() => setSelectedUser(null)}
-                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Bot Management */}
       <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
