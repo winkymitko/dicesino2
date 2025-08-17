@@ -11,6 +11,7 @@ const TopUp: React.FC = () => {
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [copied, setCopied] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [walletStatus, setWalletStatus] = useState<any>({});
   const [deposits, setDeposits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,11 +43,28 @@ const TopUp: React.FC = () => {
           }
         });
         setQrCodeUrl(qrUrl);
+        
+        // Fetch wallet status (balances)
+        await fetchWalletStatus();
       }
     } catch (error) {
       console.error('Failed to fetch wallet info:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchWalletStatus = async () => {
+    try {
+      const response = await fetch('/api/wallet/status', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setWalletStatus(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch wallet status:', error);
     }
   };
 
@@ -82,8 +100,14 @@ const TopUp: React.FC = () => {
         credentials: 'include'
       });
       if (response.ok) {
+        const data = await response.json();
         await refreshUser();
         await fetchDeposits();
+        await fetchWalletStatus();
+        
+        if (data.newDeposit) {
+          alert(data.message);
+        }
       }
     } catch (error) {
       console.error('Failed to check balance:', error);
@@ -146,6 +170,22 @@ const TopUp: React.FC = () => {
             {copied && (
               <p className="text-green-400 text-sm mt-2">Address copied to clipboard!</p>
             )}
+            
+            {/* Wallet Status */}
+            {walletStatus.usdtBalance !== undefined && (
+              <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <div className="text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-blue-400">USDT Balance on Blockchain:</span>
+                    <span className="font-bold">${walletStatus.usdtBalance?.toFixed(2) || '0.00'}</span>
+                  </div>
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-gray-400">TRX Balance (Gas):</span>
+                    <span className="text-sm">{walletStatus.trxBalance?.toFixed(2) || '0.00'} TRX</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Instructions */}
@@ -154,8 +194,10 @@ const TopUp: React.FC = () => {
             <ul className="text-sm text-gray-300 space-y-1">
               <li>• Send only USDT (TRC20) to this address</li>
               <li>• Minimum deposit: $10 USDT</li>
-              <li>• Deposits are usually confirmed within 5-10 minutes</li>
+              <li>• Deposits are confirmed after 1 block confirmation</li>
               <li>• Do not send other cryptocurrencies to this address</li>
+              <li>• Network: TRON (TRC20) - Low fees!</li>
+              <li>• Your wallet has been funded with 1 TRX for gas fees</li>
             </ul>
           </div>
 
@@ -163,11 +205,33 @@ const TopUp: React.FC = () => {
           <button
             onClick={checkBalance}
             disabled={checking}
-            className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-all flex items-center justify-center space-x-2"
+            className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-all flex items-center justify-center space-x-2 mb-4"
           >
             <RefreshCw className={`h-5 w-5 ${checking ? 'animate-spin' : ''}`} />
             <span>{checking ? 'Checking...' : 'Check for New Deposits'}</span>
           </button>
+          
+          <div className="text-center">
+            <p className="text-xs text-gray-400 mb-2">Having issues? Verify a transaction manually:</p>
+            <button
+              onClick={() => {
+                const txHash = prompt('Enter transaction hash (TXID):');
+                if (txHash) {
+                  fetch('/api/wallet/verify-deposit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ txHash })
+                  }).then(res => res.json()).then(data => {
+                    alert(data.message || data.error);
+                  });
+                }
+              }}
+              className="text-xs bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded transition-colors"
+            >
+              Verify Transaction
+            </button>
+          </div>
         </div>
 
         {/* Balance & History */}
@@ -219,7 +283,14 @@ const TopUp: React.FC = () => {
                       </div>
                       {deposit.txHash && (
                         <div className="text-xs text-gray-500 mt-1">
-                          TX: {deposit.txHash.substring(0, 8)}...
+                          <a 
+                            href={`https://tronscan.org/#/transaction/${deposit.txHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-400 hover:text-blue-300"
+                          >
+                            TX: {deposit.txHash.substring(0, 8)}...
+                          </a>
                         </div>
                       )}
                     </div>
