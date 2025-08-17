@@ -199,7 +199,53 @@ const DiceRoulette: React.FC = () => {
                 onClick={() => setShowBetModal(`number_${num}`)}
                 className="bg-blue-500/20 hover:bg-blue-500/30 rounded-lg p-4 transition-all"
               >
-                <div className="text-lg font-bold">{num}</div>
+                <div className="flex justify-center mb-2">
+                  <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center shadow-lg">
+                    <svg width="80%" height="80%" viewBox="0 0 100 100">
+                      {num === 1 && <circle cx="50" cy="50" r="8" fill="black" />}
+                      {num === 2 && (
+                        <>
+                          <circle cx="30" cy="30" r="8" fill="black" />
+                          <circle cx="70" cy="70" r="8" fill="black" />
+                        </>
+                      )}
+                      {num === 3 && (
+                        <>
+                          <circle cx="30" cy="30" r="8" fill="black" />
+                          <circle cx="50" cy="50" r="8" fill="black" />
+                          <circle cx="70" cy="70" r="8" fill="black" />
+                        </>
+                      )}
+                      {num === 4 && (
+                        <>
+                          <circle cx="30" cy="30" r="8" fill="black" />
+                          <circle cx="70" cy="30" r="8" fill="black" />
+                          <circle cx="30" cy="70" r="8" fill="black" />
+                          <circle cx="70" cy="70" r="8" fill="black" />
+                        </>
+                      )}
+                      {num === 5 && (
+                        <>
+                          <circle cx="30" cy="30" r="8" fill="black" />
+                          <circle cx="70" cy="30" r="8" fill="black" />
+                          <circle cx="50" cy="50" r="8" fill="black" />
+                          <circle cx="30" cy="70" r="8" fill="black" />
+                          <circle cx="70" cy="70" r="8" fill="black" />
+                        </>
+                      )}
+                      {num === 6 && (
+                        <>
+                          <circle cx="30" cy="30" r="8" fill="black" />
+                          <circle cx="70" cy="30" r="8" fill="black" />
+                          <circle cx="30" cy="50" r="8" fill="black" />
+                          <circle cx="70" cy="50" r="8" fill="black" />
+                          <circle cx="30" cy="70" r="8" fill="black" />
+                          <circle cx="70" cy="70" r="8" fill="black" />
+                        </>
+                      )}
+                    </svg>
+                  </div>
+                </div>
                 <div className="text-xs text-gray-400">Any die shows {num}</div>
                 <div className="text-sm text-green-400">2.2x payout</div>
                 {bets[`number_${num}`] && (
@@ -215,10 +261,10 @@ const DiceRoulette: React.FC = () => {
           <h3 className="text-xl font-bold mb-4">Sum Bets</h3>
           <div className="space-y-3">
             {[
-              { type: 'odd', label: 'Odd Sum', payout: '1.9x' },
-              { type: 'even', label: 'Even Sum', payout: '1.9x' },
-              { type: 'low', label: 'Low (3-9)', payout: '1.9x' },
-              { type: 'high', label: 'High (10-18)', payout: '1.9x' }
+              { type: 'odd', label: 'Odd Sum', payout: '1.9x', icon: '🔢', color: 'text-purple-400' },
+              { type: 'even', label: 'Even Sum', payout: '1.9x', icon: '⚖️', color: 'text-blue-400' },
+              { type: 'low', label: 'Low (3-9)', payout: '1.9x', icon: '⬇️', color: 'text-green-400' },
+              { type: 'high', label: 'High (10-18)', payout: '1.9x', icon: '⬆️', color: 'text-red-400' }
             ].map(bet => (
               <button
                 key={bet.type}
@@ -227,8 +273,17 @@ const DiceRoulette: React.FC = () => {
               >
                 <div className="flex justify-between items-center">
                   <div>
-                    <div className="font-bold">{bet.label}</div>
+                    <div className="flex items-center space-x-3 mb-1">
+                      <span className="text-2xl">{bet.icon}</span>
+                      <div className="font-bold">{bet.label}</div>
+                    </div>
                     <div className="text-xs text-gray-400">{bet.payout}</div>
+                    <div className={`text-xs ${bet.color} mt-1`}>
+                      {bet.type === 'odd' && 'Sum: 5, 7, 9, 11, 13, 15, 17'}
+                      {bet.type === 'even' && 'Sum: 4, 6, 8, 10, 12, 14, 16, 18'}
+                      {bet.type === 'low' && 'Sum: 3, 4, 5, 6, 7, 8, 9'}
+                      {bet.type === 'high' && 'Sum: 10, 11, 12, 13, 14, 15, 16, 17, 18'}
+                    </div>
                   </div>
                   {bets[bet.type] && (
                     <div className="text-sm font-bold">${bets[bet.type].toFixed(2)}</div>
