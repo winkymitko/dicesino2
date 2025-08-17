@@ -310,17 +310,25 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
     
     res.json({
       virtual: {
-        dice: virtualDice,
-        battle: virtualBattle,
-        roulette: virtualRoulette,
-        total: virtualTotal
+        dice: virtualDiceStats,
+        battle: virtualBattleStats,
+        roulette: virtualRouletteStats,
+        total: {
+          gamesPlayed: virtualDiceStats.total + virtualBattleStats.total + virtualRouletteStats.total,
+          totalWagered: virtualTotalWagered,
+          casinoProfit: virtualTotalCasinoProfit
+        }
       },
       real: {
         deposited: realDeposited,
-        dice: realDice,
-        battle: realBattle,
-        roulette: realRoulette,
-        total: realTotal
+        dice: realDiceStats,
+        battle: realBattleStats,
+        roulette: realRouletteStats,
+        total: {
+          gamesPlayed: realDiceStats.total + realBattleStats.total + realRouletteStats.total,
+          totalWagered: realTotalWagered,
+          casinoProfit: realTotalCasinoProfit
+        }
       },
       wagering: {
         required: user?.activeWageringRequirement || 0,

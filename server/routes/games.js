@@ -361,7 +361,7 @@ router.post('/dice/roll', authenticateToken, async (req, res) => {
       
       // Update wagering progress if bonus was used
       if (game.betSource !== 'cash' && !game.metadata?.includes('virtual')) {
-        await updateWageringProgress(req.user.id, game.stake);
+        await updateWageringProgress(req.user.id, numericStake);
       }
       
       await prisma.user.update({
@@ -452,7 +452,7 @@ router.post('/dice/cashout', authenticateToken, async (req, res) => {
       });
       
       // Update wagering progress
-      const wageringResult = await updateWageringProgress(req.user.id, game.stake);
+      const wageringResult = await updateWageringProgress(req.user.id, numericStake);
       
       // Create transaction record
       const user = await prisma.user.findUnique({ where: { id: req.user.id } });
