@@ -1031,8 +1031,6 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
       });
     }
     
-    await refreshUser();
-    
     res.json({
       dice1, dice2, dice3, total,
       playerGuess, playerDistance,

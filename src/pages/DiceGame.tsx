@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Play, DollarSign } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-const DiceGame: React.FC = () => {
+  const { user, refreshUser, gameMode } = useAuth();
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [gameId, setGameId] = useState<string | null>(null);
@@ -34,7 +34,7 @@ const DiceGame: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ stake, useVirtual })
+        body: JSON.stringify({ stake, useVirtual: gameMode === 'virtual' })
       });
 
       if (!response.ok) {
@@ -107,7 +107,7 @@ const DiceGame: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ gameId, useVirtual })
+        body: JSON.stringify({ gameId, useVirtual: gameMode === 'virtual' })
       });
 
       if (!response.ok) {
@@ -173,12 +173,10 @@ const DiceGame: React.FC = () => {
         <h1 className="text-4xl font-bold mb-4">BarboDice</h1>
         <div className="flex justify-center items-center space-x-8 mb-6">
           <div className="text-center">
-            <div className="text-green-400 font-bold text-xl">${(user.virtualBalance || 0).toFixed(2)}</div>
-            <div className="text-gray-400">Virtual</div>
-          </div>
-          <div className="text-center">
-            <div className="text-yellow-400 font-bold text-xl">${((user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0)).toFixed(2)}</div>
-            <div className="text-gray-400">Real</div>
+            <div className={`font-bold text-xl ${gameMode === 'virtual' ? 'text-purple-400' : 'text-yellow-400'}`}>
+              ${gameMode === 'virtual' ? (user.virtualBalance || 0).toFixed(2) : ((user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0)).toFixed(2)}
+            </div>
+            <div className="text-gray-400">{gameMode === 'virtual' ? 'Virtual' : 'Real'} Balance</div>
           </div>
           {/* <div className="text-center">
             <div className="text-blue-400 font-bold text-xl">{user.currentWinStreak}</div>
@@ -263,27 +261,13 @@ const DiceGame: React.FC = () => {
             
             <div>
               <label className="block text-sm font-medium mb-2">Balance Type</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setUseVirtual(true)}
-                  className={`p-3 rounded-lg font-bold transition-all ${
-                    useVirtual
-                      ? 'bg-green-500 text-black'
-                      : 'bg-white/10 hover:bg-white/20'
-                  }`}
-                >
-                  Virtual
-                </button>
-                <button
-                  onClick={() => setUseVirtual(false)}
-                  className={`p-3 rounded-lg font-bold transition-all ${
-                    !useVirtual
-                      ? 'bg-yellow-500 text-black'
-                      : 'bg-white/10 hover:bg-white/20'
-                  }`}
-                >
-                  Real
-                </button>
+              <div className="p-3 bg-black/30 border border-white/20 rounded-lg text-center">
+                <span className={`font-bold ${gameMode === 'virtual' ? 'text-purple-400' : 'text-yellow-400'}`}>
+                  {gameMode === 'virtual' ? 'Virtual Mode' : 'Real Money Mode'}
+                </span>
+                <div className="text-xs text-gray-400 mt-1">
+                  Change mode in header
+                </div>
               </div>
             </div>
           </div>
@@ -478,6 +462,5 @@ const DiceGame: React.FC = () => {
       </div>
     </div>
   );
-};
 
 export default DiceGame;

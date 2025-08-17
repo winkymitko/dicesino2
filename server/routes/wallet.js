@@ -44,6 +44,10 @@ async function grantDepositBonus(userId, depositAmount, bonusAmount) {
 // Get or create wallet info for user
 router.get('/info', authenticateToken, async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
     let wallet = await prisma.cryptoWallet.findUnique({
       where: { userId: req.user.id }
     });

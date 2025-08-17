@@ -17,6 +17,8 @@ const DiceRoulette: React.FC = () => {
   const [showBetModal, setShowBetModal] = useState<string | null>(null);
   const [betAmount, setBetAmount] = useState(1);
 
+  const diceComponents = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
+
   useEffect(() => {
     if (!user) navigate('/login');
   }, [user, navigate]);
@@ -148,11 +150,30 @@ const DiceRoulette: React.FC = () => {
       {/* Dice Display */}
       <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 mb-6">
         <div className="flex justify-center mb-6">
-          <DiceAnimation 
-            isRolling={rolling}
-            diceValues={lastRoll ? [lastRoll.dice1, lastRoll.dice2, lastRoll.dice3] : [1, 1, 1]}
-            size={80}
-          />
+          <div className="flex justify-center space-x-4">
+            {lastRoll ? (
+              [lastRoll.dice1, lastRoll.dice2, lastRoll.dice3].map((die, index) => {
+                const DiceComponent = diceComponents[die - 1];
+                return (
+                  <div key={index} className="relative">
+                    <div className="w-20 h-20 bg-white rounded-lg flex items-center justify-center shadow-lg">
+                      <DiceComponent className="h-12 w-12 text-black" />
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              [1, 2, 3].map((index) => (
+                <div key={index} className="relative">
+                  <div className={`w-20 h-20 bg-white rounded-lg flex items-center justify-center shadow-lg ${
+                    rolling ? 'animate-spin' : ''
+                  }`}>
+                    <Dice1 className="h-12 w-12 text-black" />
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
         
         {lastRoll && (
