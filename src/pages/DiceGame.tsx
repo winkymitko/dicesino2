@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Play, DollarSign } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+const DiceGame: React.FC = () => {
   const { user, refreshUser, gameMode } = useAuth();
   const navigate = useNavigate();
   const [gameId, setGameId] = useState<string | null>(null);
@@ -461,5 +462,6 @@ import { useAuth } from '../context/AuthContext';
       </div>
     </div>
   );
+};
 
 export default DiceGame;
