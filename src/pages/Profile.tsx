@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Trophy, History, Wallet } from 'lucide-react';
+import { User, Trophy, History, Wallet, Users, Link as LinkIcon, Copy, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -26,6 +26,9 @@ type Game = {
 const Profile: React.FC = () => {
   const { user, refreshUser } = useAuth();
   const [gameHistory, setGameHistory] = useState<Game[]>([]);
+  const [affiliateStats, setAffiliateStats] = useState<any>({});
+  const [referralLink, setReferralLink] = useState('');
+  const [linkCopied, setLinkCopied] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
@@ -51,8 +54,51 @@ const Profile: React.FC = () => {
     if (!user) return;
     setName(user.name || '');
     setPhone(user.phone || '');
-    fetchGameHistory();
+    if (user.isAffiliate) {
+      fetchAffiliateStats();
+      generateReferralLink();
+    } else {
+      fetchGameHistory();
+    }
   }, [user]);
+
+  const fetchAffiliateStats = async () => {
+    try {
+      const response = await fetch('/api/affiliate/stats', {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAffiliateStats(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch affiliate stats:', error);
+    }
+  };
+
+  const generateReferralLink = async () => {
+    try {
+      const response = await fetch('/api/affiliate/link', {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setReferralLink(data.link);
+      }
+    } catch (error) {
+      console.error('Failed to generate referral link:', error);
+    }
+  };
+
+  const copyReferralLink = async () => {
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+    }
+  };
 
   const fetchGameHistory = async () => {
     try {
@@ -160,6 +206,129 @@ const Profile: React.FC = () => {
   };
 
   if (!user) return null;
+
+  // Affiliate Dashboard
+  if (user.isAffiliate) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <div className="grid md:grid-cols-3 gap-8">
+          {/* Profile Info */}
+          <div className="md:col-span-1 space-y-6">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+              <div className="flex items-center space-x-3 mb-6">
+                <Users className="h-6 w-6 text-blue-500" />
+                <h2 className="text-2xl font-bold">Affiliate Dashboard</h2>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Email</label>
+                  <div className="px-4 py-3 bg-black/30 border border-white/20 rounded-lg">
+                    {user.email}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Name</label>
+                  <input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                    placeholder="Your name"
+                  />
+                </div>
+
+                <button
+                  onClick={handleSave}
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-blue-500 via-blue-400 to-blue-300 hover:from-blue-400 hover:to-blue-200 disabled:opacity-50 text-black font-bold py-3 rounded-lg transition-all"
+                >
+                  {loading ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+
+            {/* Referral Link */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+              <h3 className="text-xl font-bold mb-4">Your Referral Link</h3>
+              <div className="flex items-center space-x-2 mb-4">
+                <input
+                  type="text"
+                  value={referralLink}
+                  readOnly
+                  className="flex-1 px-4 py-2 bg-black/30 border border-white/20 rounded-lg text-sm"
+                />
+                <button
+                  onClick={copyReferralLink}
+                  className="p-2 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-lg transition-colors"
+                >
+                  {linkCopied ? <CheckCircle className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
+                </button>
+              </div>
+              {linkCopied && (
+                <p className="text-green-400 text-sm">Link copied to clipboard!</p>
+              )}
+            </div>
+          </div>
+
+          {/* Affiliate Stats */}
+          <div className="md:col-span-2 space-y-6">
+            {/* Overview Stats */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+              <h3 className="text-xl font-bold mb-6">Affiliate Statistics</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-400">{affiliateStats.totalReferrals || 0}</div>
+                  <div className="text-sm text-gray-400">Total Referrals</div>
+                </div>
+                <div className="text-center p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                  <div className="text-2xl font-bold text-green-400">${(affiliateStats.totalCommission || 0).toFixed(2)}</div>
+                  <div className="text-sm text-gray-400">Total Earned</div>
+                </div>
+                <div className="text-center p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                  <div className="text-2xl font-bold text-yellow-400">${(affiliateStats.pendingCommission || 0).toFixed(2)}</div>
+                  <div className="text-sm text-gray-400">Pending</div>
+                </div>
+                <div className="text-center p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                  <div className="text-2xl font-bold text-purple-400">{(user.affiliateCommission || 0).toFixed(1)}%</div>
+                  <div className="text-sm text-gray-400">Commission Rate</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Referral Details */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+              <h3 className="text-xl font-bold mb-4">Referral Performance</h3>
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {affiliateStats.referrals && affiliateStats.referrals.length > 0 ? (
+                  affiliateStats.referrals.map((referral: any, index: number) => (
+                    <div key={index} className="flex justify-between items-center p-3 bg-black/30 rounded-lg">
+                      <div>
+                        <div className="font-medium">{referral.email}</div>
+                        <div className="text-sm text-gray-400">
+                          Joined: {new Date(referral.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-green-400 font-bold">${(referral.totalProfit || 0).toFixed(2)}</div>
+                        <div className="text-xs text-gray-400">Total Profit</div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-gray-400 py-8">
+                    <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>No referrals yet</p>
+                    <p className="text-sm">Share your link to start earning!</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">

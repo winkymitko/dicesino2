@@ -7,6 +7,7 @@ import authRoutes from './routes/auth.js';
 import gameRoutes from './routes/games.js';
 import adminRoutes from './routes/admin.js';
 import walletRoutes from './routes/wallet.js';
+import affiliateRoutes from './routes/affiliate.js';
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/games', gameRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/wallet', walletRoutes);
+app.use('/api/affiliate', affiliateRoutes);
 
 app.listen(PORT, async () => {
   await testConnection();
