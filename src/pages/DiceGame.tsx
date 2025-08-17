@@ -4,7 +4,6 @@ import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Play, DollarSign } from 'luci
 import { useAuth } from '../context/AuthContext';
 
   const { user, refreshUser, gameMode } = useAuth();
-  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [gameId, setGameId] = useState<string | null>(null);
   const [stake, setStake] = useState(5);
