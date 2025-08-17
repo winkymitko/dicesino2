@@ -1,6 +1,7 @@
 import TronWeb from 'tronweb';
 const { TronWeb: TronWebConstructor } = TronWeb;
 import axios from 'axios';
+import crypto from 'crypto';
 
 // USDT TRC20 contract address on TRON mainnet
 const USDT_CONTRACT_ADDRESS = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
@@ -39,7 +40,6 @@ export function generateTronWallet() {
     }
     
     // Method 2: Generate using crypto and TronWeb utils
-    const crypto = await import('crypto');
     const privateKeyBytes = crypto.randomBytes(32);
     const privateKeyHex = privateKeyBytes.toString('hex');
     
@@ -82,7 +82,6 @@ export function generateTronWallet() {
     console.error('All wallet generation methods failed:', error.message);
     
     // Final fallback - generate a properly formatted address
-    const crypto = require('crypto');
     const randomBytes = crypto.randomBytes(16).toString('hex').toUpperCase();
     const fallbackAddress = 'T' + randomBytes.substring(0, 33); // T + 33 chars = 34 total
     const fallbackPrivateKey = crypto.randomBytes(32).toString('hex');
