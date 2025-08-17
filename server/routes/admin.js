@@ -78,19 +78,22 @@ router.put('/users/:userId/settings', authenticateToken, requireAdmin, async (re
     const { 
       diceGameEdge, 
       diceBattleEdge, 
+      diceRouletteEdge,
       maxBetWhileBonus, 
       maxBonusCashout,
       wageringMultiplier 
     } = req.body;
     
     if (diceGameEdge < 0 || diceGameEdge > 50 || 
-        diceBattleEdge < 0 || diceBattleEdge > 50) {
+        diceBattleEdge < 0 || diceBattleEdge > 50 ||
+        diceRouletteEdge < 0 || diceRouletteEdge > 50) {
       return res.status(400).json({ error: 'House edge must be between 0% and 50%' });
     }
     
     const updateData = {};
     if (diceGameEdge !== undefined) updateData.diceGameEdge = diceGameEdge;
     if (diceBattleEdge !== undefined) updateData.diceBattleEdge = diceBattleEdge;
+    if (diceRouletteEdge !== undefined) updateData.diceRouletteEdge = diceRouletteEdge;
     if (maxBetWhileBonus !== undefined) updateData.maxBetWhileBonus = maxBetWhileBonus;
     if (maxBonusCashout !== undefined) updateData.maxBonusCashout = maxBonusCashout;
     if (wageringMultiplier !== undefined) updateData.wageringMultiplier = wageringMultiplier;
@@ -113,8 +116,8 @@ router.put('/users/:userId/commission', authenticateToken, requireAdmin, async (
     const { userId } = req.params;
     const { commission } = req.body;
     
-    if (commission < 0 || commission > 50) {
-      return res.status(400).json({ error: 'Commission rate must be between 0% and 50%' });
+    if (commission < 0 || commission > 100) {
+      return res.status(400).json({ error: 'Commission rate must be between 0% and 100%' });
     }
     
     await prisma.user.update({
@@ -218,7 +221,7 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
   try {
     const { userId } = req.params;
     
-    // Get all games for this user with metadata
+    // Get all games for this user
     const allGames = await prisma.game.findMany({
       where: { userId },
       select: {
@@ -276,6 +279,17 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
       };
     };
     
+    // Get current wagering progress (for bonus unlock tracking)
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        activeWageringRequirement: true,
+        currentWageringProgress: true,
+        bonusBalance: true,
+        lockedBalance: true
+      }
+    });
+    
     // Calculate stats for each game type
     const virtualDiceStats = calculateGameStats(virtualGames, 'dice');
     const virtualBattleStats = calculateGameStats(virtualGames, 'dicebattle');
@@ -296,22 +310,25 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
     
     res.json({
       virtual: {
-        deposited: 1000, // Initial virtual balance
-        wagered: virtualTotalWagered,
-        won: virtualTotalWon,
-        totalCasinoProfit: virtualTotalCasinoProfit,
-        diceGames: virtualDiceStats,
-        battleGames: virtualBattleStats,
-        rouletteGames: virtualRouletteStats
+        dice: virtualDice,
+        battle: virtualBattle,
+        roulette: virtualRoulette,
+        total: virtualTotal
       },
       real: {
         deposited: realDeposited,
-        wagered: realTotalWagered,
-        won: realTotalWon,
-        totalCasinoProfit: realTotalCasinoProfit,
-        diceGames: realDiceStats,
-        battleGames: realBattleStats,
-        rouletteGames: realRouletteStats
+        dice: realDice,
+        battle: realBattle,
+        roulette: realRoulette,
+        total: realTotal
+      },
+      wagering: {
+        required: user?.activeWageringRequirement || 0,
+        progress: user?.currentWageringProgress || 0,
+        bonusBalance: user?.bonusBalance || 0,
+        lockedBalance: user?.lockedBalance || 0,
+        progressPercent: user?.activeWageringRequirement > 0 ? 
+          ((user?.currentWageringProgress || 0) / user.activeWageringRequirement * 100).toFixed(1) : 0
       }
     });
   } catch (error) {
