@@ -309,11 +309,13 @@ const DiceGame: React.FC = () => {
                 <div key={index} className="relative">
                   <div className={`w-20 h-20 bg-white rounded-lg flex items-center justify-center shadow-lg ${
                     rolling ? 'animate-spin' : ''
-          <DiceAnimation 
-            dice={gameState?.dice || null} 
-            rolling={rolling} 
-            size="large"
-          />
+                  }`}>
+                    <Dice1 className="h-12 w-12 text-black" />
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
 
           {lastRoll && (
             <div className="text-center mb-6 p-4 bg-black/30 rounded-lg">
