@@ -148,14 +148,10 @@ router.post('/request-payout', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Not an affiliate' });
     }
     
-    const { amount, period } = req.body;
+    const { amount } = req.body;
     
     if (!amount || amount <= 0) {
       return res.status(400).json({ error: 'Invalid payout amount' });
-    }
-    
-    if (!period) {
-      return res.status(400).json({ error: 'Period is required (e.g., 2024-01, 2024-Q1)' });
     }
     
     // Check if already has pending request
@@ -167,11 +163,6 @@ router.post('/request-payout', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Payout request already pending' });
     }
     
-    // Check if this period was already paid
-    if (affiliateStats?.lastPayoutPeriod === period) {
-      return res.status(400).json({ error: 'This period has already been paid out' });
-    }
-    
     // Update affiliate stats
     await prisma.affiliateStats.upsert({
       where: { userId: req.user.id },
@@ -179,18 +170,16 @@ router.post('/request-payout', authenticateToken, async (req, res) => {
         userId: req.user.id,
         payoutRequested: true,
         requestedPayout: amount,
-        payoutRequestDate: new Date(),
-        payoutPeriod: period
+        payoutRequestDate: new Date()
       },
       update: {
         payoutRequested: true,
         requestedPayout: amount,
-        payoutRequestDate: new Date(),
-        payoutPeriod: period
+        payoutRequestDate: new Date()
       }
     });
     
-    res.json({ success: true, message: 'Payout request submitted' });
+    res.json({ success: true, message: 'Commission payout request submitted to admin' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Server error' });

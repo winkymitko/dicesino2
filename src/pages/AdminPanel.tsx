@@ -255,22 +255,28 @@ const AdminPanel: React.FC = () => {
                     
                     {/* Affiliate Stats - Only show if user is affiliate */}
                     {user.isAffiliate && (
-                      <div className="flex items-center space-x-4 bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-orange-400">${(user.totalCommissionEarned || 0).toFixed(2)}</div>
-                          <div className="text-xs text-gray-400">Total Earned</div>
+                      <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <h5 className="font-bold text-orange-400 text-sm">👥 Affiliate Stats</h5>
+                          <div className="text-purple-400 font-bold">{(user.affiliateCommission || 0).toFixed(1)}% Commission</div>
                         </div>
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-orange-400">{user.totalReferrals || 0}</div>
-                          <div className="text-xs text-gray-400">Total Referrals</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-orange-400">{user.activeReferrals || 0}</div>
-                          <div className="text-xs text-gray-400">Active Referrals</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-purple-400">{(user.affiliateCommission || 0).toFixed(1)}%</div>
-                          <div className="text-xs text-gray-400">Commission Rate</div>
+                        <div className="grid grid-cols-3 gap-3 text-xs">
+                          <div className="text-center">
+                            <div className="text-orange-400 font-bold">
+                              ${(userStats[user.id]?.realMoney?.casinoProfit || 0) > 0 ? 
+                                ((userStats[user.id]?.realMoney?.casinoProfit || 0) * (user.affiliateCommission || 0) / 100).toFixed(2) : 
+                                '0.00'}
+                            </div>
+                            <div className="text-gray-400">Commission Earned</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-orange-400 font-bold">{userStats[user.id]?.affiliateStats?.totalReferrals || 0}</div>
+                            <div className="text-gray-400">Total Referrals</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-orange-400 font-bold">{userStats[user.id]?.affiliateStats?.activeReferrals || 0}</div>
+                            <div className="text-gray-400">Active Referrals</div>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -343,38 +349,44 @@ const AdminPanel: React.FC = () => {
                 </div>
               </div>
 
-              {/* Wagering Progress */}
-              <div className="mt-6 bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                <h5 className="font-bold mb-3 text-blue-400">🎯 Bonus Wagering Progress</h5>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <div className="text-blue-400 font-bold">${userStats[user.id]?.wagering?.progress?.toFixed(2) || '0.00'}</div>
-                    <div className="text-gray-400">Progress</div>
-                  </div>
-                  <div>
-                    <div className="text-blue-400 font-bold">${userStats[user.id]?.wagering?.required?.toFixed(2) || '0.00'}</div>
-                    <div className="text-gray-400">Required</div>
-                  </div>
-                  <div>
-                    <div className="text-blue-400 font-bold">{userStats[user.id]?.wagering?.progressPercent || 0}%</div>
-                    <div className="text-gray-400">Complete</div>
-                  </div>
-                  <div>
-                    <div className="text-blue-400 font-bold">${userStats[user.id]?.wagering?.lockedBalance?.toFixed(2) || '0.00'}</div>
-                    <div className="text-gray-400">Locked Balance</div>
-                  </div>
-                </div>
-                <div className="mt-3 w-full bg-gray-700 rounded-full h-2">
-                  <div 
-                    className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min(100, userStats[user.id]?.wagering?.progressPercent || 0)}%` }}
-                  ></div>
-                </div>
-              </div>
-
               {/* Expanded User Stats */}
               {expandedUser === user.id && userStats[user.id] && (
                 <div className="border-t border-white/10 p-6 bg-black/20">
+                  {/* Wagering Progress */}
+                  <div className="mb-6 bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                    <h5 className="font-bold mb-2 text-blue-400 text-sm">🎯 Bonus Wagering Progress</h5>
+                    <div className="grid grid-cols-4 gap-3 text-xs">
+                      <div className="text-center">
+                        <div className="text-blue-400 font-bold">${(user.currentWageringProgress || 0).toFixed(2)}</div>
+                        <div className="text-gray-400">Progress</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-blue-400 font-bold">${(user.activeWageringRequirement || 0).toFixed(2)}</div>
+                        <div className="text-gray-400">Required</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-blue-400 font-bold">
+                          {user.activeWageringRequirement > 0 ? 
+                            ((user.currentWageringProgress || 0) / user.activeWageringRequirement * 100).toFixed(1) : 0}%
+                        </div>
+                        <div className="text-gray-400">Complete</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-blue-400 font-bold">${(user.lockedBalance || 0).toFixed(2)}</div>
+                        <div className="text-gray-400">Locked</div>
+                      </div>
+                    </div>
+                    <div className="mt-2 w-full bg-gray-700 rounded-full h-1">
+                      <div 
+                        className="bg-blue-500 h-1 rounded-full transition-all duration-300"
+                        style={{ 
+                          width: `${Math.min(100, user.activeWageringRequirement > 0 ? 
+                            ((user.currentWageringProgress || 0) / user.activeWageringRequirement * 100) : 0)}%` 
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+
                   {/* Real Money Overview */}
                   <div className="mb-6 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
                     <h4 className="text-lg font-bold text-yellow-400 mb-4">💰 Real Money Overview</h4>

@@ -236,6 +236,30 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
     const totalWithdrawn = withdrawals.reduce((sum, w) => sum + w.amount, 0);
     const casinoProfit = totalDeposited - totalWithdrawn;
     
+    // Get affiliate stats if user is affiliate
+    let affiliateStats = null;
+    if (user.isAffiliate) {
+      const referrals = await prisma.user.findMany({
+        where: { referredBy: user.affiliateCode },
+        select: { id: true }
+      });
+      
+      const activeReferrals = referrals.filter(async (ref) => {
+        const recentActivity = await prisma.game.findFirst({
+          where: { 
+            userId: ref.id,
+            createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } // Last 30 days
+          }
+        });
+        return recentActivity !== null;
+      });
+      
+      affiliateStats = {
+        totalReferrals: referrals.length,
+        activeReferrals: activeReferrals.length
+      };
+    }
+    
     // Get all games separated by virtual/real
     const virtualGames = await prisma.game.findMany({
       where: { userId },
@@ -311,6 +335,9 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
         totalWithdrawn,
         casinoProfit
       },
+      
+      // Affiliate stats
+      affiliateStats,
       
       // Game statistics
       virtualStats,
