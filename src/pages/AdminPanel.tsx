@@ -492,7 +492,7 @@ const AdminPanel: React.FC = () => {
                 {/* Bonus Section */}
                 <div className="border-t border-white/10 pt-3">
                   <h4 className="text-sm font-bold mb-2">Grant Real Bonus</h4>
-                  <div className="grid grid-cols-2 gap-2 mb-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <input
                       type="number"
                       placeholder="Amount $"
@@ -502,19 +502,12 @@ const AdminPanel: React.FC = () => {
                     />
                     <input
                       type="number"
-                      placeholder="WR Multiplier"
+                      placeholder="Wagering Coefficient"
                       value={wageringMultiplier}
                       onChange={(e) => setWageringMultiplier(e.target.value)}
                       className="px-2 py-1 bg-black/30 border border-white/20 rounded text-sm"
                     />
                   </div>
-                  <input
-                    type="text"
-                    placeholder="Description"
-                    value={bonusDescription}
-                    onChange={(e) => setBonusDescription(e.target.value)}
-                    className="w-full px-2 py-1 bg-black/30 border border-white/20 rounded text-sm mb-2"
-                  />
                 </div>
 
                 {/* Wagering Adjustment */}
