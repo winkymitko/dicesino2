@@ -1010,8 +1010,8 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
       }
     } else {
       // Player lost
-      if (game.betSource !== 'cash' && !useVirtual) {
-        await updateWageringProgress(req.user.id, game.stake);
+      if (!useVirtual && game.betSource !== 'cash') {
+        await updateWageringProgress(req.user.id, numericStake);
       }
       
       await prisma.user.update({

@@ -580,11 +580,11 @@ const AdminPanel: React.FC = () => {
                         <h5 className="font-bold mb-3 text-green-400">🎲 BarboDice</h5>
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <div className="text-green-400 font-bold">{userStats[user.id].real?.dice?.gamesPlayed || 0}</div>
+                            <div className="text-green-400 font-bold">{userStats[user.id].real?.dice?.total || 0}</div>
                             <div className="text-gray-400">Games Played</div>
                           </div>
                           <div>
-                            <div className="text-green-400 font-bold">${userStats[user.id].real?.dice?.totalWagered?.toFixed(2) || '0.00'}</div>
+                            <div className="text-green-400 font-bold">${userStats[user.id].real?.dice?.wagered?.toFixed(2) || '0.00'}</div>
                             <div className="text-gray-400">Total Wagered</div>
                           </div>
                           <div>
@@ -599,11 +599,11 @@ const AdminPanel: React.FC = () => {
                         <h5 className="font-bold mb-3 text-red-400">⚔️ DiceBattle</h5>
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <div className="text-red-400 font-bold">{userStats[user.id].real?.battle?.gamesPlayed || 0}</div>
+                            <div className="text-red-400 font-bold">{userStats[user.id].real?.battle?.total || 0}</div>
                             <div className="text-gray-400">Battles</div>
                           </div>
                           <div>
-                            <div className="text-red-400 font-bold">${userStats[user.id].real?.battle?.totalWagered?.toFixed(2) || '0.00'}</div>
+                            <div className="text-red-400 font-bold">${userStats[user.id].real?.battle?.wagered?.toFixed(2) || '0.00'}</div>
                             <div className="text-gray-400">Total Wagered</div>
                           </div>
                           <div>
@@ -618,11 +618,11 @@ const AdminPanel: React.FC = () => {
                         <h5 className="font-bold mb-3 text-orange-400">🎯 DiceRoulette</h5>
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <div className="text-orange-400 font-bold">{userStats[user.id].real?.roulette?.gamesPlayed || 0}</div>
+                            <div className="text-orange-400 font-bold">{userStats[user.id].real?.roulette?.total || 0}</div>
                             <div className="text-gray-400">Games Played</div>
                           </div>
                           <div>
-                            <div className="text-orange-400 font-bold">${userStats[user.id].real?.roulette?.totalWagered?.toFixed(2) || '0.00'}</div>
+                            <div className="text-orange-400 font-bold">${userStats[user.id].real?.roulette?.wagered?.toFixed(2) || '0.00'}</div>
                             <div className="text-gray-400">Total Wagered</div>
                           </div>
                           <div>
