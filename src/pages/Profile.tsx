@@ -270,6 +270,51 @@ const Profile: React.FC = () => {
               {linkCopied && (
                 <p className="text-green-400 text-sm">Link copied to clipboard!</p>
               )}
+              
+              {/* Payout Request */}
+              <div className="mt-4 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <h4 className="font-bold text-green-400 mb-2">💰 Request Payout</h4>
+                <p className="text-sm text-gray-400 mb-3">
+                  Monthly Commission: ${(affiliateStats.monthlyCommission || 0).toFixed(2)}
+                </p>
+                {affiliateStats.payoutRequested ? (
+                  <div className="text-yellow-400 text-sm">
+                    ⏳ Payout request pending: ${(affiliateStats.requestedPayout || 0).toFixed(2)}
+                    <br />
+                    <span className="text-gray-400">
+                      Requested: {affiliateStats.payoutRequestDate ? new Date(affiliateStats.payoutRequestDate).toLocaleDateString() : 'N/A'}
+                    </span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={async () => {
+                      const amount = prompt('Enter payout amount:');
+                      if (amount && parseFloat(amount) > 0) {
+                        try {
+                          const response = await fetch('/api/affiliate/request-payout', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ amount: parseFloat(amount) })
+                          });
+                          if (response.ok) {
+                            alert('Payout request submitted!');
+                            fetchAffiliateStats();
+                          } else {
+                            const error = await response.json();
+                            alert(error.error);
+                          }
+                        } catch (error) {
+                          alert('Failed to submit payout request');
+                        }
+                      }
+                    }}
+                    className="bg-green-500/20 text-green-400 px-4 py-2 rounded-lg hover:bg-green-500/30 transition-colors text-sm"
+                  >
+                    Request Payout
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 

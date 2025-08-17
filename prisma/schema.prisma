@@ -222,6 +222,10 @@ model AffiliateStats {
   totalReferrals    Int      @default(0)
   totalCommission   Float    @default(0)
   pendingCommission Float    @default(0)
+  lastPayoutDate    DateTime?
+  requestedPayout   Float    @default(0)
+  payoutRequested   Boolean  @default(false)
+  payoutRequestDate DateTime?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

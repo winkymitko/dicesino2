@@ -41,14 +41,22 @@ router.get('/stats', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Not an affiliate' });
     }
 
-    const affiliateStats = await prisma.affiliateStats.findUnique({
+    let affiliateStats = await prisma.affiliateStats.findUnique({
       where: { userId: req.user.id }
     });
+    
+    // Create affiliate stats if doesn't exist
+    if (!affiliateStats) {
+      affiliateStats = await prisma.affiliateStats.create({
+        data: { userId: req.user.id }
+      });
+    }
 
     // Get referral details
     const referrals = await prisma.user.findMany({
       where: { referredBy: req.user.affiliateCode },
       select: {
+        id: true,
         email: true,
         createdAt: true
       }
@@ -88,12 +96,43 @@ router.get('/stats', authenticateToken, async (req, res) => {
     const totalCasinoProfit = referralStats.reduce((sum, ref) => sum + (ref.casinoProfit || 0), 0);
     const commissionRate = req.user.affiliateCommission || 0;
     const totalCommissionEarned = totalCasinoProfit * (commissionRate / 100);
+    
+    // Calculate current month commission
+    const currentMonth = new Date();
+    currentMonth.setDate(1);
+    currentMonth.setHours(0, 0, 0, 0);
+    
+    const monthlyGames = await prisma.game.findMany({
+      where: {
+        userId: { in: referrals.map(r => r.id) },
+        createdAt: { gte: currentMonth },
+        metadata: {
+          not: {
+            contains: '"useVirtual":true'
+          }
+        }
+      },
+      select: {
+        stake: true,
+        finalPot: true
+      }
+    });
+    
+    const monthlyProfit = monthlyGames.reduce((sum, game) => {
+      return sum + ((game.stake || 0) - (game.finalPot || 0));
+    }, 0);
+    
+    const monthlyCommission = monthlyProfit * (commissionRate / 100);
 
     res.json({
       totalReferrals: affiliateStats?.totalReferrals || 0,
       totalCommission: affiliateStats?.totalCommission || 0,
       totalCommissionEarned,
       pendingCommission: affiliateStats?.pendingCommission || 0,
+      monthlyCommission,
+      payoutRequested: affiliateStats?.payoutRequested || false,
+      requestedPayout: affiliateStats?.requestedPayout || 0,
+      lastPayoutDate: affiliateStats?.lastPayoutDate,
       referrals: referralStats
     });
   } catch (error) {
@@ -102,4 +141,48 @@ router.get('/stats', authenticateToken, async (req, res) => {
   }
 });
 
+// Request payout
+router.post('/request-payout', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user.isAffiliate) {
+      return res.status(403).json({ error: 'Not an affiliate' });
+    }
+    
+    const { amount } = req.body;
+    
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: 'Invalid payout amount' });
+    }
+    
+    // Check if already has pending request
+    const affiliateStats = await prisma.affiliateStats.findUnique({
+      where: { userId: req.user.id }
+    });
+    
+    if (affiliateStats?.payoutRequested) {
+      return res.status(400).json({ error: 'Payout request already pending' });
+    }
+    
+    // Update affiliate stats
+    await prisma.affiliateStats.upsert({
+      where: { userId: req.user.id },
+      create: {
+        userId: req.user.id,
+        payoutRequested: true,
+        requestedPayout: amount,
+        payoutRequestDate: new Date()
+      },
+      update: {
+        payoutRequested: true,
+        requestedPayout: amount,
+        payoutRequestDate: new Date()
+      }
+    });
+    
+    res.json({ success: true, message: 'Payout request submitted' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 export default router;
