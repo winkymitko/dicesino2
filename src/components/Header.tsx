@@ -27,23 +27,27 @@ const Header: React.FC = () => {
           </Link>
 
           <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/" className="text-gray-300 hover:text-white transition-colors">
-              Home
-            </Link>
-            {user && (
-              <Link to="/dice" className="text-gray-300 hover:text-white transition-colors">
-                BarboDice
-              </Link>
-            )}
-            {user && (
-              <Link to="/dicebattle" className="text-gray-300 hover:text-white transition-colors">
-                DiceBattle
-              </Link>
-            )}
-            {user && (
-              <Link to="/diceroulette" className="text-gray-300 hover:text-white transition-colors">
-                DiceRoulette
-              </Link>
+            {!user?.isAffiliate && (
+              <>
+                <Link to="/" className="text-gray-300 hover:text-white transition-colors">
+                  Home
+                </Link>
+                {user && (
+                  <Link to="/dice" className="text-gray-300 hover:text-white transition-colors">
+                    BarboDice
+                  </Link>
+                )}
+                {user && (
+                  <Link to="/dicebattle" className="text-gray-300 hover:text-white transition-colors">
+                    DiceBattle
+                  </Link>
+                )}
+                {user && (
+                  <Link to="/diceroulette" className="text-gray-300 hover:text-white transition-colors">
+                    DiceRoulette
+                  </Link>
+                )}
+              </>
             )}
             
             {/* Game Mode Toggle */}
@@ -73,15 +77,17 @@ const Header: React.FC = () => {
           <div className="flex items-center space-x-4">
             {user ? (
               <>
-                <div className="hidden sm:flex flex-col items-end text-sm cursor-pointer" onClick={() => setShowBalanceBreakdown(!showBalanceBreakdown)}>
-                  <span className="text-yellow-400 font-bold">
-                    ${((user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0)).toFixed(2)} Main
-                  </span>
-                  <span className="text-gray-400 text-xs">Click for breakdown</span>
-                </div>
+                {!user.isAffiliate && (
+                  <div className="hidden sm:flex flex-col items-end text-sm cursor-pointer" onClick={() => setShowBalanceBreakdown(!showBalanceBreakdown)}>
+                    <span className="text-yellow-400 font-bold">
+                      ${((user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0)).toFixed(2)} Main
+                    </span>
+                    <span className="text-gray-400 text-xs">Click for breakdown</span>
+                  </div>
+                )}
                 
                 {/* Balance Breakdown Dropdown */}
-                {showBalanceBreakdown && (
+                {showBalanceBreakdown && !user.isAffiliate && (
                   <div className="absolute top-16 right-4 bg-gray-900 border border-white/20 rounded-lg p-4 shadow-xl z-50 min-w-64">
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">

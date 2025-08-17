@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext';
 
 const DiceBattle = () => {
   const { user, refreshUser, gameMode } = useAuth();
-  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   
   // Game state

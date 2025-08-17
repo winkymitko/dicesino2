@@ -530,8 +530,10 @@ const AdminPanel: React.FC = () => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {(userStats[user.id][(statsViewMode[user.id] || 'virtual')]?.recentGames || []).map((game: any, index: number) => (
-                                  <tr key={index} className="border-b border-white/10">
+                    <td className="p-3 text-green-400">${(user.cashBalance || 0).toFixed(2)}</td>
+                    <td className="p-3 text-blue-400">${(user.bonusBalance || 0).toFixed(2)}</td>
+                    <td className="p-3 text-orange-400">${(user.lockedBalance || 0).toFixed(2)}</td>
+                    <td className="p-3 text-purple-400">${(user.virtualBalance || 0).toFixed(2)}</td>
                                     <td className="p-2">{new Date(game.createdAt).toLocaleDateString()}</td>
                                     <td className="p-2">
                                       <span className={`px-2 py-1 rounded text-xs ${
@@ -554,6 +556,16 @@ const AdminPanel: React.FC = () => {
                                       </span>
                                     </td>
                                     <td className="p-2">
+                    <td className="p-3">
+                      {user.isAffiliate ? (
+                        <div className="text-center">
+                          <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded">Affiliate</span>
+                          <div className="text-xs text-gray-400 mt-1">{(user.affiliateCommission || 0).toFixed(1)}%</div>
+                        </div>
+                      ) : (
+                        <span className="text-gray-500 text-xs">Player</span>
+                      )}
+                    </td>
                                       ${game.finalPot?.toFixed(2) || '0.00'}
                                     </td>
                                     <td className="p-2">
@@ -662,6 +674,29 @@ const AdminPanel: React.FC = () => {
                 </p>
               </div>
 
+              {selectedUser?.isAffiliate && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Affiliate Commission (%)</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    max="50"
+                    value={selectedUser.affiliateCommission || 0}
+                    onChange={(e) => {
+                      setSelectedUser(prev => ({
+                        ...prev,
+                        affiliateCommission: parseFloat(e.target.value) || 0
+                      }));
+                    }}
+                    className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Percentage of real money profit from referred users
+                  </p>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium mb-2">Add Bonus (Virtual Money)</label>
                 <input
@@ -742,12 +777,15 @@ const AdminPanel: React.FC = () => {
                       game.status === 'cashed_out' ? 'bg-green-500/20 text-green-400' :
                       game.status === 'lost' ? 'bg-red-500/20 text-red-400' :
                       'bg-yellow-500/20 text-yellow-400'
-                    }`}>
-                      {game.status}
+                  <th className="text-left p-3">Cash Balance</th>
+                  <th className="text-left p-3">Bonus Balance</th>
+                  <th className="text-left p-3">Locked Balance</th>
+                  <th className="text-left p-3">Virtual Balance</th>
                     </span>
                   </td>
                   <td className="p-3">
                     {game.finalPot ? `$${game.finalPot.toFixed(2)}` : '-'}
+                  <th className="text-left p-3">Affiliate</th>
                   </td>
                 </tr>
               ))}
