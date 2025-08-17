@@ -1,11 +1,12 @@
 import TronWeb from 'tronweb';
+const { TronWeb: TronWebConstructor } = TronWeb;
 import axios from 'axios';
 
 // USDT TRC20 contract address on TRON mainnet
 const USDT_CONTRACT_ADDRESS = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 
 // Initialize TronWeb with TronGrid
-const tronWeb = new TronWeb({
+const tronWeb = new TronWebConstructor({
   fullHost: 'https://api.trongrid.io',
   headers: { 'TRON-PRO-API-KEY': process.env.TRON_API_KEY || '' },
   privateKey: process.env.TRON_MASTER_PRIVATE_KEY || '01'.repeat(32) // Master wallet for gas fees
