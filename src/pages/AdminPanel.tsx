@@ -223,19 +223,13 @@ const AdminPanel: React.FC = () => {
         
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 text-center">
           <TrendingUp className="h-8 w-8 text-green-400 mx-auto mb-2" />
-          <div className="text-2xl font-bold">{stats.totalGames || 0}</div>
-          <div className="text-gray-400">Total Games</div>
-        </div>
-        
-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 text-center">
-          <TrendingUp className="h-8 w-8 text-yellow-400 mx-auto mb-2" />
           <div className="text-2xl font-bold">${(stats.totalRealMoneyDeposited || 0).toFixed(2)}</div>
           <div className="text-gray-400">Total Deposits</div>
         </div>
-
+        
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 text-center">
           <TrendingUp className="h-8 w-8 text-purple-400 mx-auto mb-2" />
-          <div className="text-2xl font-bold">${(stats.totalCasinoProfit || 0).toFixed(2)}</div>
+          <div className="text-2xl font-bold">${(stats.totalCommissionEarned || 0).toFixed(2)}</div>
           <div className="text-gray-400">Casino Profit</div>
         </div>
       </div>
@@ -245,61 +239,133 @@ const AdminPanel: React.FC = () => {
         <h2 className="text-2xl font-bold mb-6">Users Management</h2>
         
         <div className="space-y-4">
-          {users.map((user) => (
-            <div key={user.id} className="bg-black/30 rounded-lg border border-white/10">
-              {/* User Header */}
-              <div className="p-4 flex items-center justify-between">
+          {users.map((user: any) => (
+            <div key={user.id} className="bg-black/30 rounded-lg p-4 border border-white/10">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div>
-                    <div className="font-bold text-lg">{user.email}</div>
-                    <div className="text-sm text-gray-400">
-                      {user.name || 'No name'} • Joined {new Date(user.createdAt).toLocaleDateString()}
+                    <div className="font-bold">{user.username}</div>
+                    <div className="text-sm text-gray-400">{user.email}</div>
+                  </div>
+                  <div className="text-sm">
+                    <div>Virtual: ${(user.virtualBalance || 0).toFixed(2)}</div>
+                    <div>Real: ${(user.realBalance || 0).toFixed(2)}</div>
+                  </div>
+                  <div className="text-sm">
+                    <div className="text-center p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                      <div className="text-2xl font-bold text-orange-400">${(user.totalCommissionEarned || 0).toFixed(2)}</div>
+                      <div className="text-sm text-gray-400">Total Earned</div>
+                    </div>
+                    
+                    <div className="text-center p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                      <div className="text-2xl font-bold text-orange-400">{user.totalReferrals || 0}</div>
+                      <div className="text-sm text-gray-400">Total Referrals</div>
+                    </div>
+                    
+                    <div className="text-center p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                      <div className="text-2xl font-bold text-orange-400">{user.activeReferrals || 0}</div>
+                      <div className="text-sm text-gray-400">Active Referrals</div>
+                    </div>
+                    
+                    <div className="text-center p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                      <div className="text-2xl font-bold text-purple-400">{(user.affiliateCommission || 0).toFixed(1)}%</div>
+                      <div className="text-sm text-gray-400">Commission Rate</div>
+                    </div>
+                    
+                    {/* Add Commission Rate Setting */}
+                    <div className="col-span-4 mt-4">
+                      <label className="block text-sm font-medium mb-2">Set Commission Rate (%)</label>
+                      <div className="flex space-x-2">
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="50"
+                          defaultValue={user.affiliateCommission || 0}
+                          className="flex-1 px-3 py-2 bg-black/30 border border-white/20 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+                          id={`commission-${user.id}`}
+                        />
+                        <button
+                          onClick={async () => {
+                            const input = document.getElementById(`commission-${user.id}`) as HTMLInputElement;
+                            const newRate = parseFloat(input.value);
+                            if (newRate >= 0 && newRate <= 50) {
+                              try {
+                                const response = await fetch(`/api/admin/users/${user.id}/commission`, {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  credentials: 'include',
+                                  body: JSON.stringify({ commission: newRate })
+                                });
+                                if (response.ok) {
+                                  fetchUsers();
+                                  alert('Commission rate updated successfully');
+                                } else {
+                                  const error = await response.json();
+                                  alert(error.error || 'Failed to update commission rate');
+                                }
+                              } catch (error) {
+                                console.error('Failed to update commission rate:', error);
+                              }
+                            }
+                          }}
+                          className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+                        >
+                          Update
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-4">
-                  {/* Quick Stats */}
-                  <div className="text-right text-sm">
-                    <div className="text-green-400 font-bold">
-                      ${((user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0)).toFixed(2)}
-                    </div>
-                    <div className="text-gray-400">Real Balance</div>
-                  </div>
-                  
-                  <div className="text-right text-sm">
-                    <div className="text-purple-400 font-bold">
-                      ${(user.virtualBalance || 0).toFixed(2)}
-                    </div>
-                    <div className="text-gray-400">Virtual Balance</div>
-                  </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => toggleUserStats(user.id)}
+                    className="bg-blue-500/20 text-blue-400 px-4 py-2 rounded-lg hover:bg-blue-500/30 transition-colors"
+                  >
+                    {expandedUser === user.id ? <ChevronUp /> : <ChevronDown />}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedUser(user);
+                      setDiceGameEdge(user.diceGameEdge?.toString() || '5.0');
+                      setDiceBattleEdge(user.diceBattleEdge?.toString() || '5.0');
+                      setMaxBetWhileBonus(user.maxBetWhileBonus?.toString() || '50');
+                      setMaxBonusCashout(user.maxBonusCashout?.toString() || '1000');
+                    }}
+                    className="bg-yellow-500/20 text-yellow-400 px-4 py-2 rounded-lg hover:bg-yellow-500/30 transition-colors"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => {
-                        setSelectedUser(user);
-                        setDiceGameEdge((user.diceGameEdge || 5).toString());
-                        setDiceBattleEdge((user.diceBattleEdge || 5).toString());
-                        setMaxBetWhileBonus((user.maxBetWhileBonus || 50).toString());
-                        setMaxBonusCashout((user.maxBonusCashout || 1000).toString());
-                      }}
-                      className="bg-blue-500/20 text-blue-400 px-3 py-1 rounded text-xs hover:bg-blue-500/30"
-                    >
-                      Settings
-                    </button>
-                    
-                    <button
-                      onClick={() => toggleUserStats(user.id)}
-                      className="bg-purple-500/20 text-purple-400 px-3 py-1 rounded text-xs hover:bg-purple-500/30 flex items-center space-x-1"
-                    >
-                      <span>Stats</span>
-                      {expandedUser === user.id ? 
-                        <ChevronUp className="h-3 w-3" /> : 
-                        <ChevronDown className="h-3 w-3" />
-                      }
-                    </button>
+              {/* Wagering Progress */}
+              <div className="mt-6 bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                <h5 className="font-bold mb-3 text-blue-400">🎯 Bonus Wagering Progress</h5>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <div className="text-blue-400 font-bold">${userStats[user.id]?.wagering?.progress?.toFixed(2) || '0.00'}</div>
+                    <div className="text-gray-400">Progress</div>
                   </div>
+                  <div>
+                    <div className="text-blue-400 font-bold">${userStats[user.id]?.wagering?.required?.toFixed(2) || '0.00'}</div>
+                    <div className="text-gray-400">Required</div>
+                  </div>
+                  <div>
+                    <div className="text-blue-400 font-bold">{userStats[user.id]?.wagering?.progressPercent || 0}%</div>
+                    <div className="text-gray-400">Complete</div>
+                  </div>
+                  <div>
+                    <div className="text-blue-400 font-bold">${userStats[user.id]?.wagering?.lockedBalance?.toFixed(2) || '0.00'}</div>
+                    <div className="text-gray-400">Locked Balance</div>
+                  </div>
+                </div>
+                <div className="mt-3 w-full bg-gray-700 rounded-full h-2">
+                  <div 
+                    className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min(100, userStats[user.id]?.wagering?.progressPercent || 0)}%` }}
+                  ></div>
                 </div>
               </div>
 
@@ -381,6 +447,82 @@ const AdminPanel: React.FC = () => {
                           </div>
                         </div>
                       </div>
+
+                      {/* Virtual BarboDice */}
+                      <div className="mt-6 bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                        <h5 className="font-bold mb-3 text-green-400">🎲 BarboDice</h5>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <div className="text-green-400 font-bold">{userStats[user.id].virtual?.dice?.gamesPlayed || 0}</div>
+                            <div className="text-gray-400">Games Played</div>
+                          </div>
+                          <div>
+                            <div className="text-green-400 font-bold">${userStats[user.id].virtual?.dice?.totalWagered?.toFixed(2) || '0.00'}</div>
+                            <div className="text-gray-400">Total Wagered</div>
+                          </div>
+                          <div>
+                            <div className="text-green-400 font-bold">${userStats[user.id].virtual?.dice?.casinoProfit?.toFixed(2) || '0.00'}</div>
+                            <div className="text-gray-400">🏦 Casino Profit</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Virtual DiceBattle */}
+                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                        <h5 className="font-bold mb-3 text-red-400">⚔️ DiceBattle</h5>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <div className="text-red-400 font-bold">{userStats[user.id].virtual?.battle?.gamesPlayed || 0}</div>
+                            <div className="text-gray-400">Battles</div>
+                          </div>
+                          <div>
+                            <div className="text-red-400 font-bold">${userStats[user.id].virtual?.battle?.totalWagered?.toFixed(2) || '0.00'}</div>
+                            <div className="text-gray-400">Total Wagered</div>
+                          </div>
+                          <div>
+                            <div className="text-red-400 font-bold">${userStats[user.id].virtual?.battle?.casinoProfit?.toFixed(2) || '0.00'}</div>
+                            <div className="text-gray-400">🏦 Casino Profit</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Virtual DiceRoulette */}
+                      <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
+                        <h5 className="font-bold mb-3 text-orange-400">🎯 DiceRoulette</h5>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <div className="text-orange-400 font-bold">{userStats[user.id].virtual?.roulette?.gamesPlayed || 0}</div>
+                            <div className="text-gray-400">Games Played</div>
+                          </div>
+                          <div>
+                            <div className="text-orange-400 font-bold">${userStats[user.id].virtual?.roulette?.totalWagered?.toFixed(2) || '0.00'}</div>
+                            <div className="text-gray-400">Total Wagered</div>
+                          </div>
+                          <div>
+                            <div className="text-orange-400 font-bold">${userStats[user.id].virtual?.roulette?.casinoProfit?.toFixed(2) || '0.00'}</div>
+                            <div className="text-gray-400">🏦 Casino Profit</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Virtual Total */}
+                      <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
+                        <h5 className="font-bold mb-3 text-purple-400">📊 Virtual Total</h5>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <div className="text-purple-400 font-bold">{userStats[user.id].virtual?.total?.gamesPlayed || 0}</div>
+                            <div className="text-gray-400">Total Games</div>
+                          </div>
+                          <div>
+                            <div className="text-purple-400 font-bold">${userStats[user.id].virtual?.total?.totalWagered?.toFixed(2) || '0.00'}</div>
+                            <div className="text-gray-400">Total Wagered</div>
+                          </div>
+                          <div>
+                            <div className="text-purple-400 font-bold">${userStats[user.id].virtual?.total?.casinoProfit?.toFixed(2) || '0.00'}</div>
+                            <div className="text-gray-400">🏦 Total Casino Profit</div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Real Money Stats */}
@@ -433,156 +575,143 @@ const AdminPanel: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Real DiceBattle */}
-                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                        <h5 className="font-bold mb-3 text-red-400">⚔️ Real DiceBattle</h5>
+                      {/* Real BarboDice */}
+                      <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                        <h5 className="font-bold mb-3 text-green-400">🎲 BarboDice</h5>
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <div className="text-red-400 font-bold">{userStats[user.id].real?.battleGames?.total || 0}</div>
-                            <div className="text-gray-400">Battles</div>
+                            <div className="text-green-400 font-bold">{userStats[user.id].real?.dice?.gamesPlayed || 0}</div>
+                            <div className="text-gray-400">Games Played</div>
                           </div>
                           <div>
-                            <div className="text-red-400 font-bold">{userStats[user.id].real?.battleGames?.won || 0}W/{userStats[user.id].real?.battleGames?.lost || 0}L/{userStats[user.id].real?.battleGames?.tied || 0}T</div>
-                            <div className="text-gray-400">W/L/T</div>
+                            <div className="text-green-400 font-bold">${userStats[user.id].real?.dice?.totalWagered?.toFixed(2) || '0.00'}</div>
+                            <div className="text-gray-400">Total Wagered</div>
                           </div>
                           <div>
-                            <div className="text-red-400 font-bold">${userStats[user.id].real?.battleGames?.wagered?.toFixed(2) || '0.00'}</div>
-                            <div className="text-gray-400">Wagered</div>
-                          </div>
-                          <div>
-                            <div className="text-red-400 font-bold">${userStats[user.id].real?.battleCasinoProfit?.toFixed(2) || '0.00'}</div>
+                            <div className="text-green-400 font-bold">${userStats[user.id].real?.dice?.casinoProfit?.toFixed(2) || '0.00'}</div>
                             <div className="text-gray-400">🏦 Casino Profit</div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
 
-                  {/* Recent Games */}
-                  <div className="mt-6 bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                    <h5 className="font-bold mb-3 text-blue-400">📊 Recent Real Money Games</h5>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs">
-                        <thead>
-                          <tr className="border-b border-white/20">
-                            <th className="text-left p-2">Date</th>
-                            <th className="text-left p-2">Game</th>
-                            <th className="text-left p-2">Bet</th>
-                            <th className="text-left p-2">Result</th>
-                            <th className="text-left p-2">Won</th>
-                            <th className="text-left p-2">Casino Profit</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {userStats[user.id].real?.recentGames?.slice(0, 5).map((game: any) => (
-                            <tr key={game.id} className="border-b border-white/10">
-                              <td className="p-2">{new Date(game.createdAt).toLocaleDateString()}</td>
-                              <td className="p-2">
-                                <span className={`px-2 py-1 rounded text-xs ${
-                                  game.gameType === 'dice' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                                }`}>
-                                  {game.gameType === 'dice' ? '🎲' : '⚔️'}
-                                </span>
-                              </td>
-                              <td className="p-2">${game.stake?.toFixed(2)}</td>
-                              <td className="p-2">
-                                <span className={`px-2 py-1 rounded text-xs ${
-                                  game.status === 'cashed_out' || game.status === 'won' ? 'bg-green-500/20 text-green-400' :
-                                  game.status === 'tie' ? 'bg-yellow-500/20 text-yellow-400' :
-                                  'bg-red-500/20 text-red-400'
-                                }`}>
-                                  {game.status === 'cashed_out' ? 'Won' : 
-                                   game.status === 'won' ? 'Won' :
-                                   game.status === 'tie' ? 'Tie' : 'Lost'}
-                                </span>
-                              </td>
-                              <td className="p-2">${game.finalPot?.toFixed(2) || '0.00'}</td>
-                              <td className="p-2">
-                                <span className={`font-bold ${
-                                  game.casinoProfit > 0 ? 'text-green-400' : 
-                                  game.casinoProfit < 0 ? 'text-red-400' : 'text-gray-400'
-                                }`}>
-                                  {game.casinoProfit > 0 ? '+' : ''}${game.casinoProfit?.toFixed(2) || '0.00'}
-                                </span>
-                              </td>
-                            </tr>
-                          )) || (
-                            <tr>
-                              <td colSpan={6} className="p-4 text-center text-gray-400">
-                                No real money games found
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                      {/* Real DiceBattle */}
+                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                        <h5 className="font-bold mb-3 text-red-400">⚔️ DiceBattle</h5>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <div className="text-red-400 font-bold">{userStats[user.id].real?.battle?.gamesPlayed || 0}</div>
+                            <div className="text-gray-400">Battles</div>
+                          </div>
+                          <div>
+                            <div className="text-red-400 font-bold">${userStats[user.id].real?.battle?.totalWagered?.toFixed(2) || '0.00'}</div>
+                            <div className="text-gray-400">Total Wagered</div>
+                          </div>
+                          <div>
+                            <div className="text-red-400 font-bold">${userStats[user.id].real?.battle?.casinoProfit?.toFixed(2) || '0.00'}</div>
+                            <div className="text-gray-400">🏦 Casino Profit</div>
+                          </div>
+                        </div>
+                      </div>
 
-                  {/* Affiliate Commission Section */}
-                  <div className="mt-6 bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
-                    <h5 className="font-bold mb-3 text-orange-400">💼 Affiliate Commission</h5>
-                    <div className="grid grid-cols-4 gap-4">
-                      <div className="text-center p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-                        <div className="text-2xl font-bold text-orange-400">${(user.totalCommissionEarned || 0).toFixed(2)}</div>
-                        <div className="text-sm text-gray-400">Total Earned</div>
+                      {/* Real DiceRoulette */}
+                      <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
+                        <h5 className="font-bold mb-3 text-orange-400">🎯 DiceRoulette</h5>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <div className="text-orange-400 font-bold">{userStats[user.id].real?.roulette?.gamesPlayed || 0}</div>
+                            <div className="text-gray-400">Games Played</div>
+                          </div>
+                          <div>
+                            <div className="text-orange-400 font-bold">${userStats[user.id].real?.roulette?.totalWagered?.toFixed(2) || '0.00'}</div>
+                            <div className="text-gray-400">Total Wagered</div>
+                          </div>
+                          <div>
+                            <div className="text-orange-400 font-bold">${userStats[user.id].real?.roulette?.casinoProfit?.toFixed(2) || '0.00'}</div>
+                            <div className="text-gray-400">🏦 Casino Profit</div>
+                          </div>
+                        </div>
                       </div>
-                      
-                      <div className="text-center p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-                        <div className="text-2xl font-bold text-orange-400">{user.totalReferrals || 0}</div>
-                        <div className="text-sm text-gray-400">Total Referrals</div>
+
+                      {/* Real Total */}
+                      <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+                        <h5 className="font-bold mb-3 text-yellow-400">📊 Real Money Total</h5>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <div className="text-yellow-400 font-bold">${userStats[user.id].real?.deposited?.toFixed(2) || '0.00'}</div>
+                            <div className="text-gray-400">Total Deposited</div>
+                          </div>
+                          <div>
+                            <div className="text-yellow-400 font-bold">{userStats[user.id].real?.total?.gamesPlayed || 0}</div>
+                            <div className="text-gray-400">Total Games</div>
+                          </div>
+                          <div>
+                            <div className="text-yellow-400 font-bold">${userStats[user.id].real?.total?.totalWagered?.toFixed(2) || '0.00'}</div>
+                            <div className="text-gray-400">Total Wagered</div>
+                          </div>
+                          <div>
+                            <div className="text-yellow-400 font-bold">${userStats[user.id].real?.total?.casinoProfit?.toFixed(2) || '0.00'}</div>
+                            <div className="text-gray-400">Casino Profit</div>
+                          </div>
+                        </div>
                       </div>
-                      
-                      <div className="text-center p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-                        <div className="text-2xl font-bold text-orange-400">{user.activeReferrals || 0}</div>
-                        <div className="text-sm text-gray-400">Active Referrals</div>
-                      </div>
-                      
-                      <div className="text-center p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-                        <div className="text-2xl font-bold text-purple-400">{(user.affiliateCommission || 0).toFixed(1)}%</div>
-                        <div className="text-sm text-gray-400">Commission Rate</div>
-                      </div>
-                      
-                      {/* Add Commission Rate Setting */}
-                      <div className="col-span-4 mt-4">
-                        <label className="block text-sm font-medium mb-2">Set Commission Rate (%)</label>
-                        <div className="flex space-x-2">
-                          <input
-                            type="number"
-                            step="0.1"
-                            min="0"
-                            max="50"
-                            defaultValue={user.affiliateCommission || 0}
-                            className="flex-1 px-3 py-2 bg-black/30 border border-white/20 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
-                            id={`commission-${user.id}`}
-                          />
-                          <button
-                            onClick={async () => {
-                              const input = document.getElementById(`commission-${user.id}`) as HTMLInputElement;
-                              const newRate = parseFloat(input.value);
-                              if (newRate >= 0 && newRate <= 50) {
-                                try {
-                                  const response = await fetch(`/api/admin/users/${user.id}/commission`, {
-                                    method: 'PUT',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    credentials: 'include',
-                                    body: JSON.stringify({ commission: newRate })
-                                  });
-                                  if (response.ok) {
-                                    fetchUsers();
-                                    alert('Commission rate updated successfully');
-                                  } else {
-                                    const error = await response.json();
-                                    alert(error.error || 'Failed to update commission rate');
-                                  }
-                                } catch (error) {
-                                  alert('Failed to update commission rate');
-                                }
-                              }
-                            }}
-                            className="bg-blue-500/20 text-blue-400 px-4 py-2 rounded-lg hover:bg-blue-500/30 transition-colors"
-                          >
-                            Update
-                          </button>
+
+                      {/* Recent Games */}
+                      <div className="bg-gray-500/10 border border-gray-500/20 rounded-lg p-4">
+                        <h5 className="font-bold mb-3 text-gray-400">🎮 Recent Real Money Games</h5>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs">
+                            <thead>
+                              <tr className="border-b border-white/20">
+                                <th className="text-left p-2">Date</th>
+                                <th className="text-left p-2">Game</th>
+                                <th className="text-left p-2">Bet</th>
+                                <th className="text-left p-2">Result</th>
+                                <th className="text-left p-2">Won</th>
+                                <th className="text-left p-2">Casino Profit</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {userStats[user.id].real?.recentGames?.slice(0, 5).map((game: any) => (
+                                <tr key={game.id} className="border-b border-white/10">
+                                  <td className="p-2">{new Date(game.createdAt).toLocaleDateString()}</td>
+                                  <td className="p-2">
+                                    <span className={`px-2 py-1 rounded text-xs ${
+                                      game.gameType === 'dice' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                                    }`}>
+                                      {game.gameType === 'dice' ? '🎲' : '⚔️'}
+                                    </span>
+                                  </td>
+                                  <td className="p-2">${game.stake?.toFixed(2)}</td>
+                                  <td className="p-2">
+                                    <span className={`px-2 py-1 rounded text-xs ${
+                                      game.status === 'cashed_out' || game.status === 'won' ? 'bg-green-500/20 text-green-400' :
+                                      game.status === 'tie' ? 'bg-yellow-500/20 text-yellow-400' :
+                                      'bg-red-500/20 text-red-400'
+                                    }`}>
+                                      {game.status === 'cashed_out' ? 'Won' : 
+                                       game.status === 'won' ? 'Won' :
+                                       game.status === 'tie' ? 'Tie' : 'Lost'}
+                                    </span>
+                                  </td>
+                                  <td className="p-2">${game.finalPot?.toFixed(2) || '0.00'}</td>
+                                  <td className="p-2">
+                                    <span className={`font-bold ${
+                                      game.casinoProfit > 0 ? 'text-green-400' : 
+                                      game.casinoProfit < 0 ? 'text-red-400' : 'text-gray-400'
+                                    }`}>
+                                      {game.casinoProfit > 0 ? '+' : ''}${game.casinoProfit?.toFixed(2) || '0.00'}
+                                    </span>
+                                  </td>
+                                </tr>
+                              )) || (
+                                <tr>
+                                  <td colSpan={6} className="p-4 text-center text-gray-400">
+                                    No real money games found
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
                         </div>
                       </div>
                     </div>
@@ -594,17 +723,15 @@ const AdminPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* User Management Modal */}
+      {/* User Settings Modal */}
       {selectedUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-2xl border border-white/20 p-6 w-full max-w-md mx-4">
-            <h3 className="text-xl font-bold mb-4">
-              Manage User: {selectedUser.email}
-            </h3>
-
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-2xl p-8 max-w-md w-full mx-4 border border-white/20">
+            <h3 className="text-2xl font-bold mb-6">User Settings: {selectedUser.username}</h3>
+            
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Dice Game House Edge (%)</label>
+                <label className="block text-sm font-medium mb-2">BarboDice House Edge (%)</label>
                 <input
                   type="number"
                   step="0.5"
@@ -618,7 +745,7 @@ const AdminPanel: React.FC = () => {
                   5.0% = normal luck, higher = more bad luck for user, lower = more good luck
                 </p>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium mb-2">DiceBattle House Edge (%)</label>
                 <input
@@ -635,6 +762,21 @@ const AdminPanel: React.FC = () => {
                 </p>
               </div>
 
+              <div>
+                <label className="block text-sm font-medium mb-2">DiceRoulette House Edge (%)</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  max="50"
+                  value={diceRouletteEdge}
+                  onChange={(e) => setDiceRouletteEdge(e.target.value)}
+                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  5.0% = normal luck, higher = more bad luck for user, lower = more good luck
+                </p>
+              </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Max Bet While Bonus Active ($)</label>
                 <input
@@ -759,11 +901,11 @@ const AdminPanel: React.FC = () => {
               <h3 className="text-lg font-bold mb-4">Current Bot Names ({botNames.length})</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-60 overflow-y-auto">
                 {botNames.map((name, index) => (
-                  <div key={index} className="flex items-center justify-between bg-white/5 rounded-lg p-3">
-                    <span className="text-sm font-medium">{name}</span>
+                  <div key={index} className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 flex items-center justify-between">
+                    <span className="text-blue-400 font-medium">{name}</span>
                     <button
                       onClick={() => removeBotName(name)}
-                      className="text-red-400 hover:text-red-300 text-xs ml-2"
+                      className="text-red-400 hover:text-red-300 ml-2 text-sm font-bold"
                     >
                       ✕
                     </button>
