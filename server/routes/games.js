@@ -764,6 +764,11 @@ router.post('/dicebattle/start', authenticateToken, async (req, res) => {
       useVirtual
     );
     
+    // Update wagering progress for all real money bets
+    if (!useVirtual) {
+      await updateWageringProgress(req.user.id, numericStake);
+    }
+    
     // Generate bot opponent
     const botNames = ['DiceKing', 'RollMaster', 'LuckyPlayer', 'DiceNinja', 'BattleBot'];
     const botName = botNames[Math.floor(Math.random() * botNames.length)];
@@ -979,9 +984,6 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
           data: updateData
         });
         
-        // Update wagering progress
-        await updateWageringProgress(req.user.id, game.stake);
-        
         // Create transaction record
         const user = await prisma.user.findUnique({ where: { id: req.user.id } });
         await prisma.transaction.create({
@@ -1002,10 +1004,6 @@ router.post('/dicebattle/roll', authenticateToken, async (req, res) => {
       }
     } else {
       // Player lost
-      if (!useVirtual && game.betSource !== 'cash') {
-        await updateWageringProgress(req.user.id, game.stake);
-      }
-      
       await prisma.user.update({
         where: { id: req.user.id },
         data: {
