@@ -248,12 +248,12 @@ const AdminPanel: React.FC = () => {
               <tr className="border-b border-white/20">
                 <th className="text-left p-3">Email</th>
                 <th className="text-left p-3">Name</th>
-                <th className="text-left p-3">Cash Balance</th>
-                <th className="text-left p-3">Bonus Balance</th>
+                <th className="text-left p-3">Real Balance</th>
+                <th className="text-left p-3">Virtual Balance</th>
                 <th className="text-left p-3">Total Deposited</th>
-                <th className="text-left p-3">Total Games</th>
-                <th className="text-left p-3">Total Wagered</th>
-                <th className="text-left p-3">Net Casino Profit</th>
+                <th className="text-left p-3">Games Played</th>
+                <th className="text-left p-3">Real Money Wagered</th>
+                <th className="text-left p-3">Casino Profit (Real)</th>
                 <th className="text-left p-3">House Edge %</th>
                 <th className="text-left p-3">Actions</th>
               </tr>
@@ -264,15 +264,15 @@ const AdminPanel: React.FC = () => {
                   <tr className="border-b border-white/10 hover:bg-white/5">
                   <td className="p-3">{user.email}</td>
                   <td className="p-3">{user.name || '-'}</td>
-                  <td className="p-3 text-green-400">${(user.cashBalance || 0).toFixed(2)}</td>
-                  <td className="p-3 text-blue-400">${(user.bonusBalance || 0).toFixed(2)}</td>
+                  <td className="p-3 text-green-400">${((user.cashBalance || 0) + (user.bonusBalance || 0) + (user.lockedBalance || 0)).toFixed(2)}</td>
+                  <td className="p-3 text-purple-400">${(user.virtualBalance || 0).toFixed(2)}</td>
                   <td className="p-3 text-yellow-400">${(user.totalDeposited || 0).toFixed(2)}</td>
-                  <td className="p-3">{user.totalGames || 0}</td>
-                  <td className="p-3 text-orange-400">${(user.totalBets || 0).toFixed(2)}</td>
+                  <td className="p-3">{(user.totalGameWins || 0) + (user.totalGameLosses || 0)}</td>
+                  <td className="p-3 text-orange-400">${((user.totalBets || 0) - (user.virtualBalance >= 1000 ? (user.totalBets || 0) * 0.1 : 0)).toFixed(2)}</td>
                   <td className="p-3">
                     <div className="text-xs">
-                      <div className={`font-bold ${((user.totalBets || 0) - (user.totalWins || 0)) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        ${((user.totalBets || 0) - (user.totalWins || 0)).toFixed(2)}
+                      <div className={`font-bold ${((user.totalBets || 0) - (user.totalWins || 0) - (user.virtualBalance >= 1000 ? (user.totalBets || 0) * 0.1 : 0)) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        ${((user.totalBets || 0) - (user.totalWins || 0) - (user.virtualBalance >= 1000 ? (user.totalBets || 0) * 0.1 : 0)).toFixed(2)}
                       </div>
                     </div>
                   </td>

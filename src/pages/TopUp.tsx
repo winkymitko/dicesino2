@@ -243,19 +243,39 @@ const TopUp: React.FC = () => {
           {/* Current Balance */}
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
             <h3 className="text-xl font-bold mb-4">Current Balance</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="text-center p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
                 <div className="text-2xl font-bold text-green-400">
-                  ${virtualBalance.toFixed(2)}
+                  ${((user?.cashBalance || 0)).toFixed(2)}
                 </div>
-                <div className="text-sm text-gray-400">Virtual Balance</div>
+                <div className="text-sm text-gray-400">💰 Cash</div>
               </div>
               <div className="text-center p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                 <div className="text-2xl font-bold text-yellow-400">
-                  ${realBalance.toFixed(2)}
+                  ${((user?.bonusBalance || 0) + (user?.lockedBalance || 0)).toFixed(2)}
                 </div>
-                <div className="text-sm text-gray-400">Real Balance</div>
+                <div className="text-sm text-gray-400">🎁 Bonus</div>
               </div>
+              <div className="text-center p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                <div className="text-2xl font-bold text-purple-400">
+                  ${virtualBalance.toFixed(2)}
+                </div>
+                <div className="text-sm text-gray-400">🎮 Virtual</div>
+              </div>
+            </div>
+            
+            {/* Withdraw Button */}
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => alert('Withdraw feature coming soon! Contact support for manual withdrawals.')}
+                disabled={(user?.cashBalance || 0) < 10}
+                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2 px-6 rounded-lg transition-all"
+              >
+                💸 Withdraw Cash (Min $10)
+              </button>
+              {(user?.cashBalance || 0) < 10 && (
+                <p className="text-xs text-gray-400 mt-2">Minimum withdrawal: $10</p>
+              )}
             </div>
           </div>
 

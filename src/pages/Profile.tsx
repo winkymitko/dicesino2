@@ -466,12 +466,20 @@ const Profile: React.FC = () => {
           <div className="bg-gradient-to-r from-green-500/20 to-green-600/20 backdrop-blur-sm rounded-2xl border border-green-500/30 p-6 text-center">
             <h3 className="text-lg font-bold mb-2 text-green-400">💰 Need More Real Money?</h3>
             <p className="text-gray-300 text-sm mb-4">Top up your account with USDT and start playing with real money!</p>
-            <Link
-              to="/topup"
-              className="inline-block bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-2 px-6 rounded-lg transition-all"
-            >
-              Top Up Now
-            </Link>
+            <div className="flex space-x-4 justify-center">
+              <Link
+                to="/topup"
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-2 px-6 rounded-lg transition-all"
+              >
+                💳 Top Up
+              </Link>
+              <button
+                onClick={() => alert('Withdraw feature coming soon! Contact support for manual withdrawals.')}
+                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-all"
+              >
+                💸 Withdraw
+              </button>
+            </div>
           </div>
 
           {/* Balances */}
