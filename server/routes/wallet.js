@@ -74,8 +74,8 @@ router.get('/info', authenticateToken, async (req, res) => {
       
       // Validate the generated address
       if (!isValidTronAddress(address)) {
-        console.warn('Generated address not valid, using fallback');
-        // Use fallback but continue
+        console.error('Generated address not valid:', address);
+        return res.status(500).json({ error: 'Failed to generate valid TRON address' });
       }
       
       try {
