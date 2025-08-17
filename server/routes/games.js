@@ -584,6 +584,182 @@ router.get('/stats', authenticateToken, async (req, res) => {
 
 // DiceBattle routes (simplified for space - similar pattern)
 
+// Dice Roulette routes
+router.post('/diceroulette/roll', authenticateToken, async (req, res) => {
+  try {
+    const { bets, useVirtual = false } = req.body;
+    
+    if (!bets || Object.keys(bets).length === 0) {
+      return res.status(400).json({ error: 'No bets placed' });
+    }
+    
+    const totalBet = Object.values(bets).reduce((sum, bet) => sum + Number(bet), 0);
+    
+    if (totalBet < 0.1 || totalBet > 1000) {
+      return res.status(400).json({ error: 'Total bet must be between $0.10 and $1000' });
+    }
+    
+    // Determine bet source
+    const { source, bonusUsed, cashUsed, virtualUsed } = await determineBetSource(
+      req.user.id, 
+      totalBet, 
+      useVirtual
+    );
+    
+    // Generate dice roll
+    const serverSeed = generateServerSeed();
+    const clientSeed = Math.random().toString(36).substring(2, 15);
+    const [dice1, dice2, dice3] = generateDiceRoll(serverSeed, clientSeed, 1);
+    const sum = dice1 + dice2 + dice3;
+    
+    // Calculate winnings for each bet
+    let totalWin = 0;
+    const betResults = {};
+    
+    Object.entries(bets).forEach(([betType, betAmount]) => {
+      const amount = Number(betAmount);
+      let payout = 0;
+      
+      // Apply house edge
+      const houseEdge = req.user.diceRouletteEdge || 5;
+      const luckRoll = Math.random() * 100;
+      let shouldWin = false;
+      
+      // Determine if bet wins
+      if (betType.startsWith('number_')) {
+        const number = parseInt(betType.split('_')[1]);
+        shouldWin = [dice1, dice2, dice3].includes(number);
+        if (shouldWin) payout = amount * 2.2;
+      } else if (betType === 'odd') {
+        shouldWin = sum % 2 === 1;
+        if (shouldWin) payout = amount * 1.9;
+      } else if (betType === 'even') {
+        shouldWin = sum % 2 === 0;
+        if (shouldWin) payout = amount * 1.9;
+      } else if (betType === 'low') {
+        shouldWin = sum >= 3 && sum <= 9;
+        if (shouldWin) payout = amount * 1.9;
+      } else if (betType === 'high') {
+        shouldWin = sum >= 10 && sum <= 18;
+        if (shouldWin) payout = amount * 1.9;
+      }
+      
+      // Apply luck manipulation
+      if (houseEdge > 5 && shouldWin) {
+        const badLuckChance = (houseEdge - 5) * 2;
+        if (luckRoll < badLuckChance) {
+          shouldWin = false;
+          payout = 0;
+        }
+      } else if (houseEdge < 5 && !shouldWin) {
+        const goodLuckChance = (5 - houseEdge) * 1.5;
+        if (luckRoll < goodLuckChance) {
+          shouldWin = true;
+          // Set appropriate payout based on bet type
+          if (betType.startsWith('number_')) payout = amount * 2.2;
+          else payout = amount * 1.9;
+        }
+      }
+      
+      betResults[betType] = { amount, won: shouldWin, payout };
+      totalWin += payout;
+    });
+    
+    // Create game record
+    const game = await prisma.game.create({
+      data: {
+        userId: req.user.id,
+        gameType: 'diceroulette',
+        stake: totalBet,
+        totalPot: totalBet,
+        finalPot: totalWin,
+        status: totalWin > 0 ? 'cashed_out' : 'lost',
+        betSource: source,
+        bonusUsed,
+        cashUsed,
+        metadata: JSON.stringify({ 
+          useVirtual, 
+          bets, 
+          betResults,
+          dice1, dice2, dice3, sum
+        })
+      }
+    });
+    
+    // Update user balances
+    const updateData = { totalBets: { increment: totalBet } };
+    if (useVirtual) {
+      updateData.virtualBalance = { decrement: virtualUsed };
+      if (totalWin > 0) updateData.virtualBalance = { increment: totalWin };
+    } else {
+      if (bonusUsed > 0) updateData.bonusBalance = { decrement: bonusUsed };
+      if (cashUsed > 0) updateData.cashBalance = { decrement: cashUsed };
+    }
+    
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: updateData
+    });
+    
+    // Handle real money winnings
+    if (totalWin > 0 && !useVirtual) {
+      const { cashWin, lockedWin } = await processWinnings(
+        req.user.id,
+        totalWin,
+        source,
+        bonusUsed,
+        cashUsed
+      );
+      
+      const winUpdateData = {
+        totalWins: { increment: totalWin },
+        totalGameWins: { increment: 1 }
+      };
+      
+      if (cashWin > 0) winUpdateData.cashBalance = { increment: cashWin };
+      if (lockedWin > 0) winUpdateData.lockedBalance = { increment: lockedWin };
+      
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: winUpdateData
+      });
+      
+      await updateWageringProgress(req.user.id, totalBet);
+    }
+    
+    // Create game round for record keeping
+    await prisma.gameRound.create({
+      data: {
+        gameId: game.id,
+        userId: req.user.id,
+        roundNumber: 1,
+        dice1, dice2, dice3,
+        points: totalWin > 0 ? 100 : 0,
+        multiplier: totalWin > 0 ? totalWin / totalBet : 0,
+        potBefore: totalBet,
+        potAfter: totalWin,
+        serverSeed,
+        clientSeed,
+        nonce: 1,
+        wageringContribution: source !== 'cash' ? totalBet : 0,
+        metadata: JSON.stringify({ betResults })
+      }
+    });
+    
+    res.json({
+      roll: { dice1, dice2, dice3, sum },
+      results: {
+        betResults,
+        totalWin,
+        totalLost: totalBet - totalWin
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message || 'Server error' });
+  }
+});
+
 // Start DiceBattle matchmaking
 router.post('/dicebattle/start', authenticateToken, async (req, res) => {
   try {

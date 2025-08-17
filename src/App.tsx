@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import DiceGame from './pages/DiceGame';
 import DiceBattle from './pages/DiceBattle';
+import DiceRoulette from './pages/DiceRoulette';
 import Profile from './pages/Profile';
 import AdminPanel from './pages/AdminPanel';
 import TopUp from './pages/TopUp';
@@ -25,6 +26,7 @@ function App() {
               <Route path="/register" element={<Register />} />
               <Route path="/dice" element={<DiceGame />} />
               <Route path="/dicebattle" element={<DiceBattle />} />
+              <Route path="/diceroulette" element={<DiceRoulette />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/topup" element={<TopUp />} />

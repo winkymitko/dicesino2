@@ -152,6 +152,43 @@ const Home: React.FC = () => {
             </div>
           </div>
 
+          {/* Dice Roulette - Available */}
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 hover:border-orange-500/50 transition-all transform hover:scale-105">
+            <div className="text-center">
+              <div className="flex justify-center space-x-2 mb-4">
+                <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
+                  <Target className="h-6 w-6 text-white" />
+                </div>
+                <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
+                  <Dice6 className="h-6 w-6 text-white" />
+                </div>
+              </div>
+              <h3 className="text-xl font-bold mb-2">Dice Roulette</h3>
+              <p className="text-gray-400 text-sm mb-4">
+                Bet on dice outcomes with multiple betting options and big payouts!
+              </p>
+              <div className="flex justify-center space-x-2 mb-4">
+                <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">Live</span>
+                <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded">Multi-Bet</span>
+              </div>
+              {user ? (
+                <Link
+                  to="/diceroulette"
+                  className="block bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-2 px-4 rounded-lg transition-all"
+                >
+                  Play Now
+                </Link>
+              ) : (
+                <Link
+                  to="/register"
+                  className="block bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-2 px-4 rounded-lg transition-all"
+                >
+                  Register to Play
+                </Link>
+              )}
+            </div>
+          </div>
+
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 hover:border-red-500/50 transition-all transform hover:scale-105">
             <div className="text-center">
               <div className="flex justify-center space-x-2 mb-4">
@@ -191,139 +228,6 @@ const Home: React.FC = () => {
             </div>
           </div>
 
-          {/* Blackjack - Coming Soon */}
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/30"></div>
-            <div className="relative text-center opacity-75">
-              <div className="flex justify-center space-x-2 mb-4">
-                <div className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
-                  <Spade className="h-6 w-6 text-gray-400" />
-                </div>
-                <div className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
-                  <Heart className="h-6 w-6 text-gray-400" />
-                </div>
-              </div>
-              <h3 className="text-xl font-bold mb-2">Blackjack</h3>
-              <p className="text-gray-500 text-sm mb-4">Classic 21 with side bets and insurance options</p>
-              <div className="flex justify-center space-x-2 mb-4">
-                <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded">Coming Soon</span>
-                <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded">Provably Fair</span>
-              </div>
-              <button
-                disabled
-                className="block w-full bg-gray-600 text-gray-400 font-bold py-2 px-4 rounded-lg cursor-not-allowed"
-              >
-                Coming Soon
-              </button>
-            </div>
-          </div>
-
-          {/* Poker - Coming Soon */}
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/30"></div>
-            <div className="relative text-center opacity-75">
-              <div className="flex justify-center space-x-2 mb-4">
-                <div className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
-                  <Diamond className="h-6 w-6 text-gray-400" />
-                </div>
-                <div className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
-                  <Club className="h-6 w-6 text-gray-400" />
-                </div>
-              </div>
-              <h3 className="text-xl font-bold mb-2">Texas Hold&apos;em</h3>
-              <p className="text-gray-500 text-sm mb-4">Tournament-style poker with progressive jackpots</p>
-              <div className="flex justify-center space-x-2 mb-4">
-                <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded">Coming Soon</span>
-                <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded">Multiplayer</span>
-              </div>
-              <button
-                disabled
-                className="block w-full bg-gray-600 text-gray-400 font-bold py-2 px-4 rounded-lg cursor-not-allowed"
-              >
-                Coming Soon
-              </button>
-            </div>
-          </div>
-
-          {/* Roulette - Coming Soon */}
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/30"></div>
-            <div className="relative text-center opacity-75">
-              <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center">
-                  <Target className="h-8 w-8 text-gray-400" />
-                </div>
-              </div>
-              <h3 className="text-xl font-bold mb-2">Roulette</h3>
-              <p className="text-gray-500 text-sm mb-4">European roulette with live wheel animation</p>
-              <div className="flex justify-center space-x-2 mb-4">
-                <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded">Coming Soon</span>
-                <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded">Live</span>
-              </div>
-              <button
-                disabled
-                className="block w-full bg-gray-600 text-gray-400 font-bold py-2 px-4 rounded-lg cursor-not-allowed"
-              >
-                Coming Soon
-              </button>
-            </div>
-          </div>
-
-          {/* Slots - Coming Soon */}
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/30"></div>
-            <div className="relative text-center opacity-75">
-              <div className="flex justify-center space-x-1 mb-4">
-                <div className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
-                  <Coins className="h-6 w-6 text-gray-400" />
-                </div>
-                <div className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
-                  <Coins className="h-6 w-6 text-gray-400" />
-                </div>
-                <div className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
-                  <Coins className="h-6 w-6 text-gray-400" />
-                </div>
-              </div>
-              <h3 className="text-xl font-bold mb-2">Slot Machines</h3>
-              <p className="text-gray-500 text-sm mb-4">Classic 3-reel slots with progressive jackpots</p>
-              <div className="flex justify-center space-x-2 mb-4">
-                <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded">Coming Soon</span>
-                <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded">Jackpot</span>
-              </div>
-              <button
-                disabled
-                className="block w-full bg-gray-600 text-gray-400 font-bold py-2 px-4 rounded-lg cursor-not-allowed"
-              >
-                Coming Soon
-              </button>
-            </div>
-          </div>
-
-          {/* Crash Game - Coming Soon */}
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/30"></div>
-            <div className="relative text-center opacity-75">
-              <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 bg-gray-700 rounded-lg flex items-center justify-center">
-                  <TrendingUp className="h-8 w-8 text-gray-400" />
-                </div>
-              </div>
-              <h3 className="text-xl font-bold mb-2">Crash</h3>
-              <p className="text-gray-500 text-sm mb-4">
-                Watch the multiplier rise and cash out before it crashes
-              </p>
-              <div className="flex justify-center space-x-2 mb-4">
-                <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded">Coming Soon</span>
-                <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded">High Risk</span>
-              </div>
-              <button
-                disabled
-                className="block w-full bg-gray-600 text-gray-400 font-bold py-2 px-4 rounded-lg cursor-not-allowed"
-              >
-                Coming Soon
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 

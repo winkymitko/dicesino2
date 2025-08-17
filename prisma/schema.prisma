@@ -40,10 +40,17 @@ model User {
   // Enhanced edge control per game
   diceGameEdge      Float    @default(5.0)   // House edge % for dice game
   diceBattleEdge    Float    @default(5.0)   // House edge % for dice battle
+  diceRouletteEdge  Float    @default(5.0)   // House edge % for dice roulette
   
   // Risk controls
   maxBetWhileBonus  Float    @default(50)    // Max bet when bonus active
   maxBonusCashout   Float    @default(1000)  // Max cashout from bonus flow
+  
+  // Affiliate system
+  isAffiliate       Boolean  @default(false)
+  affiliateCode     String?  @unique         // Unique affiliate code
+  affiliateCommission Float  @default(0)     // Commission percentage (0-100)
+  referredBy        String?                  // Affiliate code that referred this user
   
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -54,6 +61,7 @@ model User {
   transactions    Transaction[]
   cryptoWallets   CryptoWallet?
   cryptoDeposits  CryptoDeposit[]
+  affiliateStats  AffiliateStats?
 
   @@map("users")
 }
@@ -197,4 +205,18 @@ model CryptoDeposit {
   wallet CryptoWallet @relation(fields: [walletId], references: [id])
 
   @@map("crypto_deposits")
+}
+
+model AffiliateStats {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  totalReferrals    Int      @default(0)
+  totalCommission   Float    @default(0)
+  pendingCommission Float    @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("affiliate_stats")
 }
