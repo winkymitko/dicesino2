@@ -518,9 +518,13 @@ const AdminPanel: React.FC = () => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {userStats[user.id][(statsViewMode[user.id] || 'virtual')]?.recentGames?.map((game: any, index: number) => (
+                              <span>Initial Virtual + Bonuses:</span>
                                   <tr key={index} className="border-b border-white/10">
                                     <td className="p-2">{new Date(game.createdAt).toLocaleDateString()}</td>
+                            <div className="flex justify-between">
+                              <span>Signup Bonuses Granted:</span>
+                              <span className="text-blue-400">${userStats[user.id].virtual?.totalBonusesGranted?.toFixed(2) || '0.00'}</span>
+                            </div>
                                     <td className="p-2">
                                       <span className={`px-2 py-1 rounded text-xs ${
                                         game.gameType === 'dice' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
@@ -532,10 +536,10 @@ const AdminPanel: React.FC = () => {
                                     <td className="p-2">
                                       <span className={`px-2 py-1 rounded text-xs ${
                                         game.status === 'cashed_out' ? 'bg-green-500/20 text-green-400' :
-                                        game.status === 'tie' ? 'bg-yellow-500/20 text-yellow-400' :
+                                (userStats[user.id].virtual?.netResult || 0) >= 0 
                                         'bg-red-500/20 text-red-400'
                                       }`}>
-                                        {game.status === 'cashed_out' ? '✅ Won' : 
+                                ${(userStats[user.id].virtual?.netResult || 0).toFixed(2)}
                                          game.status === 'tie' ? '🤝 Tie' : '❌ Lost'}
                                       </span>
                                     </td>
@@ -545,6 +549,10 @@ const AdminPanel: React.FC = () => {
                                     <td className="p-2">
                                       <span className={`font-bold ${
                                         game.casinoProfit > 0 ? 'text-green-400' : 
+                            <div className="flex justify-between">
+                              <span>Deposit Bonuses Granted:</span>
+                              <span className="text-blue-400">${userStats[user.id].real?.depositBonuses?.toFixed(2) || '0.00'}</span>
+                            </div>
                                         game.casinoProfit < 0 ? 'text-red-400' : 'text-gray-400'
                                       }`}>
                                         {game.casinoProfit > 0 ? '+' : ''}${game.casinoProfit?.toFixed(2) || '0.00'}
@@ -553,13 +561,17 @@ const AdminPanel: React.FC = () => {
                                   </tr>
                                 )) || []}
                                 {(!userStats[user.id][(statsViewMode[user.id] || 'virtual')]?.recentGames || 
+                            <div className="flex justify-between">
+                              <span>Gross Gaming Revenue (GGR):</span>
+                              <span className="text-purple-400">${userStats[user.id].real?.grossGamingRevenue?.toFixed(2) || '0.00'}</span>
+                            </div>
                                   userStats[user.id][(statsViewMode[user.id] || 'virtual')]?.recentGames?.length === 0) && (
                                   <tr>
                                     <td colSpan={6} className="p-4 text-center text-gray-400">
-                                      No {(statsViewMode[user.id] || 'virtual') === 'virtual' ? 'virtual' : 'real'} games found
+                                (userStats[user.id].real?.netResult || 0) >= 0 
                                     </td>
                                   </tr>
-                                )}
+                                ${(userStats[user.id].real?.netResult || 0).toFixed(2)}
                               </tbody>
                             </table>
                           </div>

@@ -216,12 +216,20 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
     // Calculate virtual stats
     const virtualWagered = virtualGames.reduce((sum, game) => sum + (game.stake || 0), 0);
     const virtualWon = virtualGames.reduce((sum, game) => sum + (game.finalPot || 0), 0);
-    const virtualDeposited = bonuses.reduce((sum, bonus) => sum + (bonus.amount || 0), 0) + 1000;
+    const virtualDeposited = bonuses.filter(b => b.type === 'signup').reduce((sum, bonus) => sum + (bonus.amount || 0), 0) + 1000; // Initial virtual money + signup bonuses
     
     // Calculate real stats
     const realWagered = realGames.reduce((sum, game) => sum + (game.stake || 0), 0);
     const realWon = realGames.reduce((sum, game) => sum + (game.finalPot || 0), 0);
-    const realDeposited = 0;
+    
+    // Get user's deposit history from crypto deposits
+    const cryptoDeposits = await prisma.cryptoDeposit.findMany({
+      where: { userId, status: 'confirmed' }
+    });
+    const realDeposited = cryptoDeposits.reduce((sum, deposit) => sum + (deposit.amount || 0), 0);
+    
+    // Get deposit bonuses (real money bonuses)
+    const depositBonuses = bonuses.filter(b => b.type === 'deposit').reduce((sum, bonus) => sum + (bonus.amount || 0), 0);
     
     // Separate by game type for virtual
     const virtualDiceGames = virtualGames.filter(g => g.gameType === 'dice');
@@ -294,6 +302,8 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
         deposited: virtualDeposited,
         wagered: virtualWagered,
         won: virtualWon,
+        netResult: virtualWon - virtualWagered,
+        totalBonusesGranted: bonuses.filter(b => b.type === 'signup').reduce((sum, bonus) => sum + (bonus.amount || 0), 0),
         diceGames: virtualDiceStats,
         battleGames: virtualBattleStats,
         diceCasinoProfit: virtualDiceCasinoProfit,
@@ -303,8 +313,11 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
       },
       real: {
         deposited: realDeposited,
+        depositBonuses: depositBonuses,
         wagered: realWagered,
         won: realWon,
+        netResult: realWon - realWagered,
+        grossGamingRevenue: realWagered - realWon, // GGR = bets - wins
         diceGames: realDiceStats,
         battleGames: realBattleStats,
         diceCasinoProfit: realDiceCasinoProfit,

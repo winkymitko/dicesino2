@@ -232,8 +232,8 @@ router.post('/dice/start', authenticateToken, async (req, res) => {
     const { stake, useVirtual = false } = req.body;
     
     const numericStake = Number(stake);
-    if (!stake || numericStake < 0.5 || numericStake > 1000) {
-      return res.status(400).json({ error: 'Stake must be between $0.50 and $1000' });
+    if (!stake || numericStake < 0.1 || numericStake > 1000) {
+      return res.status(400).json({ error: 'Stake must be between $0.10 and $1000' });
     }
     
     // Determine bet source
@@ -589,8 +589,8 @@ router.post('/dicebattle/start', authenticateToken, async (req, res) => {
     const { stake, useVirtual = false, playerGuess } = req.body;
     
     const numericStake = Number(stake);
-    if (!stake || numericStake < 0.5 || numericStake > 1000) {
-      return res.status(400).json({ error: 'Stake must be between $0.50 and $1000' });
+    if (!stake || numericStake < 0.1 || numericStake > 1000) {
+      return res.status(400).json({ error: 'Stake must be between $0.10 and $1000' });
     }
     
     // Determine bet source

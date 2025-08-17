@@ -172,7 +172,7 @@ const DiceBattle: React.FC = () => {
             <div>
               <label className="block text-sm font-medium mb-2">Choose Stake</label>
               <div className="grid grid-cols-4 gap-2 mb-2">
-                {[0.5, 1, 2, 3].map((amount) => (
+                {[0.1, 0.2, 0.5, 1].map((amount) => (
                   <button
                     key={amount}
                     onClick={() => setStake(amount)}
@@ -182,12 +182,12 @@ const DiceBattle: React.FC = () => {
                         : 'bg-white/10 hover:bg-white/20'
                     }`}
                   >
-                    ${amount}
+                    ${amount < 1 ? amount.toFixed(1) : amount}
                   </button>
                 ))}
               </div>
               <div className="grid grid-cols-4 gap-2">
-                {[5, 10, 20, 50].map((amount) => (
+                {[2, 5, 10, 20].map((amount) => (
                   <button
                     key={amount}
                     onClick={() => setStake(amount)}
