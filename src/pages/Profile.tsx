@@ -326,6 +326,17 @@ const Profile: React.FC = () => {
             {/* Overview Stats */}
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
               <h3 className="text-xl font-bold mb-6">Your Affiliate Performance</h3>
+              
+              {/* Payout Period Display */}
+              <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-center">
+                <div className="text-sm text-blue-400 font-medium">
+                  📅 Payout Period: <span className="font-bold">{affiliateStats.payoutPeriod || 'Monthly'}</span>
+                </div>
+                <div className="text-xs text-gray-400 mt-1">
+                  Set by admin • Request payouts per referral below
+                </div>
+              </div>
+              
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                   <div className="text-2xl font-bold text-blue-400">{affiliateStats.totalReferrals || 0}</div>
@@ -350,7 +361,7 @@ const Profile: React.FC = () => {
 
             {/* Referral Performance */}
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-              <h3 className="text-xl font-bold mb-4">Your Referrals & Earnings</h3>
+              <h3 className="text-xl font-bold mb-4">Your Referrals & Per-Referral Payouts</h3>
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {affiliateStats.referrals && affiliateStats.referrals.length > 0 ? (
                   affiliateStats.referrals.map((referral: any, index: number) => (
@@ -373,20 +384,11 @@ const Profile: React.FC = () => {
                           ${((referral.casinoProfit || 0) * (user.affiliateCommission || 0) / 100).toFixed(2)}
                         </div>
                         <div className="text-xs text-gray-400">Your Commission</div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center text-gray-400 py-8">
-                    <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>No referrals yet</p>
-                    <p className="text-sm">Share your link to start earning!</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+                        
+                        {/* Per-Referral Payout Request */}
+                        <button
+                          onClick={async () => {
+                            const commissionEarned = (referral.casinoProfit || 0) * (user.affiliateCommission || 0) / 100;
       </div>
     );
   }

@@ -221,6 +221,23 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
   try {
     const { userId } = req.params;
     
+    // Get user first
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        isAffiliate: true,
+        affiliateCode: true,
+        activeWageringRequirement: true,
+        currentWageringProgress: true,
+        bonusBalance: true,
+        lockedBalance: true
+      }
+    });
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
     // Get crypto deposits and withdrawals for real money tracking
     const deposits = await prisma.cryptoDeposit.findMany({
       where: { userId, status: 'confirmed' },
@@ -238,25 +255,31 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
     
     // Get affiliate stats if user is affiliate
     let affiliateStats = null;
-    if (user.isAffiliate) {
+    if (user.isAffiliate && user.affiliateCode) {
       const referrals = await prisma.user.findMany({
         where: { referredBy: user.affiliateCode },
-        select: { id: true }
+        select: { 
+          id: true,
+          email: true,
+          createdAt: true
+        }
       });
       
-      const activeReferrals = referrals.filter(async (ref) => {
+      // Calculate active referrals (had activity in last 30 days)
+      let activeCount = 0;
+      for (const ref of referrals) {
         const recentActivity = await prisma.game.findFirst({
           where: { 
-            userId: ref.id,
+            userId: ref.id, 
             createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } // Last 30 days
           }
         });
-        return recentActivity !== null;
-      });
+        if (recentActivity) activeCount++;
+      }
       
       affiliateStats = {
         totalReferrals: referrals.length,
-        activeReferrals: activeReferrals.length
+        activeReferrals: activeCount
       };
     }
     
@@ -316,17 +339,6 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
       diceBattle: calculateGameStats(realGames, 'dicebattle'),
       diceRoulette: calculateGameStats(realGames, 'diceroulette')
     };
-    
-    // Get current wagering progress (for bonus unlock tracking)
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        activeWageringRequirement: true,
-        currentWageringProgress: true,
-        bonusBalance: true,
-        lockedBalance: true
-      }
-    });
     
     res.json({
       // Real money overview

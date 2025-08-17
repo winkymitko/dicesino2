@@ -322,6 +322,44 @@ const AdminPanel: React.FC = () => {
                         >
                           Update
                         </button>
+                        
+                        {/* Payout Period Setting */}
+                        <select
+                          defaultValue={userStats[user.id]?.affiliateStats?.payoutPeriod || 'Monthly'}
+                          className="px-2 py-1 bg-black/30 border border-white/20 rounded text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+                          id={`period-${user.id}`}
+                        >
+                          <option value="Weekly">Weekly</option>
+                          <option value="Bi-weekly">Bi-weekly</option>
+                          <option value="Monthly">Monthly</option>
+                          <option value="Quarterly">Quarterly</option>
+                        </select>
+                        <button
+                          onClick={async () => {
+                            const select = document.getElementById(`period-${user.id}`) as HTMLSelectElement;
+                            const newPeriod = select.value;
+                            try {
+                              const response = await fetch(`/api/affiliate/set-payout-period/${user.id}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                credentials: 'include',
+                                body: JSON.stringify({ payoutPeriod: newPeriod })
+                              });
+                              if (response.ok) {
+                                fetchUsers();
+                                alert(`Payout period set to ${newPeriod}`);
+                              } else {
+                                const error = await response.json();
+                                alert(error.error || 'Failed to update payout period');
+                              }
+                            } catch (error) {
+                              console.error('Failed to update payout period:', error);
+                            }
+                          }}
+                          className="px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-xs transition-colors"
+                        >
+                          Set Period
+                        </button>
                       </div>
                     )}
                   </div>

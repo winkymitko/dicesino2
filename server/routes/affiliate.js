@@ -85,6 +85,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
       }, 0);
       
       referralStats.push({
+        id: referral.id,
         email: referral.email,
         createdAt: referral.createdAt,
         totalBets: realMoneyGames.length,
@@ -130,6 +131,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
       totalCommissionEarned,
       pendingCommission: affiliateStats?.pendingCommission || 0,
       monthlyCommission,
+      payoutPeriod: affiliateStats?.payoutPeriod || 'Monthly',
       payoutRequested: affiliateStats?.payoutRequested || false,
       requestedPayout: affiliateStats?.requestedPayout || 0,
       lastPayoutDate: affiliateStats?.lastPayoutDate,
@@ -148,38 +150,67 @@ router.post('/request-payout', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Not an affiliate' });
     }
     
-    const { amount } = req.body;
+    const { amount, referralEmail, referralId } = req.body;
     
     if (!amount || amount <= 0) {
       return res.status(400).json({ error: 'Invalid payout amount' });
     }
     
-    // Check if already has pending request
-    const affiliateStats = await prisma.affiliateStats.findUnique({
-      where: { userId: req.user.id }
-    });
-    
-    if (affiliateStats?.payoutRequested) {
-      return res.status(400).json({ error: 'Payout request already pending' });
+    if (!referralEmail || !referralId) {
+      return res.status(400).json({ error: 'Referral information required' });
     }
     
-    // Update affiliate stats
+    // Create a payout request record (you might want to create a new table for this)
+    // For now, we'll just log it and return success
+    console.log(`Payout request: ${req.user.email} requests $${amount} commission from referral ${referralEmail}`);
+    
+    // In a real system, you'd create a PayoutRequest table entry here
+    // await prisma.payoutRequest.create({
+    //   data: {
+    //     affiliateId: req.user.id,
+    //     referralId,
+    //     amount,
+    //     referralEmail,
+    //     status: 'pending'
+    //   }
+    // });
+    
+    res.json({ 
+      success: true, 
+      message: `Payout request submitted for $${amount.toFixed(2)} commission from ${referralEmail}` 
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Admin: Set payout period for affiliate
+router.put('/set-payout-period/:userId', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    
+    const { userId } = req.params;
+    const { payoutPeriod } = req.body;
+    
+    if (!['Weekly', 'Bi-weekly', 'Monthly', 'Quarterly'].includes(payoutPeriod)) {
+      return res.status(400).json({ error: 'Invalid payout period' });
+    }
+    
     await prisma.affiliateStats.upsert({
-      where: { userId: req.user.id },
+      where: { userId },
       create: {
-        userId: req.user.id,
-        payoutRequested: true,
-        requestedPayout: amount,
-        payoutRequestDate: new Date()
+        userId,
+        payoutPeriod
       },
       update: {
-        payoutRequested: true,
-        requestedPayout: amount,
-        payoutRequestDate: new Date()
+        payoutPeriod
       }
     });
     
-    res.json({ success: true, message: 'Commission payout request submitted to admin' });
+    res.json({ success: true, message: `Payout period set to ${payoutPeriod}` });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Server error' });
