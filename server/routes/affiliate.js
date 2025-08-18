@@ -135,6 +135,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
       payoutRequested: affiliateStats?.payoutRequested || false,
       requestedPayout: affiliateStats?.requestedPayout || 0,
       lastPayoutDate: affiliateStats?.lastPayoutDate,
+      payoutWallet: affiliateStats?.payoutWallet || '',
       referrals: referralStats
     });
   } catch (error) {

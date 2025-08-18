@@ -228,6 +228,7 @@ model AffiliateStats {
   payoutRequestDate DateTime?
   payoutPeriod      String   @default("monthly") // "monthly", "quarterly", "yearly"
   lastPayoutPeriod  String?  // "2024-01", "2024-Q1", "2024"
+  payoutWallet      String?  // TRON wallet address for payouts
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
