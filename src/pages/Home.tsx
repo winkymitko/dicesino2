@@ -314,7 +314,7 @@ const Home: React.FC = () => {
           <h2 className="text-3xl font-bold">More Games Coming Soon</h2>
         </div>
         <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
-          We&apos;re constantly expanding our casino with new exciting games. Stay tuned for blackjack, poker, roulette, slots, and more!
+          We&apos;re constantly eeexpanding our casino with new exciting games. Stay tuned for blackjack, poker, roulette, slots, and more!
         </p>
         <div className="flex flex-wrap justify-center gap-3">
           <span className="px-4 py-2 bg-purple-500/20 text-purple-400 rounded-full text-sm">Live Dealer Games</span>
