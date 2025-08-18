@@ -333,6 +333,11 @@ const AdminPanel: React.FC = () => {
                   <div key={report.id} className="bg-black/30 rounded-lg p-4 border border-white/10">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <span className="text-sm text-blue-400">
+                            👤 {report.user ? `${report.user.email} (${report.user.username || 'No username'})` : 'Anonymous User'}
+                          </span>
+                        </div>
                         <div className="flex items-center space-x-3 mb-2">
                           <h4 className="font-bold text-white">{report.subject}</h4>
                           <span className={`px-2 py-1 rounded-full text-xs font-bold ${
@@ -356,7 +361,6 @@ const AdminPanel: React.FC = () => {
                         </div>
                         <p className="text-gray-300 text-sm mb-2">{report.message}</p>
                         <div className="text-xs text-gray-400">
-                          <div>From: {report.user?.email || report.email || 'Anonymous'}</div>
                           <div>Submitted: {new Date(report.createdAt).toLocaleString()}</div>
                         </div>
                       </div>
