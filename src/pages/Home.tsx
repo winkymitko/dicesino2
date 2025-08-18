@@ -6,26 +6,19 @@ import {
   Trophy,
   Shield,
   Zap,
-  Spade,
-  Heart,
-  Diamond,
-  Club,
   Target,
   Coins,
   Clock,
-  TrendingUp, // ✅ required for the Crash card
+  TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Home: React.FC = () => {
   const { user } = useAuth();
 
-  // Safe numbers so .toFixed never throws if API gives strings/undefined
   const mainBal = user ? Number((user.cashBalance ?? 0) + (user.bonusBalance ?? 0) + (user.lockedBalance ?? 0)) : 0;
   const vBal = user ? Number(user.virtualBalance ?? 0) : 0;
-  const streak = user ? Number(user.currentWinStreak ?? 0) : 0;
 
-  // Random game selection
   const getRandomGame = () => {
     const games = ['BarboDice', 'DiceBattle'];
     return games[Math.floor(Math.random() * games.length)];
@@ -35,6 +28,7 @@ const Home: React.FC = () => {
     const paths = ['/dice', '/dicebattle'];
     return paths[Math.floor(Math.random() * paths.length)];
   };
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Hero Section */}
@@ -103,7 +97,7 @@ const Home: React.FC = () => {
         <div className="text-center p-6 bg-white/5 rounded-xl border border-white/10">
           <Trophy className="h-12 w-12 text-purple-400 mx-auto mb-4" />
           <h3 className="text-xl font-bold mb-2">Big Multipliers</h3>
-          <p className="text-gray-400">Win up to 2.2x on every successful roll</p>
+          <p className="text-gray-400">Win up to ~2.2x per scoring roll (configurable)</p>
         </div>
       </div>
 
@@ -112,7 +106,7 @@ const Home: React.FC = () => {
         <h2 className="text-3xl font-bold text-center mb-8">Casino Games</h2>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* 3-Dice Game - Available */}
+          {/* BarboDice */}
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 hover:border-yellow-500/50 transition-all transform hover:scale-105">
             <div className="text-center">
               <div className="flex justify-center space-x-2 mb-4">
@@ -128,7 +122,7 @@ const Home: React.FC = () => {
               </div>
               <h3 className="text-xl font-bold mb-2">BarboDice</h3>
               <p className="text-gray-400 text-sm mb-4">
-                Roll for singles, straights, and triples. Multiply your pot up to 2.2x!
+                Roll for singles, straights, and triples. Multiply your pot up to ~2.2x!
               </p>
               <div className="flex justify-center space-x-2 mb-4">
                 <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">Live</span>
@@ -152,7 +146,7 @@ const Home: React.FC = () => {
             </div>
           </div>
 
-          {/* Dice Roulette - Available */}
+          {/* Dice Roulette */}
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 hover:border-orange-500/50 transition-all transform hover:scale-105">
             <div className="text-center">
               <div className="flex justify-center space-x-2 mb-4">
@@ -189,6 +183,7 @@ const Home: React.FC = () => {
             </div>
           </div>
 
+          {/* DiceBattle */}
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 hover:border-red-500/50 transition-all transform hover:scale-105">
             <div className="text-center">
               <div className="flex justify-center space-x-2 mb-4">
@@ -266,7 +261,7 @@ const Home: React.FC = () => {
                 <span className="text-green-400 font-bold">50 pts</span>
               </div>
               <div className="flex justify-between items-center">
-                <span>Straight (1-3-5, 2-4-6):</span>
+                <span>Straight (1-2-3, 2-3-4, 1-3-5, 2-4-6):</span>
                 <span className="text-yellow-400 font-bold">100 pts</span>
               </div>
               <div className="flex justify-between items-center">
@@ -312,7 +307,7 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      {/* Coming Soon Section */}
+      {/* Coming Soon */}
       <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 backdrop-blur-sm rounded-2xl border border-purple-500/20 p-8 text-center">
         <div className="flex items-center justify-center space-x-3 mb-6">
           <Clock className="h-8 w-8 text-purple-400" />
