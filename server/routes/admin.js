@@ -279,30 +279,70 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
     // Get affiliate stats if user is affiliate
     let affiliateStats = null;
     if (user.isAffiliate && user.affiliateCode) {
+      // Get actual referrals
       const referrals = await prisma.user.findMany({
         where: { referredBy: user.affiliateCode },
         select: { 
           id: true,
           email: true,
-          createdAt: true
+          createdAt: true,
+          cashBalance: true,
+          bonusBalance: true,
+          lockedBalance: true
         }
       });
       
-      // Calculate active referrals (had activity in last 30 days)
+      // Calculate commission for each referral
+      const referralStats = [];
       let activeCount = 0;
+      let totalCommissionEarned = 0;
+      
       for (const ref of referrals) {
-        const recentActivity = await prisma.game.findFirst({
-          where: { 
-            userId: ref.id, 
-            createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } // Last 30 days
-          }
+        // Get deposits and withdrawals for casino profit calculation
+        const deposits = await prisma.cryptoDeposit.findMany({
+          where: { userId: ref.id, status: 'confirmed' },
+          select: { amount: true }
         });
-        if (recentActivity) activeCount++;
+        
+        const withdrawals = await prisma.cryptoWithdrawal.findMany({
+          where: { userId: ref.id, status: 'completed' },
+          select: { amount: true }
+        });
+        
+        const totalDeposited = deposits.reduce((sum, d) => sum + d.amount, 0);
+        const totalWithdrawn = withdrawals.reduce((sum, w) => sum + w.amount, 0);
+        const casinoProfit = totalDeposited - totalWithdrawn;
+        
+        // Commission only if casino is profitable
+        const commissionEarned = casinoProfit > 0 ? casinoProfit * (user.affiliateCommission || 0) / 100 : 0;
+        totalCommissionEarned += commissionEarned;
+        
+        // Check if active (has any balance or recent deposits)
+        const hasBalance = (ref.cashBalance || 0) + (ref.bonusBalance || 0) + (ref.lockedBalance || 0) > 0;
+        const hasRecentDeposit = deposits.some(d => {
+          const depositDate = new Date(d.createdAt || Date.now());
+          const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+          return depositDate > thirtyDaysAgo;
+        });
+        
+        if (hasBalance || hasRecentDeposit) activeCount++;
+        
+        referralStats.push({
+          id: ref.id,
+          email: ref.email,
+          createdAt: ref.createdAt,
+          totalDeposited,
+          totalWithdrawn,
+          casinoProfit,
+          commissionEarned
+        });
       }
       
       affiliateStats = {
         totalReferrals: referrals.length,
-        activeReferrals: activeCount
+        activeReferrals: activeCount,
+        totalCommissionEarned,
+        referrals: referralStats
       };
     }
     
