@@ -24,6 +24,7 @@ model User {
   // Wagering requirements
   activeWageringRequirement Float @default(0)  // Total amount needed to wager
   currentWageringProgress   Float @default(0)  // Amount already wagered
+  wageringMultiplier        Float @default(20) // Keep existing column
   
   isAdmin           Boolean  @default(false)
   currentWinStreak  Int      @default(0)
@@ -120,7 +121,6 @@ model Bonus {
   // Wagering requirements
   wageringRequired    Float    @default(0)  // Total wagering needed
   wageringMultiplier  Float    @default(20) // WR multiplier used
-  wageringCompleted   Boolean  @default(false) // Keep existing column
   
   status      String   @default("active") // "active", "completed", "expired", "voided"
   expiresAt   DateTime?
