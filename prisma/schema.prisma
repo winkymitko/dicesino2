@@ -56,6 +56,7 @@ model User {
   cryptoWithdrawals CryptoWithdrawal[]
   affiliatePayoutPeriods AffiliatePayoutPeriod[]
   affiliateStats  AffiliateStats?
+  bugReports      BugReport[]
 
   @@map("users")
 }
@@ -246,4 +247,20 @@ model AffiliateStats {
   user          User     @relation(fields: [userId], references: [id])
   
   @@map("affiliate_stats")
+}
+
+model BugReport {
+  id          String   @id @default(cuid())
+  userId      String?  // Optional - can be anonymous
+  email       String?  // For contact
+  subject     String
+  message     String
+  status      String   @default("open") // "open", "in_progress", "resolved", "closed"
+  priority    String   @default("medium") // "low", "medium", "high", "critical"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user        User?    @relation(fields: [userId], references: [id])
+  
+  @@map("bug_reports")
 }

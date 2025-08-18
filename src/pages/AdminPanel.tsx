@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Users, TrendingUp, Plus, Settings, ChevronDown, ChevronUp } from 'lucide-react';
+import { Shield, Users, TrendingUp, Plus, Settings, ChevronDown, ChevronUp, Bug, Inbox, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -23,6 +23,11 @@ const AdminPanel: React.FC = () => {
   const [newBotName, setNewBotName] = useState('');
   const [showBotManager, setShowBotManager] = useState(false);
 
+  // Bug reports state
+  const [bugReports, setBugReports] = useState<any[]>([]);
+  const [showBugReports, setShowBugReports] = useState(false);
+  const [bugReportFilter, setBugReportFilter] = useState('all');
+
   useEffect(() => {
     if (!user?.isAdmin) {
       navigate('/');
@@ -31,6 +36,7 @@ const AdminPanel: React.FC = () => {
     fetchUsers();
     fetchStats();
     fetchBotNames();
+    fetchBugReports();
   }, [user, navigate]);
 
   const fetchUsers = async () => {
@@ -72,6 +78,40 @@ const AdminPanel: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to fetch bot names:', error);
+    }
+  };
+
+  const fetchBugReports = async () => {
+    try {
+      const response = await fetch('/api/admin/bug-reports', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setBugReports(data.bugReports);
+      }
+    } catch (error) {
+      console.error('Failed to fetch bug reports:', error);
+    }
+  };
+
+  const updateBugReportStatus = async (reportId: string, status: string) => {
+    try {
+      const response = await fetch(`/api/admin/bug-reports/${reportId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ status })
+      });
+      
+      if (response.ok) {
+        await fetchBugReports();
+      } else {
+        const error = await response.json();
+        alert(error.error);
+      }
+    } catch (error) {
+      console.error('Failed to update bug report:', error);
     }
   };
 
@@ -201,11 +241,24 @@ const AdminPanel: React.FC = () => {
     return null;
   }
 
+  const openBugReports = bugReports.filter(report => report.status === 'open').length;
+  const filteredBugReports = bugReportFilter === 'all' 
+    ? bugReports 
+    : bugReports.filter(report => report.status === bugReportFilter);
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="flex items-center space-x-3 mb-8">
         <Shield className="h-8 w-8 text-red-500" />
         <h1 className="text-3xl font-bold">Admin Panel</h1>
+        
+        {/* Bug Reports Alert */}
+        {openBugReports > 0 && (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2 flex items-center space-x-2">
+            <AlertTriangle className="h-5 w-5 text-red-400" />
+            <span className="text-red-400 font-bold">{openBugReports} Open Bug Report{openBugReports !== 1 ? 's' : ''}</span>
+          </div>
+        )}
       </div>
 
       {/* Overall Stats */}
@@ -227,6 +280,127 @@ const AdminPanel: React.FC = () => {
           <div className="text-2xl font-bold">${(stats.totalCommissionEarned || 0).toFixed(2)}</div>
           <div className="text-gray-400">Casino Profit</div>
         </div>
+      </div>
+
+      {/* Bug Reports Inbox */}
+      <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <Inbox className="h-6 w-6 text-orange-500" />
+            <h2 className="text-2xl font-bold">Bug Reports Inbox</h2>
+            {openBugReports > 0 && (
+              <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                {openBugReports}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={() => setShowBugReports(!showBugReports)}
+            className="bg-orange-500/20 text-orange-400 px-4 py-2 rounded-lg hover:bg-orange-500/30 transition-colors"
+          >
+            {showBugReports ? 'Hide' : 'Show'} Reports
+          </button>
+        </div>
+
+        {showBugReports && (
+          <div className="space-y-4">
+            {/* Filter Buttons */}
+            <div className="flex space-x-2 mb-4">
+              {['all', 'open', 'in_progress', 'resolved', 'closed'].map(filter => (
+                <button
+                  key={filter}
+                  onClick={() => setBugReportFilter(filter)}
+                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                    bugReportFilter === filter
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30'
+                  }`}
+                >
+                  {filter === 'all' ? 'All' : filter.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  {filter !== 'all' && (
+                    <span className="ml-1 text-xs">
+                      ({bugReports.filter(r => r.status === filter).length})
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Bug Reports List */}
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {filteredBugReports.length > 0 ? (
+                filteredBugReports.map((report: any) => (
+                  <div key={report.id} className="bg-black/30 rounded-lg p-4 border border-white/10">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <h4 className="font-bold text-white">{report.subject}</h4>
+                          <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            report.priority === 'critical' ? 'bg-red-500/20 text-red-400' :
+                            report.priority === 'high' ? 'bg-orange-500/20 text-orange-400' :
+                            report.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-green-500/20 text-green-400'
+                          }`}>
+                            {report.priority === 'critical' ? '🔴' :
+                             report.priority === 'high' ? '🟠' :
+                             report.priority === 'medium' ? '🟡' : '🟢'} {report.priority}
+                          </span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            report.status === 'open' ? 'bg-red-500/20 text-red-400' :
+                            report.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400' :
+                            report.status === 'resolved' ? 'bg-green-500/20 text-green-400' :
+                            'bg-gray-500/20 text-gray-400'
+                          }`}>
+                            {report.status.replace('_', ' ')}
+                          </span>
+                        </div>
+                        <p className="text-gray-300 text-sm mb-2">{report.message}</p>
+                        <div className="text-xs text-gray-400">
+                          <div>From: {report.user?.email || report.email || 'Anonymous'}</div>
+                          <div>Submitted: {new Date(report.createdAt).toLocaleString()}</div>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2 ml-4">
+                        {report.status === 'open' && (
+                          <button
+                            onClick={() => updateBugReportStatus(report.id, 'in_progress')}
+                            className="bg-blue-500/20 text-blue-400 px-3 py-1 rounded text-xs hover:bg-blue-500/30 transition-colors"
+                          >
+                            Start Work
+                          </button>
+                        )}
+                        {report.status === 'in_progress' && (
+                          <button
+                            onClick={() => updateBugReportStatus(report.id, 'resolved')}
+                            className="bg-green-500/20 text-green-400 px-3 py-1 rounded text-xs hover:bg-green-500/30 transition-colors"
+                          >
+                            Resolve
+                          </button>
+                        )}
+                        {(report.status === 'resolved' || report.status === 'open') && (
+                          <button
+                            onClick={() => updateBugReportStatus(report.id, 'closed')}
+                            className="bg-gray-500/20 text-gray-400 px-3 py-1 rounded text-xs hover:bg-gray-500/30 transition-colors"
+                          >
+                            Close
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center text-gray-400 py-8">
+                  <Bug className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>No bug reports found</p>
+                  <p className="text-sm">
+                    {bugReportFilter === 'all' ? 'No reports submitted yet' : `No ${bugReportFilter.replace('_', ' ')} reports`}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Users Management */}

@@ -31,6 +31,86 @@ const DEFAULT_BOT_NAMES = [
 // In-memory bot names storage (in production, use database)
 let botNames = [...DEFAULT_BOT_NAMES];
 
+// Submit bug report
+router.post('/bug-reports', async (req, res) => {
+  try {
+    const { subject, message, email, priority } = req.body;
+    
+    if (!subject || !message) {
+      return res.status(400).json({ error: 'Subject and message are required' });
+    }
+    
+    const bugReport = await prisma.bugReport.create({
+      data: {
+        userId: req.user?.id || null,
+        email: email || null,
+        subject: subject.trim(),
+        message: message.trim(),
+        priority: priority || 'medium'
+      }
+    });
+    
+    res.json({ success: true, reportId: bugReport.id });
+  } catch (error) {
+    console.error('Bug report submission error:', error);
+    res.status(500).json({ error: 'Failed to submit bug report' });
+  }
+});
+
+// Get bug reports (admin only)
+router.get('/bug-reports', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { status, priority } = req.query;
+    
+    const where = {};
+    if (status) where.status = status;
+    if (priority) where.priority = priority;
+    
+    const bugReports = await prisma.bugReport.findMany({
+      where,
+      include: {
+        user: {
+          select: {
+            email: true,
+            username: true
+          }
+        }
+      },
+      orderBy: [
+        { priority: 'desc' },
+        { createdAt: 'desc' }
+      ]
+    });
+    
+    res.json({ bugReports });
+  } catch (error) {
+    console.error('Failed to fetch bug reports:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Update bug report status (admin only)
+router.put('/bug-reports/:reportId', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    const { status, priority } = req.body;
+    
+    const updateData = {};
+    if (status) updateData.status = status;
+    if (priority) updateData.priority = priority;
+    
+    await prisma.bugReport.update({
+      where: { id: reportId },
+      data: updateData
+    });
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Failed to update bug report:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Export function to get bot names for other modules
 export const getBotNames = () => botNames;
 

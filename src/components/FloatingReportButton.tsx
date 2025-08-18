@@ -1,8 +1,66 @@
 import React, { useState } from 'react';
-import { Bug } from 'lucide-react';
+import { Bug, X, Send } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const FloatingReportButton: React.FC = () => {
+  const { user } = useAuth();
   const [showReportModal, setShowReportModal] = useState(false);
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [email, setEmail] = useState(user?.email || '');
+  const [priority, setPriority] = useState('medium');
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!subject.trim() || !message.trim()) {
+      alert('Please fill in both subject and message');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const response = await fetch('/api/admin/bug-reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          subject: subject.trim(),
+          message: message.trim(),
+          email: email.trim() || null,
+          priority
+        })
+      });
+
+      if (response.ok) {
+        setSuccess(true);
+        setSubject('');
+        setMessage('');
+        setPriority('medium');
+        setTimeout(() => {
+          setSuccess(false);
+          setShowReportModal(false);
+        }, 2000);
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to submit bug report');
+      }
+    } catch (error) {
+      console.error('Bug report submission error:', error);
+      alert('Failed to submit bug report');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const resetForm = () => {
+    setSubject('');
+    setMessage('');
+    setPriority('medium');
+    setSuccess(false);
+  };
 
   return (
     <>
@@ -15,28 +73,107 @@ const FloatingReportButton: React.FC = () => {
         <Bug className="h-5 w-5" />
       </button>
 
-      {/* Report Problem Modal */}
+      {/* Report Bug Modal */}
       {showReportModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 rounded-2xl border border-white/20 p-6 w-full max-w-md mx-4">
-            <h3 className="text-xl font-bold mb-4">🐛 Report Bug/Problem</h3>
-            <p className="text-gray-400 text-sm mb-4">
-              Found a bug or having issues? Let us know what happened and we'll fix it ASAP.
-            </p>
-            <div className="flex space-x-3">
-              <a
-                href="mailto:support@dicesino.com?subject=Bug Report - DiceSino&body=Describe the problem you encountered:"
-                className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-all text-center"
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold flex items-center space-x-2">
+                <Bug className="h-5 w-5 text-red-400" />
+                <span>Report Bug</span>
+              </h3>
+              <button 
+                onClick={() => {
+                  setShowReportModal(false);
+                  resetForm();
+                }}
+                className="text-gray-400 hover:text-white"
               >
-                Report Bug
-              </a>
-              <button
-                onClick={() => setShowReportModal(false)}
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
-              >
-                Cancel
+                <X className="h-5 w-5" />
               </button>
             </div>
+
+            {success ? (
+              <div className="text-center py-8">
+                <div className="text-green-400 text-4xl mb-4">✓</div>
+                <h4 className="text-lg font-bold text-green-400 mb-2">Report Submitted!</h4>
+                <p className="text-gray-400 text-sm">
+                  Thank you for your feedback. We'll look into this issue.
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Priority</label>
+                  <select
+                    value={priority}
+                    onChange={(e) => setPriority(e.target.value)}
+                    className="w-full px-3 py-2 bg-black/30 border border-white/20 rounded-lg focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-colors"
+                  >
+                    <option value="low">🟢 Low - Minor issue</option>
+                    <option value="medium">🟡 Medium - Affects functionality</option>
+                    <option value="high">🟠 High - Major problem</option>
+                    <option value="critical">🔴 Critical - Site broken</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Subject</label>
+                  <input
+                    type="text"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    className="w-full px-3 py-2 bg-black/30 border border-white/20 rounded-lg focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-colors"
+                    placeholder="Brief description of the issue"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Email (optional)</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-3 py-2 bg-black/30 border border-white/20 rounded-lg focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-colors"
+                    placeholder="Your email for follow-up"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Message</label>
+                  <textarea
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    rows={4}
+                    className="w-full px-3 py-2 bg-black/30 border border-white/20 rounded-lg focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-colors resize-none"
+                    placeholder="Describe what happened, what you expected, and steps to reproduce..."
+                    required
+                  />
+                </div>
+
+                <div className="flex space-x-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 disabled:opacity-50 text-white font-bold py-2 px-4 rounded-lg transition-all flex items-center justify-center space-x-2"
+                  >
+                    <Send className="h-4 w-4" />
+                    <span>{submitting ? 'Submitting...' : 'Submit Report'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowReportModal(false);
+                      resetForm();
+                    }}
+                    className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
