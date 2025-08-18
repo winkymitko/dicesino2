@@ -120,6 +120,7 @@ model Bonus {
   // Wagering requirements
   wageringRequired    Float    @default(0)  // Total wagering needed
   wageringMultiplier  Float    @default(20) // WR multiplier used
+  wageringCompleted   Boolean  @default(false) // Keep existing column
   
   status      String   @default("active") // "active", "completed", "expired", "voided"
   expiresAt   DateTime?
