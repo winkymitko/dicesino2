@@ -378,8 +378,8 @@ const Profile: React.FC = () => {
                           Joined: {new Date(referral.createdAt).toLocaleDateString()}
                         </div>
                         <div className="text-xs text-blue-400 space-y-1">
-                          <div>Deposited: ${(referral.totalDeposited || 0).toFixed(2)} | Withdrawn: ${(referral.totalWithdrawn || 0).toFixed(2)}</div>
-                          <div>Games: {referral.totalGames || 0} | Wagered: ${(referral.totalBets || 0).toFixed(2)}</div>
+                          <div>Deposited: ${(referral.totalDeposited || 0).toFixed(2)}</div>
+                          <div>Withdrawn: ${(referral.totalWithdrawn || 0).toFixed(2)}</div>
                         </div>
                       </div>
                       <div className="text-right">

@@ -62,10 +62,10 @@ router.get('/stats', authenticateToken, async (req, res) => {
       }
     });
 
-    // Calculate detailed stats for each referral using admin logic
+    // Calculate simple casino profit for each referral: Deposits - Withdrawals
     const referralStats = [];
     for (let referral of referrals) {
-      // Get crypto deposits and withdrawals for real money tracking
+      // Get deposits and withdrawals - SIMPLE CALCULATION
       const deposits = await prisma.cryptoDeposit.findMany({
         where: { userId: referral.id, status: 'confirmed' },
         select: { amount: true }
@@ -78,32 +78,12 @@ router.get('/stats', authenticateToken, async (req, res) => {
       
       const totalDeposited = deposits.reduce((sum, d) => sum + d.amount, 0);
       const totalWithdrawn = withdrawals.reduce((sum, w) => sum + w.amount, 0);
+      
+      // CASINO PROFIT = DEPOSITS - WITHDRAWALS (SIMPLE!)
       const casinoProfit = totalDeposited - totalWithdrawn;
       
-      // Get all real money games (not virtual)
-      const realGames = await prisma.game.findMany({
-        where: {
-          userId: referral.id,
-          OR: [
-            { metadata: { not: { contains: '"useVirtual":true' } } },
-            { metadata: null }
-          ]
-        },
-        select: {
-          stake: true,
-          finalPot: true,
-          status: true
-        }
-      });
-      
-      // Calculate game statistics
-      const totalGames = realGames.length;
-      const totalBets = realGames.reduce((sum, g) => sum + (g.stake || 0), 0);
-      const totalWins = realGames.reduce((sum, g) => sum + (g.finalPot || 0), 0);
-      const gameCasinoProfit = totalBets - totalWins;
-      
-      // Use the higher of deposit-based or game-based profit calculation
-      const finalCasinoProfit = Math.max(casinoProfit, gameCasinoProfit);
+      // Commission only if casino is profitable
+      const commissionEarned = casinoProfit > 0 ? casinoProfit * (req.user.affiliateCommission || 0) / 100 : 0;
       
       referralStats.push({
         id: referral.id,
@@ -111,18 +91,14 @@ router.get('/stats', authenticateToken, async (req, res) => {
         createdAt: referral.createdAt,
         totalDeposited,
         totalWithdrawn,
-        totalGames,
-        totalBets,
-        totalWins,
-        casinoProfit: finalCasinoProfit,
-        commissionEarned: finalCasinoProfit * (req.user.affiliateCommission || 0) / 100
+        casinoProfit,
+        commissionEarned
       });
     }
 
-    // Calculate total commission earned from all referrals
-    const totalCasinoProfit = referralStats.reduce((sum, ref) => sum + Math.max(0, ref.casinoProfit || 0), 0);
+    // Calculate total commission earned from profitable referrals only
+    const totalCommissionEarned = referralStats.reduce((sum, ref) => sum + (ref.commissionEarned || 0), 0);
     const commissionRate = req.user.affiliateCommission || 0;
-    const totalCommissionEarned = totalCasinoProfit * (commissionRate / 100);
     
     // Calculate monthly commission (only positive profits)
     const monthlyCommission = referralStats
@@ -132,7 +108,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
         return refDate.getMonth() === currentMonth.getMonth() && 
                refDate.getFullYear() === currentMonth.getFullYear();
       })
-      .reduce((sum, ref) => sum + Math.max(0, ref.commissionEarned || 0), 0);
+      .reduce((sum, ref) => sum + (ref.commissionEarned || 0), 0);
 
     res.json({
       totalReferrals: affiliateStats?.totalReferrals || 0,
