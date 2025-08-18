@@ -146,8 +146,16 @@ const DiceGame: React.FC = () => {
     }
     
     const sorted = [dice1, dice2, dice3].sort();
-    if ((sorted[0] === 1 && sorted[1] === 3 && sorted[2] === 5) ||
-        (sorted[0] === 2 && sorted[1] === 4 && sorted[2] === 6)) {
+    // NEW classic straights
+    const isClassicStraight =
+      (sorted[0] === 1 && sorted[1] === 2 && sorted[2] === 3) ||
+      (sorted[0] === 2 && sorted[1] === 3 && sorted[2] === 4);
+    // existing odd/even “trios”
+    const isOddEvenTrio =
+      (sorted[0] === 1 && sorted[1] === 3 && sorted[2] === 5) ||
+      (sorted[0] === 2 && sorted[1] === 4 && sorted[2] === 6);
+
+    if (isClassicStraight || isOddEvenTrio) {
       return `Straight = ${points} points`;
     }
     
@@ -259,6 +267,9 @@ const DiceGame: React.FC = () => {
               <div className="p-3 bg-black/30 border border-white/20 rounded-lg">
                 <div className="text-sm text-gray-300">
                   Roll for singles, straights, and triples
+                </div>
+                <div className="text-xs text-gray-400 mt-1">
+                  Straights: 1-2-3, 2-3-4, 1-3-5, 2-4-6
                 </div>
                 <div className="text-xs text-gray-400 mt-1">
                   Cash out anytime or risk it all!
@@ -385,7 +396,7 @@ const DiceGame: React.FC = () => {
                 <span className="text-green-400 font-bold">50 pts</span>
               </div>
               <div className="flex justify-between">
-                <span>Straight (1-3-5, 2-4-6):</span>
+                <span>Straight (1-2-3, 2-3-4, 1-3-5, 2-4-6):</span>
                 <span className="text-yellow-400 font-bold">100 pts</span>
               </div>
               <div className="flex justify-between">
