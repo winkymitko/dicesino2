@@ -165,10 +165,10 @@ const Header: React.FC = () => {
                   
                   <button
                     onClick={() => setShowReportModal(true)}
-                    className="p-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                    className="bg-red-500 hover:bg-red-600 text-white font-bold px-3 py-1 rounded-full text-xs transition-colors"
                     title="Report Bug"
                   >
-                    <Mail className="h-4 w-4" />
+                    REPORT
                   </button>
                 </div>
               </>
