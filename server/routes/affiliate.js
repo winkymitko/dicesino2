@@ -6,6 +6,86 @@ import crypto from 'crypto';
 const router = express.Router();
 const prisma = new PrismaClient();
 
+// Helper function to get current payout period for affiliate
+async function getCurrentPayoutPeriod(affiliateId, commissionRate) {
+  const user = await prisma.user.findUnique({
+    where: { id: affiliateId },
+    select: { affiliateCommission: true }
+  });
+  
+  if (!user) return null;
+  
+  // Determine period length based on payout frequency (default monthly)
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  
+  // For monthly periods: start of current month to end of current month
+  const periodStart = new Date(currentYear, currentMonth, 1);
+  const periodEnd = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59, 999);
+  
+  // Check if current period exists
+  let currentPeriod = await prisma.affiliatePayoutPeriod.findFirst({
+    where: {
+      affiliateId,
+      periodStart: { lte: now },
+      periodEnd: { gte: now },
+      status: 'ongoing'
+    }
+  });
+  
+  // Create new period if doesn't exist
+  if (!currentPeriod) {
+    currentPeriod = await prisma.affiliatePayoutPeriod.create({
+      data: {
+        affiliateId,
+        periodStart,
+        periodEnd,
+        status: 'ongoing'
+      }
+    });
+  }
+  
+  return currentPeriod;
+}
+
+// Helper function to update affiliate payout period with new profit
+async function updateAffiliatePayoutPeriod(affiliateId, casinoProfit, commissionRate) {
+  const currentPeriod = await getCurrentPayoutPeriod(affiliateId, commissionRate);
+  
+  if (!currentPeriod) return;
+  
+  const newTotalProfit = currentPeriod.totalProfit + casinoProfit;
+  const newCommission = Math.max(0, newTotalProfit * (commissionRate / 100));
+  
+  await prisma.affiliatePayoutPeriod.update({
+    where: { id: currentPeriod.id },
+    data: {
+      totalProfit: newTotalProfit,
+      commission: newCommission
+    }
+  });
+}
+
+// Helper function to finalize expired periods
+async function finalizeExpiredPeriods() {
+  const now = new Date();
+  
+  const expiredPeriods = await prisma.affiliatePayoutPeriod.findMany({
+    where: {
+      periodEnd: { lt: now },
+      status: 'ongoing'
+    }
+  });
+  
+  for (const period of expiredPeriods) {
+    await prisma.affiliatePayoutPeriod.update({
+      where: { id: period.id },
+      data: { status: 'pending' }
+    });
+  }
+}
+
 // Generate referral link
 router.get('/link', authenticateToken, async (req, res) => {
   try {
@@ -40,17 +120,18 @@ router.get('/stats', authenticateToken, async (req, res) => {
     if (!req.user.isAffiliate) {
       return res.status(403).json({ error: 'Not an affiliate' });
     }
-
-    let affiliateStats = await prisma.affiliateStats.findUnique({
-      where: { userId: req.user.id }
-    });
     
-    // Create affiliate stats if doesn't exist
-    if (!affiliateStats) {
-      affiliateStats = await prisma.affiliateStats.create({
-        data: { userId: req.user.id }
-      });
-    }
+    // Finalize any expired periods first
+    await finalizeExpiredPeriods();
+
+    // Get current payout period
+    const currentPeriod = await getCurrentPayoutPeriod(req.user.id, req.user.affiliateCommission || 0);
+    
+    // Get all payout periods for this affiliate
+    const payoutPeriods = await prisma.affiliatePayoutPeriod.findMany({
+      where: { affiliateId: req.user.id },
+      orderBy: { createdAt: 'desc' }
+    });
 
     // Get referral details
     const referrals = await prisma.user.findMany({
@@ -94,34 +175,32 @@ router.get('/stats', authenticateToken, async (req, res) => {
         casinoProfit,
         commissionEarned
       });
+      
+      // Update payout period with this referral's profit
+      if (casinoProfit !== 0) {
+        await updateAffiliatePayoutPeriod(req.user.id, casinoProfit, req.user.affiliateCommission || 0);
+      }
     }
 
-    // Calculate total commission earned from profitable referrals only
-    const totalCommissionEarned = referralStats.reduce((sum, ref) => sum + (ref.commissionEarned || 0), 0);
-    const commissionRate = req.user.affiliateCommission || 0;
+    // Calculate total commission from all periods
+    const totalCommissionEarned = payoutPeriods.reduce((sum, period) => sum + Math.max(0, period.commission), 0);
+    const pendingCommission = payoutPeriods
+      .filter(p => p.status === 'pending')
+      .reduce((sum, period) => sum + Math.max(0, period.commission), 0);
+    const currentPeriodCommission = currentPeriod ? Math.max(0, currentPeriod.commission) : 0;
     
-    // Calculate monthly commission (only positive profits)
-    const monthlyCommission = referralStats
-      .filter(ref => {
-        const refDate = new Date(ref.createdAt);
-        const currentMonth = new Date();
-        return refDate.getMonth() === currentMonth.getMonth() && 
-               refDate.getFullYear() === currentMonth.getFullYear();
-      })
-      .reduce((sum, ref) => sum + (ref.commissionEarned || 0), 0);
+    const commissionRate = req.user.affiliateCommission || 0;
 
     res.json({
       totalReferrals: referrals.length,
-      totalCommission: affiliateStats?.totalCommission || 0,
       totalCommissionEarned,
-      pendingCommission: affiliateStats?.pendingCommission || 0,
-      monthlyCommission,
-      payoutPeriod: affiliateStats?.payoutPeriod || 'Monthly',
-      payoutRequested: affiliateStats?.payoutRequested || false,
-      requestedPayout: affiliateStats?.requestedPayout || 0,
-      lastPayoutDate: affiliateStats?.lastPayoutDate,
-      payoutWallet: affiliateStats?.payoutWallet || '',
-      referrals: referralStats
+      pendingCommission,
+      currentPeriodCommission,
+      payoutPeriod: 'Monthly', // Fixed for now
+      payoutPeriods,
+      currentPeriod,
+      referrals: referralStats,
+      commissionRate
     });
   } catch (error) {
     console.error(error);
@@ -292,4 +371,54 @@ router.put('/set-payout-period/:userId', authenticateToken, async (req, res) => 
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+// Admin: Mark payout period as finished (paid)
+router.put('/admin/mark-period-paid/:periodId', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    
+    const { periodId } = req.params;
+    
+    await prisma.affiliatePayoutPeriod.update({
+      where: { id: periodId },
+      data: { status: 'finished' }
+    });
+    
+    res.json({ success: true, message: 'Payout period marked as paid' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Admin: Get all affiliate payout periods
+router.get('/admin/payout-periods', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    
+    await finalizeExpiredPeriods();
+    
+    const periods = await prisma.affiliatePayoutPeriod.findMany({
+      include: {
+        affiliate: {
+          select: {
+            email: true,
+            affiliateCommission: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    
+    res.json({ periods });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 export default router;

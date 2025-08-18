@@ -862,6 +862,41 @@ const AdminPanel: React.FC = () => {
         </div>
       )}
 
+      {/* Affiliate Payout Management */}
+      <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+        <h2 className="text-2xl font-bold mb-6">Affiliate Payout Management</h2>
+        
+        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-6">
+          <h3 className="font-bold text-yellow-400 mb-2">📋 How It Works</h3>
+          <ul className="text-sm text-gray-300 space-y-1">
+            <li>• System tracks casino profit/loss per affiliate per period (monthly)</li>
+            <li>• When period ends, status changes from "ongoing" to "pending"</li>
+            <li>• Admin manually pays affiliates and marks periods as "finished"</li>
+            <li>• Only positive profits generate commission payouts</li>
+          </ul>
+        </div>
+        
+        <button
+          onClick={async () => {
+            try {
+              const response = await fetch('/api/affiliate/admin/payout-periods', {
+                credentials: 'include'
+              });
+              if (response.ok) {
+                const data = await response.json();
+                console.log('Payout periods:', data.periods);
+                // You can add a modal or expand this section to show the periods
+                alert(`Found ${data.periods.length} payout periods. Check console for details.`);
+              }
+            } catch (error) {
+              console.error('Failed to fetch payout periods:', error);
+            }
+          }}
+          className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-all"
+        >
+          View All Payout Periods
+        </button>
+      </div>
       {/* Bot Management */}
       <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
         <div className="flex items-center justify-between mb-6">

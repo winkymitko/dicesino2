@@ -53,6 +53,7 @@ model User {
   cryptoWallets   CryptoWallet?
   cryptoDeposits  CryptoDeposit[]
   cryptoWithdrawals CryptoWithdrawal[]
+  affiliatePayoutPeriods AffiliatePayoutPeriod[]
 
   @@map("users")
 }
@@ -208,4 +209,20 @@ model CryptoWithdrawal {
   user   User @relation(fields: [userId], references: [id])
 
   @@map("crypto_withdrawals")
+}
+
+model AffiliatePayoutPeriod {
+  id            String   @id @default(cuid())
+  affiliateId   String
+  periodStart   DateTime
+  periodEnd     DateTime
+  totalProfit   Float    @default(0)    // Total casino profit from all referrals in this period
+  commission    Float    @default(0)    // Commission earned (totalProfit * rate)
+  status        String   @default("ongoing") // "ongoing", "pending", "finished"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  affiliate     User     @relation(fields: [affiliateId], references: [id])
+  
+  @@map("affiliate_payout_periods")
 }

@@ -333,17 +333,7 @@ const Profile: React.FC = () => {
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
               <h3 className="text-xl font-bold mb-6">Your Affiliate Performance</h3>
               
-              {/* Payout Period Display */}
-              <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-center">
-                <div className="text-sm text-blue-400 font-medium">
-                  📅 Payout Period: <span className="font-bold">{affiliateStats.payoutPeriod || 'Monthly'}</span>
-                </div>
-                <div className="text-xs text-gray-400 mt-1">
-                  Set by admin • Request payouts per referral below
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div className="text-center p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                   <div className="text-2xl font-bold text-blue-400">{affiliateStats.totalReferrals || 0}</div>
                   <div className="text-sm text-gray-400">Total Referrals</div>
@@ -359,15 +349,75 @@ const Profile: React.FC = () => {
                   <div className="text-sm text-gray-400">Pending</div>
                 </div>
                 <div className="text-center p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-400">{(user.affiliateCommission || 0).toFixed(1)}%</div>
-                  <div className="text-sm text-gray-400">Commission Rate</div>
+                  <div className="text-2xl font-bold text-purple-400">${(affiliateStats.currentPeriodCommission || 0).toFixed(2)}</div>
+                  <div className="text-sm text-gray-400">Current Period</div>
                 </div>
               </div>
+              
+              {/* Current Period Info */}
+              {affiliateStats.currentPeriod && (
+                <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                  <h4 className="font-bold text-green-400 mb-2">📅 Current Period ({affiliateStats.payoutPeriod})</h4>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div className="text-center">
+                      <div className="text-green-400 font-bold">
+                        {new Date(affiliateStats.currentPeriod.periodStart).toLocaleDateString()}
+                      </div>
+                      <div className="text-gray-400">Period Start</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-green-400 font-bold">
+                        {new Date(affiliateStats.currentPeriod.periodEnd).toLocaleDateString()}
+                      </div>
+                      <div className="text-gray-400">Period End</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-green-400 font-bold">
+                        ${(affiliateStats.currentPeriod.totalProfit || 0).toFixed(2)}
+                      </div>
+                      <div className="text-gray-400">Total Profit</div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Referral Performance */}
+            {/* Payout History */}
+            {affiliateStats.payoutPeriods && affiliateStats.payoutPeriods.length > 0 && (
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+                <h3 className="text-xl font-bold mb-4">Payout History</h3>
+                <div className="space-y-3 max-h-48 overflow-y-auto">
+                  {affiliateStats.payoutPeriods.map((period: any, index: number) => (
+                    <div key={index} className="flex justify-between items-center p-3 bg-black/30 rounded-lg">
+                      <div>
+                        <div className="font-medium">
+                          {new Date(period.periodStart).toLocaleDateString()} - {new Date(period.periodEnd).toLocaleDateString()}
+                        </div>
+                        <div className="text-sm text-gray-400">
+                          Profit: ${(period.totalProfit || 0).toFixed(2)}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-green-400">
+                          ${(period.commission || 0).toFixed(2)}
+                        </div>
+                        <div className={`text-xs px-2 py-1 rounded ${
+                          period.status === 'ongoing' ? 'bg-blue-500/20 text-blue-400' :
+                          period.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                          'bg-green-500/20 text-green-400'
+                        }`}>
+                          {period.status}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Referral Details */}
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-              <h3 className="text-xl font-bold mb-4">Your Referrals & Per-Referral Payouts</h3>
+              <h3 className="text-xl font-bold mb-4">Your Referrals</h3>
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {affiliateStats.referrals && affiliateStats.referrals.length > 0 ? (
                   affiliateStats.referrals.map((referral: any, index: number) => (
@@ -391,51 +441,6 @@ const Profile: React.FC = () => {
                           ${(referral.commissionEarned || 0).toFixed(2)}
                         </div>
                         <div className="text-xs text-gray-400">Your Commission</div>
-                        
-                        {/* Per-Referral Payout Request */}
-                        <button
-                          onClick={async () => {
-                            const commissionEarned = referral.commissionEarned || 0;
-                            
-                            if (commissionEarned <= 0) {
-                              alert('No commission earned from this referral yet.');
-                              return;
-                            }
-                            
-                            const confirmed = confirm(`Request payout of $${commissionEarned.toFixed(2)} commission from ${referral.email}?`);
-                            if (!confirmed) return;
-                            
-                            try {
-                              const response = await fetch('/api/affiliate/request-referral-payout', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                credentials: 'include',
-                                body: JSON.stringify({ 
-                                  referralId: referral.id,
-                                  amount: commissionEarned
-                                })
-                              });
-                              if (response.ok) {
-                                // Change button state to pending
-                                setPayoutRequests(prev => ({ ...prev, [referral.id]: true }));
-                                fetchAffiliateStats();
-                              } else {
-                                const error = await response.json();
-                                alert(error.error);
-                              }
-                            } catch (error) {
-                              alert('Failed to submit payout request');
-                            }
-                          }}
-                          disabled={payoutRequests[referral.id]}
-                          className={`mt-2 px-2 py-1 rounded text-xs transition-colors ${
-                            payoutRequests[referral.id] 
-                              ? 'bg-orange-500/20 text-orange-400 cursor-not-allowed'
-                              : 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
-                          }`}
-                        >
-                          {payoutRequests[referral.id] ? '⏳ Pending Payout' : '💰 Request Payout'}
-                        </button>
                       </div>
                     </div>
                   ))
@@ -445,6 +450,17 @@ const Profile: React.FC = () => {
                   </div>
                 )}
               </div>
+            </div>
+            
+            {/* Commission Rate Display */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 text-center">
+              <h3 className="text-xl font-bold mb-2">Your Commission Rate</h3>
+              <div className="text-4xl font-bold text-purple-400 mb-2">
+                {(user.affiliateCommission || 0).toFixed(1)}%
+              </div>
+              <p className="text-gray-400 text-sm">
+                You earn {(user.affiliateCommission || 0).toFixed(1)}% commission on casino profits from your referrals
+              </p>
             </div>
           </div>
         </div>
