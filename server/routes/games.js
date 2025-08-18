@@ -36,9 +36,19 @@ function calculatePoints(dice1, dice2, dice3) {
   }
   
   // Check for straights
-  const sorted = [...dice].sort();
-  if ((sorted[0] === 1 && sorted[1] === 3 && sorted[2] === 5) ||
-      (sorted[0] === 2 && sorted[1] === 4 && sorted[2] === 6)) {
+  const sorted = [...dice].sort((a, b) => a - b);
+
+  // NEW: classic consecutive straights 1-2-3 and 2-3-4
+  const isClassicStraight =
+    (sorted[0] === 1 && sorted[1] === 2 && sorted[2] === 3) ||
+    (sorted[0] === 2 && sorted[1] === 3 && sorted[2] === 4);
+
+  // Keep existing odd/even trios as "straights" for compatibility
+  const isOddEvenTrio =
+    (sorted[0] === 1 && sorted[1] === 3 && sorted[2] === 5) ||
+    (sorted[0] === 2 && sorted[1] === 4 && sorted[2] === 6);
+
+  if (isClassicStraight || isOddEvenTrio) {
     return 100; // Straight
   }
   
@@ -58,7 +68,9 @@ function getMultiplier(points) {
     50: 1.1, 100: 1.2, 150: 1.3, 200: 1.4,
     250: 1.6, 300: 1.8, 400: 2.0, 500: 2.1, 600: 2.2
   };
-  return multipliers[points] || 1.0;
+  // Hard cap to keep UI promise: "up to 2.2× per scoring roll"
+  const m = multipliers[points] || 1.0;
+  return Math.min(m, 2.2);
 }
 
 // Apply house edge
