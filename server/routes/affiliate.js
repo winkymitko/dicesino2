@@ -62,68 +62,77 @@ router.get('/stats', authenticateToken, async (req, res) => {
       }
     });
 
-    // Calculate real casino profit for each referral
+    // Calculate detailed stats for each referral using admin logic
     const referralStats = [];
     for (let referral of referrals) {
-      const realMoneyGames = await prisma.game.findMany({
+      // Get crypto deposits and withdrawals for real money tracking
+      const deposits = await prisma.cryptoDeposit.findMany({
+        where: { userId: referral.id, status: 'confirmed' },
+        select: { amount: true }
+      });
+      
+      const withdrawals = await prisma.cryptoWithdrawal.findMany({
+        where: { userId: referral.id, status: 'completed' },
+        select: { amount: true }
+      });
+      
+      const totalDeposited = deposits.reduce((sum, d) => sum + d.amount, 0);
+      const totalWithdrawn = withdrawals.reduce((sum, w) => sum + w.amount, 0);
+      const casinoProfit = totalDeposited - totalWithdrawn;
+      
+      // Get all real money games (not virtual)
+      const realGames = await prisma.game.findMany({
         where: {
           userId: referral.id,
-          metadata: {
-            not: {
-              contains: '"useVirtual":true'
-            }
-          }
+          OR: [
+            { metadata: { not: { contains: '"useVirtual":true' } } },
+            { metadata: null }
+          ]
         },
         select: {
           stake: true,
-          finalPot: true
+          finalPot: true,
+          status: true
         }
       });
       
-      const casinoProfit = realMoneyGames.reduce((sum, game) => {
-        return sum + ((game.stake || 0) - (game.finalPot || 0));
-      }, 0);
+      // Calculate game statistics
+      const totalGames = realGames.length;
+      const totalBets = realGames.reduce((sum, g) => sum + (g.stake || 0), 0);
+      const totalWins = realGames.reduce((sum, g) => sum + (g.finalPot || 0), 0);
+      const gameCasinoProfit = totalBets - totalWins;
+      
+      // Use the higher of deposit-based or game-based profit calculation
+      const finalCasinoProfit = Math.max(casinoProfit, gameCasinoProfit);
       
       referralStats.push({
         id: referral.id,
         email: referral.email,
         createdAt: referral.createdAt,
-        totalBets: realMoneyGames.length,
-        casinoProfit
+        totalDeposited,
+        totalWithdrawn,
+        totalGames,
+        totalBets,
+        totalWins,
+        casinoProfit: finalCasinoProfit,
+        commissionEarned: finalCasinoProfit * (req.user.affiliateCommission || 0) / 100
       });
     }
 
-    // Calculate total commission earned
-    const totalCasinoProfit = referralStats.reduce((sum, ref) => sum + (ref.casinoProfit || 0), 0);
+    // Calculate total commission earned from all referrals
+    const totalCasinoProfit = referralStats.reduce((sum, ref) => sum + Math.max(0, ref.casinoProfit || 0), 0);
     const commissionRate = req.user.affiliateCommission || 0;
     const totalCommissionEarned = totalCasinoProfit * (commissionRate / 100);
     
-    // Calculate current month commission
-    const currentMonth = new Date();
-    currentMonth.setDate(1);
-    currentMonth.setHours(0, 0, 0, 0);
-    
-    const monthlyGames = await prisma.game.findMany({
-      where: {
-        userId: { in: referrals.map(r => r.id) },
-        createdAt: { gte: currentMonth },
-        metadata: {
-          not: {
-            contains: '"useVirtual":true'
-          }
-        }
-      },
-      select: {
-        stake: true,
-        finalPot: true
-      }
-    });
-    
-    const monthlyProfit = monthlyGames.reduce((sum, game) => {
-      return sum + ((game.stake || 0) - (game.finalPot || 0));
-    }, 0);
-    
-    const monthlyCommission = monthlyProfit * (commissionRate / 100);
+    // Calculate monthly commission (only positive profits)
+    const monthlyCommission = referralStats
+      .filter(ref => {
+        const refDate = new Date(ref.createdAt);
+        const currentMonth = new Date();
+        return refDate.getMonth() === currentMonth.getMonth() && 
+               refDate.getFullYear() === currentMonth.getFullYear();
+      })
+      .reduce((sum, ref) => sum + Math.max(0, ref.commissionEarned || 0), 0);
 
     res.json({
       totalReferrals: affiliateStats?.totalReferrals || 0,

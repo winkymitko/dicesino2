@@ -377,24 +377,25 @@ const Profile: React.FC = () => {
                         <div className="text-sm text-gray-400">
                           Joined: {new Date(referral.createdAt).toLocaleDateString()}
                         </div>
-                        <div className="text-xs text-blue-400">
-                          Total Wagered: ${(referral.totalBets || 0).toFixed(2)}
+                        <div className="text-xs text-blue-400 space-y-1">
+                          <div>Deposited: ${(referral.totalDeposited || 0).toFixed(2)} | Withdrawn: ${(referral.totalWithdrawn || 0).toFixed(2)}</div>
+                          <div>Games: {referral.totalGames || 0} | Wagered: ${(referral.totalBets || 0).toFixed(2)}</div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-green-400 font-bold">
+                        <div className={`font-bold ${(referral.casinoProfit || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                           ${(referral.casinoProfit || 0).toFixed(2)}
                         </div>
                         <div className="text-xs text-gray-400">Casino Profit</div>
                         <div className="text-yellow-400 font-bold text-sm">
-                          ${((referral.casinoProfit || 0) * (user.affiliateCommission || 0) / 100).toFixed(2)}
+                          ${(referral.commissionEarned || 0).toFixed(2)}
                         </div>
                         <div className="text-xs text-gray-400">Your Commission</div>
                         
                         {/* Per-Referral Payout Request */}
                         <button
                           onClick={async () => {
-                            const commissionEarned = (referral.casinoProfit || 0) * (user.affiliateCommission || 0) / 100;
+                            const commissionEarned = referral.commissionEarned || 0;
                             
                             if (commissionEarned <= 0) {
                               alert('No commission earned from this referral yet.');
