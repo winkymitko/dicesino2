@@ -288,6 +288,34 @@ const AdminPanel: React.FC = () => {
                         </div>
                       </div>
                     )}
+
+                    {/* Payout Requests Display */}
+                    {user.isAffiliate && userStats[user.id]?.affiliateStats && (
+                      <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <h5 className="font-bold text-orange-400 text-sm">💰 Payout Status</h5>
+                          {userStats[user.id]?.affiliateStats?.payoutRequested && (
+                            <div className="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded text-xs font-bold">
+                              PENDING: ${(userStats[user.id]?.affiliateStats?.requestedPayout || 0).toFixed(2)}
+                            </div>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div className="text-center">
+                            <div className="text-orange-400 font-bold">
+                              ${(userStats[user.id]?.affiliateStats?.totalCommission || 0).toFixed(2)}
+                            </div>
+                            <div className="text-gray-400">Total Earned</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-orange-400 font-bold">
+                              {userStats[user.id]?.affiliateStats?.payoutWallet || 'Not Set'}
+                            </div>
+                            <div className="text-gray-400">Payout Wallet</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Commission Rate Setting - Only show if user is affiliate */}
                     {user.isAffiliate && (

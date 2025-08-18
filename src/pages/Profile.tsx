@@ -283,8 +283,7 @@ const Profile: React.FC = () => {
                     id="payout-wallet-input"
                     type="text"
                     placeholder="Enter TRON address (TRC20)"
-                    value={affiliateStats.payoutWallet || ''}
-                    onChange={(e) => setAffiliateStats(prev => ({ ...prev, payoutWallet: e.target.value }))}
+                    defaultValue={affiliateStats.payoutWallet || ''}
                     className="flex-1 px-3 py-2 bg-black/30 border border-white/20 rounded-lg text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
                   />
                   <button 
