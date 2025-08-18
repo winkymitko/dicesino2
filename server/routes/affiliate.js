@@ -237,6 +237,45 @@ router.post('/request-referral-payout', authenticateToken, async (req, res) => {
   }
 });
 
+// Save payout wallet
+router.post('/save-wallet', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user.isAffiliate) {
+      return res.status(403).json({ error: 'Not an affiliate' });
+    }
+    
+    const { wallet } = req.body;
+    
+    if (!wallet || typeof wallet !== 'string' || wallet.trim().length === 0) {
+      return res.status(400).json({ error: 'Valid wallet address required' });
+    }
+    
+    const trimmedWallet = wallet.trim();
+    
+    // Basic TRON address validation
+    if (!trimmedWallet.startsWith('T') || trimmedWallet.length !== 34) {
+      return res.status(400).json({ error: 'Invalid TRON address format' });
+    }
+    
+    // Update or create affiliate stats with payout wallet
+    await prisma.affiliateStats.upsert({
+      where: { userId: req.user.id },
+      create: {
+        userId: req.user.id,
+        payoutWallet: trimmedWallet
+      },
+      update: {
+        payoutWallet: trimmedWallet
+      }
+    });
+    
+    res.json({ success: true, message: 'Payout wallet saved successfully' });
+  } catch (error) {
+    console.error('Save wallet error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Admin: Set payout period for affiliate
 router.put('/set-payout-period/:userId', authenticateToken, async (req, res) => {
   try {

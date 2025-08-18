@@ -328,6 +328,12 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
     // Get transaction history
     const transactions = await prisma.transaction.findMany({
       where: { userId },
+      where: {
+        userId,
+        type: {
+          in: ['deposit', 'withdrawal', 'bonus_grant', 'bonus_conversion']
+        }
+      },
       orderBy: { createdAt: 'desc' },
       take: 10,
       select: {
