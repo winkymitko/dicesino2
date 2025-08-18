@@ -12,6 +12,7 @@ import Profile from './pages/Profile';
 import AdminPanel from './pages/AdminPanel';
 import TopUp from './pages/TopUp';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import FloatingReportButton from './components/FloatingReportButton';
 
 const AppContent: React.FC = () => {
   const { user } = useAuth();
@@ -33,6 +34,7 @@ const AppContent: React.FC = () => {
         </Routes>
       </main>
       <Footer />
+      <FloatingReportButton />
     </div>
   );
 };
