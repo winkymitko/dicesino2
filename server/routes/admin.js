@@ -139,11 +139,14 @@ router.put('/users/:userId/commission', authenticateToken, requireAdmin, async (
 router.post('/users/:userId/bonus', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { userId } = req.params;
-    const { amount, description } = req.body;
+    const { amount } = req.body;
     
     if (amount <= 0) {
       return res.status(400).json({ error: 'Bonus amount must be positive' });
     }
+    
+    const wageringMultiplier = 20; // 20x wagering requirement
+    const wageringRequired = amount * wageringMultiplier;
     
     // Create bonus record
     await prisma.bonus.create({
@@ -151,15 +154,35 @@ router.post('/users/:userId/bonus', authenticateToken, requireAdmin, async (req,
         userId,
         amount,
         type: 'admin_bonus',
-        description
+        description: 'Admin bonus',
+        wageringRequired,
+        wageringMultiplier
       }
     });
     
-    // Update user virtual balance
+    // Update user bonus balance and wagering requirement
     await prisma.user.update({
       where: { id: userId },
       data: {
-        virtualBalance: { increment: amount }
+        bonusBalance: { increment: amount },
+        activeWageringRequirement: { increment: wageringRequired }
+      }
+    });
+    
+    // Create transaction record
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    await prisma.transaction.create({
+      data: {
+        userId,
+        type: 'bonus_grant',
+        amount,
+        bonusChange: amount,
+        cashBalanceAfter: user.cashBalance,
+        bonusBalanceAfter: user.bonusBalance,
+        lockedBalanceAfter: user.lockedBalance,
+        virtualBalanceAfter: user.virtualBalance,
+        description: 'Admin bonus granted',
+        reference: 'admin_bonus'
       }
     });
     

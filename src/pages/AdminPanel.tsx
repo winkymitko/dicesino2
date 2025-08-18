@@ -147,22 +147,19 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  const addBonus = async (userId: string) => {
+  const addBonus = async (userId: string, amount: number) => {
     try {
       const response = await fetch(`/api/admin/users/${userId}/bonus`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          amount: parseFloat(bonusAmount),
-          description: 'Admin bonus'
+          amount: amount
         })
       });
 
       if (response.ok) {
         fetchUsers();
-        setBonusAmount('');
-        setSelectedUser(null);
         alert('Bonus added successfully');
       } else {
         const error = await response.json();
@@ -381,8 +378,7 @@ const AdminPanel: React.FC = () => {
                     onClick={() => {
                       const amount = prompt('Enter bonus amount:');
                       if (amount && parseFloat(amount) > 0) {
-                        setBonusAmount(amount);
-                        addBonus(user.id);
+                        addBonus(user.id, parseFloat(amount));
                       }
                     }}
                     className="bg-green-500/20 text-green-400 px-3 py-2 rounded-lg hover:bg-green-500/30 transition-colors text-sm"
