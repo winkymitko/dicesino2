@@ -7,8 +7,6 @@ const FloatingReportButton: React.FC = () => {
   const [showReportModal, setShowReportModal] = useState(false);
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
-  const [email, setEmail] = useState(user?.email || '');
-  const [priority, setPriority] = useState('medium');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -29,8 +27,6 @@ const FloatingReportButton: React.FC = () => {
         body: JSON.stringify({
           subject: subject.trim(),
           message: message.trim(),
-          email: email.trim() || null,
-          priority
         })
       });
 
@@ -38,7 +34,6 @@ const FloatingReportButton: React.FC = () => {
         setSuccess(true);
         setSubject('');
         setMessage('');
-        setPriority('medium');
         setTimeout(() => {
           setSuccess(false);
           setShowReportModal(false);
@@ -58,7 +53,6 @@ const FloatingReportButton: React.FC = () => {
   const resetForm = () => {
     setSubject('');
     setMessage('');
-    setPriority('medium');
     setSuccess(false);
   };
 
@@ -104,20 +98,6 @@ const FloatingReportButton: React.FC = () => {
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Priority</label>
-                  <select
-                    value={priority}
-                    onChange={(e) => setPriority(e.target.value)}
-                    className="w-full px-3 py-2 bg-black/30 border border-white/20 rounded-lg focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-colors"
-                  >
-                    <option value="low">🟢 Low - Minor issue</option>
-                    <option value="medium">🟡 Medium - Affects functionality</option>
-                    <option value="high">🟠 High - Major problem</option>
-                    <option value="critical">🔴 Critical - Site broken</option>
-                  </select>
-                </div>
-
-                <div>
                   <label className="block text-sm font-medium mb-2">Subject</label>
                   <input
                     type="text"
@@ -130,18 +110,7 @@ const FloatingReportButton: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Email (optional)</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3 py-2 bg-black/30 border border-white/20 rounded-lg focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-colors"
-                    placeholder="Your email for follow-up"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">Message</label>
+                  <label className="block text-sm font-medium mb-2">Description</label>
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
