@@ -12,7 +12,6 @@ const AdminPanel: React.FC = () => {
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [userStats, setUserStats] = useState<any>({});
   const [bonusAmount, setBonusAmount] = useState('');
-  const [bonusDescription, setBonusDescription] = useState('');
   const [diceGameEdge, setDiceGameEdge] = useState('5.0');
   const [diceBattleEdge, setDiceBattleEdge] = useState('5.0');
   const [diceRouletteEdge, setDiceRouletteEdge] = useState('5.0');
@@ -156,14 +155,13 @@ const AdminPanel: React.FC = () => {
         credentials: 'include',
         body: JSON.stringify({
           amount: parseFloat(bonusAmount),
-          description: bonusDescription
+          description: 'Admin bonus'
         })
       });
 
       if (response.ok) {
         fetchUsers();
         setBonusAmount('');
-        setBonusDescription('');
         setSelectedUser(null);
         alert('Bonus added successfully');
       } else {
@@ -379,6 +377,18 @@ const AdminPanel: React.FC = () => {
                 </div>
                 
                 <div className="flex space-x-2">
+                  <button
+                    onClick={() => {
+                      const amount = prompt('Enter bonus amount:');
+                      if (amount && parseFloat(amount) > 0) {
+                        setBonusAmount(amount);
+                        addBonus(user.id);
+                      }
+                    }}
+                    className="bg-green-500/20 text-green-400 px-3 py-2 rounded-lg hover:bg-green-500/30 transition-colors text-sm"
+                  >
+                    💰 Bonus
+                  </button>
                   <button
                     onClick={() => toggleUserStats(user.id)}
                     className="bg-blue-500/20 text-blue-400 px-4 py-2 rounded-lg hover:bg-blue-500/30 transition-colors"
@@ -697,6 +707,39 @@ const AdminPanel: React.FC = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Transaction History */}
+                  <div className="mb-6 bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                    <h4 className="text-lg font-bold text-blue-400 mb-4">📊 Transaction History</h4>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {userStats[user.id].transactions && userStats[user.id].transactions.length > 0 ? (
+                        userStats[user.id].transactions.map((tx: any, index: number) => (
+                          <div key={index} className="flex justify-between items-center p-2 bg-black/20 rounded text-xs">
+                            <div>
+                              <span className={`font-bold ${
+                                tx.type === 'deposit' ? 'text-green-400' :
+                                tx.type === 'withdrawal' ? 'text-red-400' :
+                                tx.type === 'bonus_grant' ? 'text-yellow-400' :
+                                'text-gray-400'
+                              }`}>
+                                {tx.type === 'deposit' ? '💳 Deposit' :
+                                 tx.type === 'withdrawal' ? '💸 Withdraw' :
+                                 tx.type === 'bonus_grant' ? '🎁 Bonus' :
+                                 tx.type}
+                              </span>
+                              <div className="text-gray-400">{new Date(tx.createdAt).toLocaleDateString()}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-bold">${Math.abs(tx.amount).toFixed(2)}</div>
+                              <div className="text-gray-500">{tx.description}</div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center text-gray-400 py-4">No transactions yet</div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -706,13 +749,13 @@ const AdminPanel: React.FC = () => {
 
       {/* User Settings Modal */}
       {selectedUser && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-2xl p-8 max-w-md w-full mx-4 border border-white/20">
-            <h3 className="text-2xl font-bold mb-6">User Settings: {selectedUser.username}</h3>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-xl p-6 max-w-sm w-full border border-white/20">
+            <h3 className="text-xl font-bold mb-4">Settings: {selectedUser.username}</h3>
             
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium mb-2">BarboDice House Edge (%)</label>
+                <label className="block text-xs font-medium mb-1">BarboDice Edge (%)</label>
                 <input
                   type="number"
                   step="0.5"
@@ -720,15 +763,12 @@ const AdminPanel: React.FC = () => {
                   max="50"
                   value={diceGameEdge}
                   onChange={(e) => setDiceGameEdge(e.target.value)}
-                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
+                  className="w-full px-3 py-2 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors text-sm"
                 />
-                <p className="text-xs text-gray-400 mt-1">
-                  5.0% = normal luck, higher = more bad luck for user, lower = more good luck
-                </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">DiceBattle House Edge (%)</label>
+                <label className="block text-xs font-medium mb-1">DiceBattle Edge (%)</label>
                 <input
                   type="number"
                   step="0.5"
@@ -736,15 +776,12 @@ const AdminPanel: React.FC = () => {
                   max="50"
                   value={diceBattleEdge}
                   onChange={(e) => setDiceBattleEdge(e.target.value)}
-                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
+                  className="w-full px-3 py-2 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors text-sm"
                 />
-                <p className="text-xs text-gray-400 mt-1">
-                  5.0% = normal luck, higher = more bad luck for user, lower = more good luck
-                </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">DiceRoulette House Edge (%)</label>
+                <label className="block text-xs font-medium mb-1">DiceRoulette Edge (%)</label>
                 <input
                   type="number"
                   step="0.5"
@@ -752,14 +789,11 @@ const AdminPanel: React.FC = () => {
                   max="50"
                   value={diceRouletteEdge}
                   onChange={(e) => setDiceRouletteEdge(e.target.value)}
-                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
+                  className="w-full px-3 py-2 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors text-sm"
                 />
-                <p className="text-xs text-gray-400 mt-1">
-                  5.0% = normal luck, higher = more bad luck for user, lower = more good luck
-                </p>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Max Bet While Bonus Active ($)</label>
+                <label className="block text-xs font-medium mb-1">Max Bet While Bonus ($)</label>
                 <input
                   type="number"
                   step="1"
@@ -767,15 +801,12 @@ const AdminPanel: React.FC = () => {
                   max="1000"
                   value={maxBetWhileBonus}
                   onChange={(e) => setMaxBetWhileBonus(e.target.value)}
-                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
+                  className="w-full px-3 py-2 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors text-sm"
                 />
-                <p className="text-xs text-gray-400 mt-1">
-                  Maximum bet amount when user has active bonus
-                </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Max Bonus Cashout ($)</label>
+                <label className="block text-xs font-medium mb-1">Max Bonus Cashout ($)</label>
                 <input
                   type="number"
                   step="10"
@@ -783,56 +814,21 @@ const AdminPanel: React.FC = () => {
                   max="10000"
                   value={maxBonusCashout}
                   onChange={(e) => setMaxBonusCashout(e.target.value)}
-                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  Maximum amount that can be unlocked from bonus winnings
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Add Bonus (Virtual Money)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={bonusAmount}
-                  onChange={(e) => setBonusAmount(e.target.value)}
-                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
-                  placeholder="Bonus amount"
+                  className="w-full px-3 py-2 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors text-sm"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Bonus Description</label>
-                <input
-                  type="text"
-                  value={bonusDescription}
-                  onChange={(e) => setBonusDescription(e.target.value)}
-                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 outline-none transition-colors"
-                  placeholder="e.g., Welcome bonus, Loyalty reward"
-                />
-              </div>
-
-              <div className="flex space-x-3 pt-4">
+              <div className="flex space-x-2 pt-3">
                 <button
                   onClick={() => updateSettings(selectedUser.id)}
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-2 rounded-lg transition-all"
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-2 rounded-lg transition-all text-sm"
                 >
-                  Update Settings
-                </button>
-                
-                <button
-                  onClick={() => addBonus(selectedUser.id)}
-                  disabled={!bonusAmount}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:opacity-50 text-white font-bold py-2 rounded-lg transition-all"
-                >
-                  Add Bonus
+                  Update
                 </button>
                 
                 <button
                   onClick={() => setSelectedUser(null)}
-                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                  className="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors text-sm"
                 >
                   Cancel
                 </button>

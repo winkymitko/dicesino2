@@ -302,6 +302,19 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
       }
     });
     
+    // Get transaction history
+    const transactions = await prisma.transaction.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      select: {
+        type: true,
+        amount: true,
+        description: true,
+        createdAt: true
+      }
+    });
+    
     // Helper function to calculate game stats
     const calculateGameStats = (games, gameType) => {
       const gameTypeGames = games.filter(g => g.gameType === gameType);
@@ -363,7 +376,10 @@ router.get('/users/:userId/stats', authenticateToken, requireAdmin, async (req, 
         lockedBalance: user?.lockedBalance || 0,
         progressPercent: user?.activeWageringRequirement > 0 ? 
           ((user?.currentWageringProgress || 0) / user.activeWageringRequirement * 100).toFixed(1) : 0
-      }
+      },
+      
+      // Transaction history
+      transactions
     });
   } catch (error) {
     console.error(error);
