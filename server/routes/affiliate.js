@@ -111,7 +111,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
       .reduce((sum, ref) => sum + (ref.commissionEarned || 0), 0);
 
     res.json({
-      totalReferrals: affiliateStats?.totalReferrals || 0,
+      totalReferrals: referrals.length,
       totalCommission: affiliateStats?.totalCommission || 0,
       totalCommissionEarned,
       pendingCommission: affiliateStats?.pendingCommission || 0,
