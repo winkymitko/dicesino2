@@ -235,6 +235,11 @@ model AffiliateStats {
   userId        String   @unique
   payoutWallet  String?
   payoutPeriod  String   @default("Monthly")
+  payoutRequested Boolean @default(false)
+  pendingCommission Float @default(0)
+  requestedPayout Float @default(0)
+  totalCommission Float @default(0)
+  totalReferrals Int @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   
