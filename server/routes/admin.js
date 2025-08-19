@@ -40,9 +40,12 @@ router.post('/bug-reports', async (req, res) => {
       return res.status(400).json({ error: 'Subject and message are required' });
     }
     
+    // Ensure we have a user ID if user is authenticated
+    const userId = req.user ? req.user.id : null;
+    
     const bugReport = await prisma.bugReport.create({
       data: {
-        userId: req.user ? req.user.id : null,
+        userId: userId,
         subject: subject.trim(),
         message: message.trim(),
         priority: 'medium' // Default priority set by system
@@ -70,6 +73,7 @@ router.get('/bug-reports', authenticateToken, requireAdmin, async (req, res) => 
       include: {
         user: {
           select: {
+            id: true,
             email: true,
             username: true
           }

@@ -43,34 +43,35 @@ export function generateTronWallet() {
 // Generate LTC address and private key (production-ready)
 export function generateLTCWallet() {
   try {
-    // Generate a proper LTC private key (32 bytes)
-    const privateKeyBytes = crypto.randomBytes(32);
-    const privateKeyHex = privateKeyBytes.toString('hex');
+    // Generate a valid private key for LTC
+    let privateKey;
+    do {
+      privateKey = crypto.randomBytes(32);
+    } while (!secp256k1.privateKeyVerify(privateKey));
     
-    // Generate LTC address using proper derivation
-    // This is a simplified version - in production use bitcoinjs-lib
-    const publicKeyHash = createHash('sha256')
-      .update(Buffer.from(privateKeyHex, 'hex'))
-      .digest();
+    const privateKeyHex = privateKey.toString('hex');
     
-    const ripemd160Hash = createHash('ripemd160')
-      .update(publicKeyHash)
-      .digest();
+    // Generate public key from private key
+    const publicKey = secp256k1.publicKeyCreate(privateKey, true); // compressed
     
-    // LTC mainnet version byte is 0x30 (48)
+    // Create LTC address (P2PKH - starts with L)
+    const publicKeyHash = createHash('sha256').update(publicKey).digest();
+    const ripemd160Hash = createHash('ripemd160').update(publicKeyHash).digest();
+    
+    // LTC mainnet version byte is 0x30 (48) for P2PKH addresses
     const versionByte = Buffer.from([0x30]);
     const payload = Buffer.concat([versionByte, ripemd160Hash]);
     
     // Double SHA256 for checksum
-    const checksum = createHash('sha256')
-      .update(createHash('sha256').update(payload).digest())
-      .digest()
-      .slice(0, 4);
+    const hash1 = createHash('sha256').update(payload).digest();
+    const hash2 = createHash('sha256').update(hash1).digest();
+    const checksum = hash2.slice(0, 4);
     
+    // Combine payload and checksum
     const fullPayload = Buffer.concat([payload, checksum]);
     
-    // Base58 encode (simplified - in production use proper base58 library)
-    const ltcAddress = 'L' + fullPayload.toString('hex').substring(0, 33);
+    // Base58 encode
+    const ltcAddress = bs58.encode(fullPayload);
     
     if (!isValidLTCAddress(ltcAddress)) {
       throw new Error('Generated invalid LTC address');
@@ -114,7 +115,10 @@ export function isValidLTCAddress(address) {
     }
     
     // LTC addresses start with L, M, or 3 and are 26-35 characters
-    if (!/^[LM3][A-Za-z0-9]{25,34}$/.test(address)) {
+    // Legacy addresses start with L, M
+    // SegWit addresses start with 3
+    // Bech32 addresses start with ltc1
+    if (!/^[LM3][A-Za-z0-9]{25,33}$/.test(address) && !/^ltc1[a-z0-9]{39,59}$/.test(address)) {
       return false;
     }
     
