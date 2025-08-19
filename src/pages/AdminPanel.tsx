@@ -686,18 +686,11 @@ const AdminPanel: React.FC = () => {
                               }`}
                             />
                           </button>
-                        <div className="text-sm text-blue-400 flex items-center space-x-2 mb-2">
+                          <span className={`text-sm font-medium ${
                             (userStats[user.id].statsMode || 'real') === 'real' ? 'text-yellow-400' : 'text-purple-400'
-                          {report.user ? (
-                            <span>
-                              <strong>ID:</strong> {report.user.id} | <strong>Email:</strong> {report.user.email} | <strong>Username:</strong> {report.user.username || 'N/A'}
-                            </span>
-                          ) : (
-                            <span className="text-red-400">Anonymous User (Not logged in)</span>
-                          )}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          Submitted: {new Date(report.createdAt).toLocaleString()}
+                          }`}>
+                            {(userStats[user.id].statsMode || 'real') === 'real' ? 'Real Money' : 'Virtual Money'}
+                          </span>
                         </div>
                       </div>
                       
