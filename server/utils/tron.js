@@ -44,28 +44,22 @@ export function generateTronWallet() {
 // Generate LTC address and private key using bitcoinjs-lib
 export function generateLTCWallet() {
   try {
-    // Define Litecoin network parameters
-    const ltcNetwork = {
-      messagePrefix: '\x19Litecoin Signed Message:\n',
-      bech32: 'ltc',
-      bip32: {
-        public: 0x019da462,
-        private: 0x019d9cfe,
-      },
-      pubKeyHash: 0x30, // LTC addresses start with 'L'
-      scriptHash: 0x32, // LTC script addresses start with 'M'
-      wif: 0xb0,
-    };
+    // Use Bitcoin testnet as base and modify for Litecoin
+    const ltcNetwork = bitcoin.networks.testnet;
+    ltcNetwork.pubKeyHash = 0x30; // LTC mainnet pubkey hash
+    ltcNetwork.scriptHash = 0x32; // LTC mainnet script hash
+    ltcNetwork.wif = 0xb0; // LTC mainnet WIF
     
-    // Generate random private key
+    // Generate key pair
     const keyPair = bitcoin.ECPair.makeRandom({ network: ltcNetwork });
-    const privateKeyHex = keyPair.privateKey.toString('hex');
     
-    // Generate P2PKH address (starts with L)
-    const { address } = bitcoin.payments.p2pkh({ 
-      pubkey: keyPair.publicKey, 
-      network: ltcNetwork 
+    // Generate P2PKH address
+    const { address } = bitcoin.payments.p2pkh({
+      pubkey: keyPair.publicKey,
+      network: ltcNetwork
     });
+    
+    const privateKeyHex = keyPair.privateKey.toString('hex');
     
     if (!isValidLTCAddress(address)) {
       throw new Error('Generated invalid LTC address');

@@ -127,7 +127,7 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
         username: true,
         name: true,
         phone: true,
-        cryptoWallets: true,
+        cryptoWallet: true,
         cashBalance: true,
         bonusBalance: true,
         lockedBalance: true,
