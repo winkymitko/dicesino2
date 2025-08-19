@@ -58,8 +58,11 @@ export function generateLTCWallet() {
       wif: 0xb0,
     };
     
-    // Generate key pair
-    const keyPair = bitcoin.ECPair.makeRandom({ network: ltcNetwork });
+    // Generate random private key (32 bytes)
+    const privateKeyBuffer = crypto.randomBytes(32);
+    
+    // Create key pair from private key
+    const keyPair = bitcoin.ECPair.fromPrivateKey(privateKeyBuffer, { network: ltcNetwork });
     
     // Generate P2PKH address
     const { address } = bitcoin.payments.p2pkh({
