@@ -255,7 +255,7 @@ const TopUp: React.FC = () => {
       const response = await fetch('/api/wallet/check-balance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
+        credentials: 'include',
         body: JSON.stringify({ currency: selectedCurrency })
       });
       if (response.ok) {
