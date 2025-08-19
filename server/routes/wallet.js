@@ -176,7 +176,7 @@ router.post('/check-balance', authenticateToken, async (req, res) => {
     let totalUsdCredited = 0;
     const processedDeposits = [];
 
-    const ltcRate = currency === 'LTC' ? getLtcUsdRate() : null;
+    const ltcRate = currency === 'LTC' ? await getLTCUSDRate() : null;
 
     for (const dep of newDeposits) {
       if (dep.amount < MIN_DEPOSIT[currency]) continue;
