@@ -337,468 +337,466 @@ const AdminPanel: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* Users Management */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-          <h2 className="text-2xl font-bold mb-6">Users Management</h2>
-          
-          <div className="space-y-4 max-h-96 overflow-y-auto">
-            {users.map((u) => (
-              <div key={u.id} className="bg-black/30 rounded-lg p-4 border border-white/10">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <div className="font-bold">{u.email}</div>
-                    <div className="text-sm text-gray-400">@{u.username || u.email.split('@')[0]}</div>
-                    <div className="text-xs text-gray-500">ID: {u.id}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-yellow-400 font-bold">
-                      ${((u.cashBalance || 0) + (u.bonusBalance || 0) + (u.lockedBalance || 0)).toFixed(2)}
-                    </div>
-                    <div className="text-xs text-gray-400">Main Balance</div>
-                  </div>
+      {/* Users Management - Full Width */}
+      <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 mb-8">
+        <h2 className="text-2xl font-bold mb-6">Users Management</h2>
+        
+        <div className="space-y-4 max-h-96 overflow-y-auto">
+          {users.map((u) => (
+            <div key={u.id} className="bg-black/30 rounded-lg p-4 border border-white/10">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <div className="font-bold">{u.email}</div>
+                  <div className="text-sm text-gray-400">@{u.username || u.email.split('@')[0]}</div>
+                  <div className="text-xs text-gray-500">ID: {u.id}</div>
                 </div>
-                
-                <div className="grid grid-cols-3 gap-2 text-xs mb-3">
-                  <div className="text-center">
-                    <div className="text-green-400">${(u.cashBalance || 0).toFixed(2)}</div>
-                    <div className="text-gray-500">Cash</div>
+                <div className="text-right">
+                  <div className="text-yellow-400 font-bold">
+                    ${((u.cashBalance || 0) + (u.bonusBalance || 0) + (u.lockedBalance || 0)).toFixed(2)}
                   </div>
-                  <div className="text-center">
-                    <div className="text-blue-400">${(u.bonusBalance || 0).toFixed(2)}</div>
-                    <div className="text-gray-500">Bonus</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-purple-400">${(u.virtualBalance || 0).toFixed(2)}</div>
-                    <div className="text-gray-500">Virtual</div>
-                  </div>
+                  <div className="text-xs text-gray-400">Main Balance</div>
                 </div>
-                
-                <div className="flex space-x-2 mb-3">
-                  <button
-                    onClick={() => setSelectedUser(u)}
-                    className="flex-1 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 px-3 py-2 rounded text-sm transition-colors"
-                  >
-                    Settings
-                  </button>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-2 text-xs mb-3">
+                <div className="text-center">
+                  <div className="text-green-400">${(u.cashBalance || 0).toFixed(2)}</div>
+                  <div className="text-gray-500">Cash</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-blue-400">${(u.bonusBalance || 0).toFixed(2)}</div>
+                  <div className="text-gray-500">Bonus</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-purple-400">${(u.virtualBalance || 0).toFixed(2)}</div>
+                  <div className="text-gray-500">Virtual</div>
+                </div>
+              </div>
+              
+              <div className="flex space-x-2 mb-3">
+                <button
+                  onClick={() => setSelectedUser(u)}
+                  className="flex-1 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 px-3 py-2 rounded text-sm transition-colors"
+                >
+                  Settings
+                </button>
+                <button
+                  onClick={() => {
+                    if (!userStats[u.id]) {
+                      fetchUserStats(u.id);
+                    }
+                    setUserStats(prev => ({
+                      ...prev,
+                      [u.id]: { ...prev[u.id], showStats: !prev[u.id]?.showStats }
+                    }));
+                  }}
+                  className="bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 px-3 py-2 rounded text-sm transition-colors"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    const amount = prompt('Bonus amount:');
+                    if (amount && parseFloat(amount) > 0) {
+                      addBonus(u.id, parseFloat(amount));
+                    }
+                  }}
+                  className="flex-1 bg-green-500/20 text-green-400 hover:bg-green-500/30 px-3 py-2 rounded text-sm transition-colors"
+                >
+                  Add Bonus
+                </button>
+                {!u.isAffiliate && (
                   <button
                     onClick={() => {
-                      if (!userStats[u.id]) {
-                        fetchUserStats(u.id);
+                      const commission = prompt('Commission rate (0-100%):');
+                      if (commission !== null) {
+                        const rate = parseFloat(commission);
+                        if (rate >= 0 && rate <= 100) {
+                          updateCommission(u.id, rate);
+                        }
                       }
-                      setUserStats(prev => ({
-                        ...prev,
-                        [u.id]: { ...prev[u.id], showStats: !prev[u.id]?.showStats }
-                      }));
                     }}
                     className="bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 px-3 py-2 rounded text-sm transition-colors"
                   >
-                    <Eye className="h-4 w-4" />
+                    Affiliate
                   </button>
-                  <button
-                    onClick={() => {
-                      const amount = prompt('Bonus amount:');
-                      if (amount && parseFloat(amount) > 0) {
-                        addBonus(u.id, parseFloat(amount));
-                      }
-                    }}
-                    className="flex-1 bg-green-500/20 text-green-400 hover:bg-green-500/30 px-3 py-2 rounded text-sm transition-colors"
-                  >
-                    Add Bonus
-                  </button>
-                  {!u.isAffiliate && (
-                    <button
-                      onClick={() => {
-                        const commission = prompt('Commission rate (0-100%):');
-                        if (commission !== null) {
-                          const rate = parseFloat(commission);
-                          if (rate >= 0 && rate <= 100) {
-                            updateCommission(u.id, rate);
-                          }
-                        }
-                      }}
-                      className="bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 px-3 py-2 rounded text-sm transition-colors"
-                    >
-                      Affiliate
-                    </button>
-                  )}
-                  {u.isAffiliate && (
-                    <div className="bg-purple-500/20 text-purple-400 px-3 py-2 rounded text-sm">
-                      {u.affiliateCommission}% Aff
-                    </div>
-                  )}
-                </div>
-
-                {/* Detailed User Statistics */}
-                {userStats[u.id]?.showStats && userStats[u.id] && (
-                  <div className="mt-4 p-4 bg-black/50 rounded-lg border border-white/10">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-bold text-white">Detailed Statistics</h4>
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => toggleStatsMode(u.id)}
-                          className="flex items-center space-x-2 bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded transition-colors"
-                        >
-                          {(userStats[u.id].statsMode || 'real') === 'real' ? 
-                            <ToggleRight className="h-4 w-4 text-yellow-400" /> : 
-                            <ToggleLeft className="h-4 w-4 text-purple-400" />
-                          }
-                          <span className={`text-sm font-medium ${
-                            (userStats[u.id].statsMode || 'real') === 'real' ? 'text-yellow-400' : 'text-purple-400'
-                          }`}>
-                            {(userStats[u.id].statsMode || 'real') === 'real' ? 'REAL MONEY' : 'VIRTUAL MONEY'}
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Real Money Overview */}
-                    {(userStats[u.id].statsMode || 'real') === 'real' && (
-                      <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded">
-                        <h5 className="font-bold text-green-400 mb-2">💰 Real Money Overview</h5>
-                        <div className="grid grid-cols-3 gap-3 text-sm">
-                          <div className="text-center">
-                            <div className="text-green-400 font-bold">${(userStats[u.id].realMoney?.totalDeposited || 0).toFixed(2)}</div>
-                            <div className="text-gray-400">Deposited</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-red-400 font-bold">${(userStats[u.id].realMoney?.totalWithdrawn || 0).toFixed(2)}</div>
-                            <div className="text-gray-400">Withdrawn</div>
-                          </div>
-                          <div className="text-center">
-                            <div className={`font-bold ${(userStats[u.id].realMoney?.casinoProfit || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                              ${(userStats[u.id].realMoney?.casinoProfit || 0).toFixed(2)}
-                            </div>
-                            <div className="text-gray-400">Casino Profit</div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Affiliate Stats */}
-                    {userStats[u.id].affiliateStats && (
-                      <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/20 rounded">
-                        <h5 className="font-bold text-purple-400 mb-2">👥 Affiliate Performance</h5>
-                        <div className="grid grid-cols-3 gap-3 text-sm">
-                          <div className="text-center">
-                            <div className="text-purple-400 font-bold">{userStats[u.id].affiliateStats.totalReferrals}</div>
-                            <div className="text-gray-400">Referrals</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-green-400 font-bold">{userStats[u.id].affiliateStats.activeReferrals}</div>
-                            <div className="text-gray-400">Active</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-yellow-400 font-bold">${(userStats[u.id].affiliateStats.totalCommissionEarned || 0).toFixed(2)}</div>
-                            <div className="text-gray-400">Commission</div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Game Statistics */}
-                    <div className="grid grid-cols-3 gap-3 mb-4">
-                      {/* BarboDice Stats */}
-                      <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded">
-                        <h6 className="font-bold text-blue-400 mb-2 text-sm">🎲 BarboDice</h6>
-                        <div className="space-y-1 text-xs">
-                          {(userStats[u.id].statsMode || 'real') === 'real' ? (
-                            <>
-                              <div className="flex justify-between">
-                                <span>Games:</span>
-                                <span className="font-bold">{userStats[u.id].realStats?.barboDice?.totalGames || 0}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Wins:</span>
-                                <span className="text-green-400">{userStats[u.id].realStats?.barboDice?.wins || 0}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Losses:</span>
-                                <span className="text-red-400">{userStats[u.id].realStats?.barboDice?.losses || 0}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Profit:</span>
-                                <span className={`font-bold ${(userStats[u.id].realStats?.barboDice?.totalWins - userStats[u.id].realStats?.barboDice?.totalBets || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                  ${((userStats[u.id].realStats?.barboDice?.totalWins || 0) - (userStats[u.id].realStats?.barboDice?.totalBets || 0)).toFixed(2)}
-                                </span>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <div className="flex justify-between">
-                                <span>Games:</span>
-                                <span className="font-bold">{userStats[u.id].virtualStats?.barboDice?.totalGames || 0}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Wins:</span>
-                                <span className="text-green-400">{userStats[u.id].virtualStats?.barboDice?.wins || 0}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Losses:</span>
-                                <span className="text-red-400">{userStats[u.id].virtualStats?.barboDice?.losses || 0}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Profit:</span>
-                                <span className={`font-bold ${(userStats[u.id].virtualStats?.barboDice?.totalWins - userStats[u.id].virtualStats?.barboDice?.totalBets || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                  ${((userStats[u.id].virtualStats?.barboDice?.totalWins || 0) - (userStats[u.id].virtualStats?.barboDice?.totalBets || 0)).toFixed(2)}
-                                </span>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* DiceBattle Stats */}
-                      <div className="p-3 bg-red-500/10 border border-red-500/20 rounded">
-                        <h6 className="font-bold text-red-400 mb-2 text-sm">⚔️ DiceBattle</h6>
-                        <div className="space-y-1 text-xs">
-                          {(userStats[u.id].statsMode || 'real') === 'real' ? (
-                            <>
-                              <div className="flex justify-between">
-                                <span>Battles:</span>
-                                <span className="font-bold">{userStats[u.id].realStats?.diceBattle?.totalGames || 0}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Wins:</span>
-                                <span className="text-green-400">{userStats[u.id].realStats?.diceBattle?.wins || 0}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Ties:</span>
-                                <span className="text-yellow-400">{userStats[u.id].realStats?.diceBattle?.ties || 0}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Profit:</span>
-                                <span className={`font-bold ${(userStats[u.id].realStats?.diceBattle?.totalWins - userStats[u.id].realStats?.diceBattle?.totalBets || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                  ${((userStats[u.id].realStats?.diceBattle?.totalWins || 0) - (userStats[u.id].realStats?.diceBattle?.totalBets || 0)).toFixed(2)}
-                                </span>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <div className="flex justify-between">
-                                <span>Battles:</span>
-                                <span className="font-bold">{userStats[u.id].virtualStats?.diceBattle?.totalGames || 0}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Wins:</span>
-                                <span className="text-green-400">{userStats[u.id].virtualStats?.diceBattle?.wins || 0}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Ties:</span>
-                                <span className="text-yellow-400">{userStats[u.id].virtualStats?.diceBattle?.ties || 0}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Profit:</span>
-                                <span className={`font-bold ${(userStats[u.id].virtualStats?.diceBattle?.totalWins - userStats[u.id].virtualStats?.diceBattle?.totalBets || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                  ${((userStats[u.id].virtualStats?.diceBattle?.totalWins || 0) - (userStats[u.id].virtualStats?.diceBattle?.totalBets || 0)).toFixed(2)}
-                                </span>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* DiceRoulette Stats */}
-                      <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded">
-                        <h6 className="font-bold text-orange-400 mb-2 text-sm">🎯 DiceRoulette</h6>
-                        <div className="space-y-1 text-xs">
-                          {(userStats[u.id].statsMode || 'real') === 'real' ? (
-                            <>
-                              <div className="flex justify-between">
-                                <span>Games:</span>
-                                <span className="font-bold">{userStats[u.id].realStats?.diceRoulette?.totalGames || 0}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Wins:</span>
-                                <span className="text-green-400">{userStats[u.id].realStats?.diceRoulette?.wins || 0}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Losses:</span>
-                                <span className="text-red-400">{userStats[u.id].realStats?.diceRoulette?.losses || 0}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Profit:</span>
-                                <span className={`font-bold ${(userStats[u.id].realStats?.diceRoulette?.totalWins - userStats[u.id].realStats?.diceRoulette?.totalBets || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                  ${((userStats[u.id].realStats?.diceRoulette?.totalWins || 0) - (userStats[u.id].realStats?.diceRoulette?.totalBets || 0)).toFixed(2)}
-                                </span>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <div className="flex justify-between">
-                                <span>Games:</span>
-                                <span className="font-bold">{userStats[u.id].virtualStats?.diceRoulette?.totalGames || 0}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Wins:</span>
-                                <span className="text-green-400">{userStats[u.id].virtualStats?.diceRoulette?.wins || 0}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Losses:</span>
-                                <span className="text-red-400">{userStats[u.id].virtualStats?.diceRoulette?.losses || 0}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Profit:</span>
-                                <span className={`font-bold ${(userStats[u.id].virtualStats?.diceRoulette?.totalWins - userStats[u.id].virtualStats?.diceRoulette?.totalBets || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                  ${((userStats[u.id].virtualStats?.diceRoulette?.totalWins || 0) - (userStats[u.id].virtualStats?.diceRoulette?.totalBets || 0)).toFixed(2)}
-                                </span>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Wagering Progress */}
-                    {userStats[u.id].wagering && userStats[u.id].wagering.required > 0 && (
-                      <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded">
-                        <h6 className="font-bold text-blue-400 mb-2 text-sm">🎯 Wagering Progress</h6>
-                        <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
-                          <div 
-                            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${userStats[u.id].wagering.progressPercent}%` }}
-                          ></div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="text-center">
-                            <div className="text-blue-400 font-bold">${userStats[u.id].wagering.progress.toFixed(2)}</div>
-                            <div className="text-gray-400">Progress</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-yellow-400 font-bold">${userStats[u.id].wagering.required.toFixed(2)}</div>
-                            <div className="text-gray-400">Required</div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Recent Transactions */}
-                    {userStats[u.id].transactions && userStats[u.id].transactions.length > 0 && (
-                      <div className="mt-3 p-3 bg-gray-500/10 border border-gray-500/20 rounded">
-                        <h6 className="font-bold text-gray-400 mb-2 text-sm">📊 Recent Transactions</h6>
-                        <div className="space-y-1 max-h-32 overflow-y-auto">
-                          {userStats[u.id].transactions.slice(0, 5).map((tx: any, idx: number) => (
-                            <div key={idx} className="flex justify-between items-center text-xs">
-                              <span className="text-gray-300">{tx.type}</span>
-                              <span className={`font-bold ${tx.amount >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                ${Math.abs(tx.amount).toFixed(2)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                )}
+                {u.isAffiliate && (
+                  <div className="bg-purple-500/20 text-purple-400 px-3 py-2 rounded text-sm">
+                    {u.affiliateCommission}% Aff
                   </div>
                 )}
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Bug Reports Inbox */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-3">
-              <Bug className="h-6 w-6 text-red-400" />
-              <h2 className="text-2xl font-bold">Bug Reports Inbox</h2>
-              {openReportsCount > 0 && (
-                <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-                  {openReportsCount}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-gray-400" />
-              <select
-                value={reportFilter}
-                onChange={(e) => setReportFilter(e.target.value)}
-                className="bg-black/30 border border-white/20 rounded px-3 py-1 text-sm"
-              >
-                <option value="all">All Reports</option>
-                <option value="open">Open</option>
-                <option value="in_progress">In Progress</option>
-                <option value="resolved">Resolved</option>
-                <option value="closed">Closed</option>
-              </select>
-            </div>
-          </div>
-          
-          <div className="space-y-4 max-h-96 overflow-y-auto">
-            {filteredReports.length > 0 ? (
-              filteredReports.map((report) => (
-                <div key={report.id} className="bg-black/30 rounded-lg p-4 border border-white/10">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <span className="text-lg">{getPriorityEmoji(report.priority)}</span>
-                        <div className="font-bold">{report.subject}</div>
-                        <span className={`px-2 py-1 rounded text-xs ${getPriorityColor(report.priority)}`}>
-                          {report.priority}
+              {/* Detailed User Statistics */}
+              {userStats[u.id]?.showStats && userStats[u.id] && (
+                <div className="mt-4 p-4 bg-black/50 rounded-lg border border-white/10">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-bold text-white">Detailed Statistics</h4>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => toggleStatsMode(u.id)}
+                        className="flex items-center space-x-2 bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded transition-colors"
+                      >
+                        {(userStats[u.id].statsMode || 'real') === 'real' ? 
+                          <ToggleRight className="h-4 w-4 text-yellow-400" /> : 
+                          <ToggleLeft className="h-4 w-4 text-purple-400" />
+                        }
+                        <span className={`text-sm font-medium ${
+                          (userStats[u.id].statsMode || 'real') === 'real' ? 'text-yellow-400' : 'text-purple-400'
+                        }`}>
+                          {(userStats[u.id].statsMode || 'real') === 'real' ? 'REAL MONEY' : 'VIRTUAL MONEY'}
                         </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Real Money Overview */}
+                  {(userStats[u.id].statsMode || 'real') === 'real' && (
+                    <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded">
+                      <h5 className="font-bold text-green-400 mb-2">💰 Real Money Overview</h5>
+                      <div className="grid grid-cols-3 gap-3 text-sm">
+                        <div className="text-center">
+                          <div className="text-green-400 font-bold">${(userStats[u.id].realMoney?.totalDeposited || 0).toFixed(2)}</div>
+                          <div className="text-gray-400">Deposited</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-red-400 font-bold">${(userStats[u.id].realMoney?.totalWithdrawn || 0).toFixed(2)}</div>
+                          <div className="text-gray-400">Withdrawn</div>
+                        </div>
+                        <div className="text-center">
+                          <div className={`font-bold ${(userStats[u.id].realMoney?.casinoProfit || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            ${(userStats[u.id].realMoney?.casinoProfit || 0).toFixed(2)}
+                          </div>
+                          <div className="text-gray-400">Casino Profit</div>
+                        </div>
                       </div>
-                      
-                      {/* User Information */}
-                      <div className="text-sm text-blue-400 mb-2">
-                        {report.user ? (
-                          <span>👤 ID: {report.user.id} | {report.user.email} | @{report.user.username || 'no-username'}</span>
+                    </div>
+                  )}
+
+                  {/* Affiliate Stats */}
+                  {userStats[u.id].affiliateStats && (
+                    <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/20 rounded">
+                      <h5 className="font-bold text-purple-400 mb-2">👥 Affiliate Performance</h5>
+                      <div className="grid grid-cols-3 gap-3 text-sm">
+                        <div className="text-center">
+                          <div className="text-purple-400 font-bold">{userStats[u.id].affiliateStats.totalReferrals}</div>
+                          <div className="text-gray-400">Referrals</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-green-400 font-bold">{userStats[u.id].affiliateStats.activeReferrals}</div>
+                          <div className="text-gray-400">Active</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-yellow-400 font-bold">${(userStats[u.id].affiliateStats.totalCommissionEarned || 0).toFixed(2)}</div>
+                          <div className="text-gray-400">Commission</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Game Statistics */}
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    {/* BarboDice Stats */}
+                    <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded">
+                      <h6 className="font-bold text-blue-400 mb-2 text-sm">🎲 BarboDice</h6>
+                      <div className="space-y-1 text-xs">
+                        {(userStats[u.id].statsMode || 'real') === 'real' ? (
+                          <>
+                            <div className="flex justify-between">
+                              <span>Games:</span>
+                              <span className="font-bold">{userStats[u.id].realStats?.barboDice?.totalGames || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Wins:</span>
+                              <span className="text-green-400">{userStats[u.id].realStats?.barboDice?.wins || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Losses:</span>
+                              <span className="text-red-400">{userStats[u.id].realStats?.barboDice?.losses || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Profit:</span>
+                              <span className={`font-bold ${(userStats[u.id].realStats?.barboDice?.totalWins - userStats[u.id].realStats?.barboDice?.totalBets || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                ${((userStats[u.id].realStats?.barboDice?.totalWins || 0) - (userStats[u.id].realStats?.barboDice?.totalBets || 0)).toFixed(2)}
+                              </span>
+                            </div>
+                          </>
                         ) : (
-                          <span>👤 Anonymous User</span>
+                          <>
+                            <div className="flex justify-between">
+                              <span>Games:</span>
+                              <span className="font-bold">{userStats[u.id].virtualStats?.barboDice?.totalGames || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Wins:</span>
+                              <span className="text-green-400">{userStats[u.id].virtualStats?.barboDice?.wins || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Losses:</span>
+                              <span className="text-red-400">{userStats[u.id].virtualStats?.barboDice?.losses || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Profit:</span>
+                              <span className={`font-bold ${(userStats[u.id].virtualStats?.barboDice?.totalWins - userStats[u.id].virtualStats?.barboDice?.totalBets || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                ${((userStats[u.id].virtualStats?.barboDice?.totalWins || 0) - (userStats[u.id].virtualStats?.barboDice?.totalBets || 0)).toFixed(2)}
+                              </span>
+                            </div>
+                          </>
                         )}
                       </div>
-                      
-                      <div className="text-sm text-gray-300 mb-3">{report.message}</div>
-                      <div className="text-xs text-gray-500">
-                        {new Date(report.createdAt).toLocaleString()}
+                    </div>
+
+                    {/* DiceBattle Stats */}
+                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded">
+                      <h6 className="font-bold text-red-400 mb-2 text-sm">⚔️ DiceBattle</h6>
+                      <div className="space-y-1 text-xs">
+                        {(userStats[u.id].statsMode || 'real') === 'real' ? (
+                          <>
+                            <div className="flex justify-between">
+                              <span>Battles:</span>
+                              <span className="font-bold">{userStats[u.id].realStats?.diceBattle?.totalGames || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Wins:</span>
+                              <span className="text-green-400">{userStats[u.id].realStats?.diceBattle?.wins || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Ties:</span>
+                              <span className="text-yellow-400">{userStats[u.id].realStats?.diceBattle?.ties || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Profit:</span>
+                              <span className={`font-bold ${(userStats[u.id].realStats?.diceBattle?.totalWins - userStats[u.id].realStats?.diceBattle?.totalBets || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                ${((userStats[u.id].realStats?.diceBattle?.totalWins || 0) - (userStats[u.id].realStats?.diceBattle?.totalBets || 0)).toFixed(2)}
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex justify-between">
+                              <span>Battles:</span>
+                              <span className="font-bold">{userStats[u.id].virtualStats?.diceBattle?.totalGames || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Wins:</span>
+                              <span className="text-green-400">{userStats[u.id].virtualStats?.diceBattle?.wins || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Ties:</span>
+                              <span className="text-yellow-400">{userStats[u.id].virtualStats?.diceBattle?.ties || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Profit:</span>
+                              <span className={`font-bold ${(userStats[u.id].virtualStats?.diceBattle?.totalWins - userStats[u.id].virtualStats?.diceBattle?.totalBets || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                ${((userStats[u.id].virtualStats?.diceBattle?.totalWins || 0) - (userStats[u.id].virtualStats?.diceBattle?.totalBets || 0)).toFixed(2)}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* DiceRoulette Stats */}
+                    <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded">
+                      <h6 className="font-bold text-orange-400 mb-2 text-sm">🎯 DiceRoulette</h6>
+                      <div className="space-y-1 text-xs">
+                        {(userStats[u.id].statsMode || 'real') === 'real' ? (
+                          <>
+                            <div className="flex justify-between">
+                              <span>Games:</span>
+                              <span className="font-bold">{userStats[u.id].realStats?.diceRoulette?.totalGames || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Wins:</span>
+                              <span className="text-green-400">{userStats[u.id].realStats?.diceRoulette?.wins || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Losses:</span>
+                              <span className="text-red-400">{userStats[u.id].realStats?.diceRoulette?.losses || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Profit:</span>
+                              <span className={`font-bold ${(userStats[u.id].realStats?.diceRoulette?.totalWins - userStats[u.id].realStats?.diceRoulette?.totalBets || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                ${((userStats[u.id].realStats?.diceRoulette?.totalWins || 0) - (userStats[u.id].realStats?.diceRoulette?.totalBets || 0)).toFixed(2)}
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex justify-between">
+                              <span>Games:</span>
+                              <span className="font-bold">{userStats[u.id].virtualStats?.diceRoulette?.totalGames || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Wins:</span>
+                              <span className="text-green-400">{userStats[u.id].virtualStats?.diceRoulette?.wins || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Losses:</span>
+                              <span className="text-red-400">{userStats[u.id].virtualStats?.diceRoulette?.losses || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Profit:</span>
+                              <span className={`font-bold ${(userStats[u.id].virtualStats?.diceRoulette?.totalWins - userStats[u.id].virtualStats?.diceRoulette?.totalBets || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                ${((userStats[u.id].virtualStats?.diceRoulette?.totalWins || 0) - (userStats[u.id].virtualStats?.diceRoulette?.totalBets || 0)).toFixed(2)}
+                              </span>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
-                  
-                  <div className="flex space-x-2">
-                    {report.status === 'open' && (
-                      <button
-                        onClick={() => updateBugReportStatus(report.id, 'in_progress')}
-                        className="bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 px-3 py-1 rounded text-xs transition-colors"
-                      >
-                        Start Working
-                      </button>
-                    )}
-                    {report.status === 'in_progress' && (
-                      <button
-                        onClick={() => updateBugReportStatus(report.id, 'resolved')}
-                        className="bg-green-500/20 text-green-400 hover:bg-green-500/30 px-3 py-1 rounded text-xs transition-colors"
-                      >
-                        Mark Resolved
-                      </button>
-                    )}
-                    {(report.status === 'resolved' || report.status === 'in_progress') && (
-                      <button
-                        onClick={() => updateBugReportStatus(report.id, 'closed')}
-                        className="bg-gray-500/20 text-gray-400 hover:bg-gray-500/30 px-3 py-1 rounded text-xs transition-colors"
-                      >
-                        Close
-                      </button>
-                    )}
-                    {report.status === 'closed' && (
-                      <button
-                        onClick={() => updateBugReportStatus(report.id, 'open')}
-                        className="bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 px-3 py-1 rounded text-xs transition-colors"
-                      >
-                        Reopen
-                      </button>
-                    )}
-                  </div>
+
+                  {/* Wagering Progress */}
+                  {userStats[u.id].wagering && userStats[u.id].wagering.required > 0 && (
+                    <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded">
+                      <h6 className="font-bold text-blue-400 mb-2 text-sm">🎯 Wagering Progress</h6>
+                      <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
+                        <div 
+                          className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${userStats[u.id].wagering.progressPercent}%` }}
+                        ></div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="text-center">
+                          <div className="text-blue-400 font-bold">${userStats[u.id].wagering.progress.toFixed(2)}</div>
+                          <div className="text-gray-400">Progress</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-yellow-400 font-bold">${userStats[u.id].wagering.required.toFixed(2)}</div>
+                          <div className="text-gray-400">Required</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Recent Transactions */}
+                  {userStats[u.id].transactions && userStats[u.id].transactions.length > 0 && (
+                    <div className="mt-3 p-3 bg-gray-500/10 border border-gray-500/20 rounded">
+                      <h6 className="font-bold text-gray-400 mb-2 text-sm">📊 Recent Transactions</h6>
+                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                        {userStats[u.id].transactions.slice(0, 5).map((tx: any, idx: number) => (
+                          <div key={idx} className="flex justify-between items-center text-xs">
+                            <span className="text-gray-300">{tx.type}</span>
+                            <span className={`font-bold ${tx.amount >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              ${Math.abs(tx.amount).toFixed(2)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ))
-            ) : (
-              <div className="text-center text-gray-400 py-8">
-                <Bug className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No bug reports found</p>
-                <p className="text-sm">
-                  {reportFilter === 'all' ? 'No reports submitted yet' : `No ${reportFilter} reports`}
-                </p>
-              </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Bug Reports Inbox - Full Width */}
+      <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <Bug className="h-6 w-6 text-red-400" />
+            <h2 className="text-2xl font-bold">Bug Reports Inbox</h2>
+            {openReportsCount > 0 && (
+              <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                {openReportsCount}
+              </span>
             )}
           </div>
+          <div className="flex items-center space-x-2">
+            <Filter className="h-4 w-4 text-gray-400" />
+            <select
+              value={reportFilter}
+              onChange={(e) => setReportFilter(e.target.value)}
+              className="bg-black/30 border border-white/20 rounded px-3 py-1 text-sm"
+            >
+              <option value="all">All Reports</option>
+              <option value="open">Open</option>
+              <option value="in_progress">In Progress</option>
+              <option value="resolved">Resolved</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
+        </div>
+        
+        <div className="space-y-4 max-h-96 overflow-y-auto">
+          {filteredReports.length > 0 ? (
+            filteredReports.map((report) => (
+              <div key={report.id} className="bg-black/30 rounded-lg p-4 border border-white/10">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className="text-lg">{getPriorityEmoji(report.priority)}</span>
+                      <div className="font-bold">{report.subject}</div>
+                      <span className={`px-2 py-1 rounded text-xs ${getPriorityColor(report.priority)}`}>
+                        {report.priority}
+                      </span>
+                    </div>
+                    
+                    {/* User Information */}
+                    <div className="text-sm text-blue-400 mb-2">
+                      {report.user ? (
+                        <span>👤 ID: {report.user.id} | {report.user.email} | @{report.user.username || 'no-username'}</span>
+                      ) : (
+                        <span>👤 Anonymous User</span>
+                      )}
+                    </div>
+                    
+                    <div className="text-sm text-gray-300 mb-3">{report.message}</div>
+                    <div className="text-xs text-gray-500">
+                      {new Date(report.createdAt).toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex space-x-2">
+                  {report.status === 'open' && (
+                    <button
+                      onClick={() => updateBugReportStatus(report.id, 'in_progress')}
+                      className="bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 px-3 py-1 rounded text-xs transition-colors"
+                    >
+                      Start Working
+                    </button>
+                  )}
+                  {report.status === 'in_progress' && (
+                    <button
+                      onClick={() => updateBugReportStatus(report.id, 'resolved')}
+                      className="bg-green-500/20 text-green-400 hover:bg-green-500/30 px-3 py-1 rounded text-xs transition-colors"
+                    >
+                      Mark Resolved
+                    </button>
+                  )}
+                  {(report.status === 'resolved' || report.status === 'in_progress') && (
+                    <button
+                      onClick={() => updateBugReportStatus(report.id, 'closed')}
+                      className="bg-gray-500/20 text-gray-400 hover:bg-gray-500/30 px-3 py-1 rounded text-xs transition-colors"
+                    >
+                      Close
+                    </button>
+                  )}
+                  {report.status === 'closed' && (
+                    <button
+                      onClick={() => updateBugReportStatus(report.id, 'open')}
+                      className="bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 px-3 py-1 rounded text-xs transition-colors"
+                    >
+                      Reopen
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center text-gray-400 py-8">
+              <Bug className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>No bug reports found</p>
+              <p className="text-sm">
+                {reportFilter === 'all' ? 'No reports submitted yet' : `No ${reportFilter} reports`}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
