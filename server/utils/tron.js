@@ -3,7 +3,7 @@ const { TronWeb: TronWebConstructor } = TronWeb;
 import axios from 'axios';
 import crypto from 'crypto';
 import { createHash } from 'crypto';
-import * as bitcoin from 'bitcoinjs-lib';
+import bitcoin from 'bitcoinjs-lib';
 
 // Contract addresses on TRON mainnet
 const USDT_CONTRACT_ADDRESS = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
