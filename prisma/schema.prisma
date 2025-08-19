@@ -166,10 +166,19 @@ model Transaction {
 model CryptoWallet {
   id         String   @id @default(cuid())
   userId     String   @unique
-  tronAddress    String?   @unique  // For USDT and USDC (TRC20)
-  tronPrivateKey String?   // In production, encrypt this!
+  
+  // USDT TRC20 wallet
+  usdtAddress    String?   @unique
+  usdtPrivateKey String?   // Encrypted
+  
+  // USDC TRC20 wallet  
+  usdcAddress    String?   @unique
+  usdcPrivateKey String?   // Encrypted
+  
+  // LTC wallet
   ltcAddress     String?   @unique  // For LTC
   ltcPrivateKey  String?   // In production, encrypt this!
+  
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

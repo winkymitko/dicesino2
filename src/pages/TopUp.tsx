@@ -79,12 +79,21 @@ const TopUp: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         setWalletAddresses({
-          tron: data.tronAddress || '',
+          usdt: data.usdtAddress || '',
+          usdc: data.usdcAddress || '',
           ltc: data.ltcAddress || ''
         });
         
         // Generate QR code for selected currency
-        const currentAddress = selectedCurrency === 'LTC' ? data.ltcAddress : data.tronAddress;
+        let currentAddress = '';
+        if (selectedCurrency === 'USDT') {
+          currentAddress = data.usdtAddress;
+        } else if (selectedCurrency === 'USDC') {
+          currentAddress = data.usdcAddress;
+        } else if (selectedCurrency === 'LTC') {
+          currentAddress = data.ltcAddress;
+        }
+        
         const qrUrl = await QRCode.toDataURL(currentAddress, {
           width: 256,
           margin: 2,
@@ -108,7 +117,15 @@ const TopUp: React.FC = () => {
   // Update QR code when currency changes
   useEffect(() => {
     if (walletAddresses.tron || walletAddresses.ltc) {
-      const currentAddress = selectedCurrency === 'LTC' ? walletAddresses.ltc : walletAddresses.tron;
+      let currentAddress = '';
+      if (selectedCurrency === 'USDT') {
+        currentAddress = walletAddresses.usdt;
+      } else if (selectedCurrency === 'USDC') {
+        currentAddress = walletAddresses.usdc;
+      } else if (selectedCurrency === 'LTC') {
+        currentAddress = walletAddresses.ltc;
+      }
+      
       if (currentAddress) {
         QRCode.toDataURL(currentAddress, {
           width: 256,
@@ -215,7 +232,15 @@ const TopUp: React.FC = () => {
   };
   const copyAddress = async () => {
     try {
-      const currentAddress = selectedCurrency === 'LTC' ? walletAddresses.ltc : walletAddresses.tron;
+      let currentAddress = '';
+      if (selectedCurrency === 'USDT') {
+        currentAddress = walletAddresses.usdt;
+      } else if (selectedCurrency === 'USDC') {
+        currentAddress = walletAddresses.usdc;
+      } else if (selectedCurrency === 'LTC') {
+        currentAddress = walletAddresses.ltc;
+      }
+      
       await navigator.clipboard.writeText(currentAddress);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -315,7 +340,11 @@ const TopUp: React.FC = () => {
             <div className="flex items-center space-x-2">
               <input
                 type="text"
-                value={selectedCurrency === 'LTC' ? walletAddresses.ltc : walletAddresses.tron}
+                value={
+                  selectedCurrency === 'USDT' ? walletAddresses.usdt :
+                  selectedCurrency === 'USDC' ? walletAddresses.usdc :
+                  walletAddresses.ltc
+                }
                 readOnly
                 className="flex-1 px-4 py-3 bg-black/30 border border-white/20 rounded-lg text-sm font-mono"
               />

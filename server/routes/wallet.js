@@ -11,9 +11,13 @@ import {
   isValidTronAddress,
   isValidLTCAddress,
   getTRXBalance,
-  sendTRXForGas
+  sendTRXForGas,
+  sendUSDT,
+  sendUSDC,
+  sendLTC,
+  encryptPrivateKey,
+  decryptPrivateKey
 } from '../utils/tron.js';
-import crypto from 'crypto';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -59,68 +63,56 @@ router.get('/info', authenticateToken, async (req, res) => {
     });
 
     if (!wallet) {
-      // Create new wallet for user
-      console.log('Creating new wallet for user:', req.user.id);
-      
-      let tronWalletData, ltcWalletData;
-      try {
-        tronWalletData = generateTronWallet();
-        ltcWalletData = generateLTCWallet();
-      } catch (error) {
-        console.error('Failed to generate TRON wallet:', error);
-        // Fallback wallet generation
-        tronWalletData = {
-          address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', // Fallback address
-          privateKey: '01'.repeat(32) // Fallback private key
-        };
-        ltcWalletData = {
-          address: 'L' + '01'.repeat(17),
-          privateKey: '01'.repeat(32)
-        };
-      }
-      
-      const { address: tronAddress, privateKey: tronPrivateKey } = tronWalletData;
-      const { address: ltcAddress, privateKey: ltcPrivateKey } = ltcWalletData;
-      
-      // Validate the generated address
-      if (!isValidTronAddress(tronAddress)) {
-        console.error('Generated TRON address not valid:', tronAddress);
-        return res.status(500).json({ error: 'Failed to generate valid TRON address' });
-      }
-      
-      if (!isValidLTCAddress(ltcAddress)) {
-        console.error('Generated LTC address not valid:', ltcAddress);
-        return res.status(500).json({ error: 'Failed to generate valid LTC address' });
-      }
+      // Create separate wallets for each currency
+      console.log('Creating new wallets for user:', req.user.id);
       
       try {
+        // Generate USDT wallet
+        const usdtWallet = generateTronWallet();
+        // Generate USDC wallet (separate from USDT)
+        const usdcWallet = generateTronWallet();
+        // Generate LTC wallet
+        const ltcWallet = generateLTCWallet();
+        
+        // Validate all addresses
+        if (!isValidTronAddress(usdtWallet.address) || 
+            !isValidTronAddress(usdcWallet.address) || 
+            !isValidLTCAddress(ltcWallet.address)) {
+          throw new Error('Generated invalid addresses');
+        }
+        
+        // Create wallet record with all three currencies
         wallet = await prisma.cryptoWallet.create({
           data: {
             userId: req.user.id,
-            tronAddress,
-            tronPrivateKey: crypto.createHash('sha256').update(tronPrivateKey + (process.env.ENCRYPTION_KEY || 'fallback-key')).digest('hex'),
-            ltcAddress,
-            ltcPrivateKey: crypto.createHash('sha256').update(ltcPrivateKey + (process.env.ENCRYPTION_KEY || 'fallback-key')).digest('hex')
+            usdtAddress: usdtWallet.address,
+            usdtPrivateKey: encryptPrivateKey(usdtWallet.privateKey),
+            usdcAddress: usdcWallet.address,
+            usdcPrivateKey: encryptPrivateKey(usdcWallet.privateKey),
+            ltcAddress: ltcWallet.address,
+            ltcPrivateKey: encryptPrivateKey(ltcWallet.privateKey)
           }
         });
-        console.log('Wallet created successfully:', wallet.id);
-      } catch (dbError) {
-        console.error('Database error creating wallet:', dbError);
-        return res.status(500).json({ error: 'Failed to create wallet in database' });
-      }
-      
-      // Send some TRX for gas fees to new wallet
-      try {
-        await sendTRXForGas(tronAddress, 1); // Send 1 TRX for gas
-        console.log('TRX sent for gas fees');
+        
+        console.log('Wallets created successfully:', wallet.id);
+        
+        // Send TRX for gas fees to both TRON wallets
+        try {
+          await sendTRXForGas(usdtWallet.address, 1);
+          await sendTRXForGas(usdcWallet.address, 1);
+          console.log('TRX sent for gas fees to both wallets');
+        } catch (error) {
+          console.warn('Failed to send TRX for gas fees:', error.message);
+        }
+        
       } catch (error) {
-        console.warn('Failed to send TRX for gas fees:', error.message);
-        // Don't fail wallet creation if gas transfer fails
+        console.error('Failed to generate wallets:', error);
+        return res.status(500).json({ error: 'Failed to generate wallets' });
       }
     }
 
-    // Don't send private key to frontend
-    const { tronPrivateKey, ltcPrivateKey, ...safeWallet } = wallet;
+    // Don't send private keys to frontend
+    const { usdtPrivateKey, usdcPrivateKey, ltcPrivateKey, ...safeWallet } = wallet;
     console.log('Returning wallet info:', safeWallet.id);
     res.json(safeWallet);
   } catch (error) {
@@ -145,7 +137,7 @@ router.get('/deposits', authenticateToken, async (req, res) => {
   }
 });
 
-// Check balance (simulate checking blockchain)
+// Check balance for specific currency
 router.post('/check-balance', authenticateToken, async (req, res) => {
   try {
     const { currency = 'USDT' } = req.body;
@@ -161,19 +153,19 @@ router.post('/check-balance', authenticateToken, async (req, res) => {
     let currentBalance = 0;
     let address = '';
     
-    // Get balance based on currency
+    // Get balance and address based on currency
     if (currency === 'USDT') {
-      address = wallet.tronAddress;
+      address = wallet.usdtAddress;
       currentBalance = await getUSDTBalance(address);
     } else if (currency === 'USDC') {
-      address = wallet.tronAddress;
+      address = wallet.usdcAddress;
       currentBalance = await getUSDCBalance(address);
     } else if (currency === 'LTC') {
       address = wallet.ltcAddress;
       currentBalance = await getLTCBalance(address);
     }
     
-    // Get last deposit timestamp to check for new deposits
+    // Get last deposit timestamp
     const lastDeposit = await prisma.cryptoDeposit.findFirst({
       where: { userId: req.user.id, currency },
       orderBy: { createdAt: 'desc' }
@@ -181,7 +173,7 @@ router.post('/check-balance', authenticateToken, async (req, res) => {
     
     const lastCheckedTimestamp = lastDeposit ? 
       Math.floor(new Date(lastDeposit.createdAt).getTime() / 1000) : 
-      Math.floor(Date.now() / 1000) - 86400; // Check last 24 hours if no previous deposits
+      Math.floor(Date.now() / 1000) - 86400;
     
     // Check for new deposits
     const newDeposits = await checkNewDeposits(address, currency, lastCheckedTimestamp);
@@ -190,12 +182,14 @@ router.post('/check-balance', authenticateToken, async (req, res) => {
     let processedDeposits = [];
     
     for (const deposit of newDeposits) {
-      // Check if this transaction already exists
+      // Check if transaction already exists
       const existingDeposit = await prisma.cryptoDeposit.findUnique({
         where: { txHash: deposit.txHash }
       });
       
-      if (!existingDeposit && deposit.amount >= 10) { // Minimum $10 deposit
+      const minDeposit = currency === 'LTC' ? 0.1 : 10;
+      
+      if (!existingDeposit && deposit.amount >= minDeposit) {
         // Create new deposit record
         const newDeposit = await prisma.cryptoDeposit.create({
           data: {
@@ -212,21 +206,22 @@ router.post('/check-balance', authenticateToken, async (req, res) => {
         });
         
         if (deposit.confirmations >= 1) {
+          // Convert LTC to USD for balance (approximate rate)
+          const usdAmount = currency === 'LTC' ? deposit.amount * 100 : deposit.amount;
+          
           // Update user's cash balance
           await prisma.user.update({
             where: { id: req.user.id },
             data: {
-              cashBalance: { increment: deposit.amount }
+              cashBalance: { increment: usdAmount }
             }
           });
           
-          // Check for deposit bonus (50% up to $100)
-          const depositBonusPercent = 0.5;
-          const maxDepositBonus = 100;
-          const bonusAmount = Math.min(deposit.amount * depositBonusPercent, maxDepositBonus);
+          // Grant deposit bonus (50% up to $100)
+          const bonusAmount = Math.min(usdAmount * 0.5, 100);
           
           if (bonusAmount > 0) {
-            await grantDepositBonus(req.user.id, deposit.amount, bonusAmount);
+            await grantDepositBonus(req.user.id, usdAmount, bonusAmount);
           }
           
           // Create transaction record
@@ -235,8 +230,8 @@ router.post('/check-balance', authenticateToken, async (req, res) => {
             data: {
               userId: req.user.id,
               type: 'deposit',
-              amount: deposit.amount,
-              cashChange: deposit.amount,
+              amount: usdAmount,
+              cashChange: usdAmount,
               bonusChange: bonusAmount,
               cashBalanceAfter: updatedUser.cashBalance,
               bonusBalanceAfter: updatedUser.bonusBalance,
@@ -247,7 +242,7 @@ router.post('/check-balance', authenticateToken, async (req, res) => {
             }
           });
           
-          totalNewDeposits += deposit.amount;
+          totalNewDeposits += usdAmount;
           processedDeposits.push(newDeposit);
         }
       }
@@ -256,7 +251,7 @@ router.post('/check-balance', authenticateToken, async (req, res) => {
     if (totalNewDeposits > 0) {
       return res.json({ 
         success: true, 
-        message: `New deposits confirmed: $${totalNewDeposits.toFixed(2)} ${currency}`,
+        message: `New deposits confirmed: $${totalNewDeposits.toFixed(2)} from ${currency}`,
         newDeposit: true,
         deposits: processedDeposits,
         currentBalance,
@@ -264,10 +259,12 @@ router.post('/check-balance', authenticateToken, async (req, res) => {
       });
     }
     
-    // Also check TRX balance for gas fees (only for TRON currencies)
+    // Get TRX balance for gas fees (only for TRON currencies)
     let trxBalance = 0;
-    if (currency === 'USDT' || currency === 'USDC') {
-      trxBalance = await getTRXBalance(wallet.tronAddress);
+    if (currency === 'USDT') {
+      trxBalance = await getTRXBalance(wallet.usdtAddress);
+    } else if (currency === 'USDC') {
+      trxBalance = await getTRXBalance(wallet.usdcAddress);
     }
     
     res.json({ 
@@ -285,7 +282,7 @@ router.post('/check-balance', authenticateToken, async (req, res) => {
   }
 });
 
-// Get wallet status and balances
+// Get wallet status and balances for all currencies
 router.get('/status', authenticateToken, async (req, res) => {
   try {
     const wallet = await prisma.cryptoWallet.findUnique({
@@ -296,20 +293,23 @@ router.get('/status', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Wallet not found' });
     }
 
-    const [usdtBalance, usdcBalance, ltcBalance, trxBalance] = await Promise.all([
-      getUSDTBalance(wallet.tronAddress),
-      getUSDCBalance(wallet.tronAddress),
+    const [usdtBalance, usdcBalance, ltcBalance, usdtTrxBalance, usdcTrxBalance] = await Promise.all([
+      getUSDTBalance(wallet.usdtAddress),
+      getUSDCBalance(wallet.usdcAddress),
       getLTCBalance(wallet.ltcAddress),
-      getTRXBalance(wallet.tronAddress)
+      getTRXBalance(wallet.usdtAddress),
+      getTRXBalance(wallet.usdcAddress)
     ]);
 
     res.json({
-      tronAddress: wallet.tronAddress,
+      usdtAddress: wallet.usdtAddress,
+      usdcAddress: wallet.usdcAddress,
       ltcAddress: wallet.ltcAddress,
       usdtBalance,
       usdcBalance,
       ltcBalance,
-      trxBalance,
+      usdtTrxBalance,
+      usdcTrxBalance,
       supportedCurrencies: ['USDT', 'USDC', 'LTC']
     });
   } catch (error) {
@@ -318,198 +318,14 @@ router.get('/status', authenticateToken, async (req, res) => {
   }
 });
 
-// Manual deposit verification (for support)
-router.post('/verify-deposit', authenticateToken, async (req, res) => {
-  try {
-    const { txHash } = req.body;
-    
-    if (!txHash) {
-      return res.status(400).json({ error: 'Transaction hash required' });
-    }
-    
-    const wallet = await prisma.cryptoWallet.findUnique({
-      where: { userId: req.user.id }
-    });
-
-    if (!wallet) {
-      return res.status(404).json({ error: 'Wallet not found' });
-    }
-
-    // Check if deposit already exists
-    const existingDeposit = await prisma.cryptoDeposit.findUnique({
-      where: { txHash }
-    });
-    
-    if (existingDeposit) {
-      return res.status(400).json({ error: 'Deposit already processed' });
-    }
-
-    // Get transaction details from blockchain
-    const txInfo = await getTransactionInfo(txHash);
-    
-    if (!txInfo || !txInfo.receipt || txInfo.receipt.result !== 'SUCCESS') {
-      return res.status(400).json({ error: 'Transaction not found or failed' });
-    }
-
-    // Verify transaction is to user's wallet
-    // This would need more detailed parsing of the transaction logs
-    // For now, we'll trust the manual verification
-    
-    res.json({ 
-      success: true,
-      message: 'Transaction verified - please contact support for manual processing',
-      txInfo
-    });
-  } catch (error) {
-    console.error('Error verifying deposit:', error);
-    res.status(500).json({ error: 'Failed to verify deposit' });
-  }
-});
-
-// Webhook endpoint for TronGrid notifications (production)
-router.post('/tron-webhook', async (req, res) => {
-  try {
-    // Verify webhook signature if configured
-    const signature = req.headers['x-tron-signature'];
-    if (process.env.TRON_WEBHOOK_SECRET && signature) {
-      const expectedSignature = crypto
-        .createHmac('sha256', process.env.TRON_WEBHOOK_SECRET)
-        .update(JSON.stringify(req.body))
-        .digest('hex');
-      
-      if (`sha256=${expectedSignature}` !== signature) {
-        return res.status(401).json({ error: 'Invalid signature' });
-      }
-    }
-    
-    const { transaction_id, to_address, value, token_info } = req.body;
-    
-    // Verify it's a USDT transaction
-    if (token_info?.address !== 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t') {
-      return res.status(200).json({ message: 'Not a USDT transaction' });
-    }
-    
-    // Find wallet by address
-    const wallet = await prisma.cryptoWallet.findUnique({
-      where: { address: to_address }
-    });
-    
-    if (!wallet) {
-      return res.status(200).json({ message: 'Wallet not found' });
-    }
-    
-    // Process the deposit
-    const amount = parseFloat(value) / 1000000; // Convert from 6 decimals
-    
-    if (amount < 10) {
-      return res.status(200).json({ message: 'Amount below minimum deposit' });
-    }
-    
-    // Check if deposit already exists
-    const existingDeposit = await prisma.cryptoDeposit.findUnique({
-      where: { txHash: transaction_id }
-    });
-    
-    if (!existingDeposit) {
-      // Create new deposit
-      await prisma.cryptoDeposit.create({
-        data: {
-          userId: wallet.userId,
-          walletId: wallet.id,
-          amount,
-          currency: 'USDT',
-          txHash: transaction_id,
-          status: 'confirmed',
-          confirmations: 20
-        }
-      });
-      
-      // Update user balance
-      await prisma.user.update({
-        where: { id: wallet.userId },
-        data: {
-          cashBalance: { increment: amount }
-        }
-      });
-      
-      // Grant deposit bonus
-      const bonusAmount = Math.min(amount * 0.5, 100);
-      if (bonusAmount > 0) {
-        await grantDepositBonus(wallet.userId, amount, bonusAmount);
-      }
-    }
-    
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Webhook error:', error);
-    res.status(500).json({ error: 'Webhook processing failed' });
-  }
-});
-
-// Legacy webhook endpoint (keep for backward compatibility)
-router.post('/webhook', async (req, res) => {
-  try {
-    const { address, amount, txHash, confirmations } = req.body;
-    
-    // Find wallet by address
-    const wallet = await prisma.cryptoWallet.findUnique({
-      where: { address }
-    });
-    
-    if (!wallet) {
-      return res.status(404).json({ error: 'Wallet not found' });
-    }
-    
-    // Check if deposit already exists
-    const existingDeposit = await prisma.cryptoDeposit.findUnique({
-      where: { txHash }
-    });
-    
-    if (existingDeposit) {
-      // Update confirmations
-      await prisma.cryptoDeposit.update({
-        where: { id: existingDeposit.id },
-        data: { confirmations }
-      });
-    } else {
-      // Create new deposit
-      const deposit = await prisma.cryptoDeposit.create({
-        data: {
-          userId: wallet.userId,
-          walletId: wallet.id,
-          amount: parseFloat(amount),
-          currency: 'USDT',
-          txHash,
-          status: confirmations >= 1 ? 'confirmed' : 'pending',
-          confirmations
-        }
-      });
-      
-      // Update user balance if confirmed
-      if (confirmations >= 1) {
-        await prisma.user.update({
-          where: { id: wallet.userId },
-          data: {
-            cashBalance: { increment: parseFloat(amount) }
-          }
-        });
-      }
-    }
-    
-    res.json({ success: true });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
 // Request withdrawal
 router.post('/withdraw', authenticateToken, async (req, res) => {
   try {
     const { amount, toAddress, currency = 'USDT' } = req.body;
     
-    if (!amount || amount < 10) {
-      return res.status(400).json({ error: 'Minimum withdrawal is $10' });
+    const minWithdraw = currency === 'LTC' ? 0.01 : 10;
+    if (!amount || amount < minWithdraw) {
+      return res.status(400).json({ error: `Minimum withdrawal is ${currency === 'LTC' ? '0.01 LTC' : '$10'}` });
     }
     
     // Validate address based on currency
@@ -528,19 +344,31 @@ router.post('/withdraw', authenticateToken, async (req, res) => {
       where: { id: req.user.id }
     });
     
-    if (user.cashBalance < amount) {
+    // Convert LTC amount to USD for balance check
+    const usdAmount = currency === 'LTC' ? amount * 100 : amount;
+    
+    if (user.cashBalance < usdAmount) {
       return res.status(400).json({ error: 'Insufficient cash balance' });
+    }
+    
+    // Get wallet for withdrawal
+    const wallet = await prisma.cryptoWallet.findUnique({
+      where: { userId: req.user.id }
+    });
+    
+    if (!wallet) {
+      return res.status(404).json({ error: 'Wallet not found' });
     }
     
     // Create withdrawal request
     const withdrawal = await prisma.cryptoWithdrawal.create({
       data: {
         userId: req.user.id,
-        amount,
+        amount: usdAmount,
         currency,
         network: currency === 'LTC' ? 'LTC' : 'TRC20',
         toAddress,
-        status: 'pending'
+        status: 'processing'
       }
     });
     
@@ -548,32 +376,77 @@ router.post('/withdraw', authenticateToken, async (req, res) => {
     await prisma.user.update({
       where: { id: req.user.id },
       data: {
-        cashBalance: { decrement: amount }
+        cashBalance: { decrement: usdAmount }
       }
     });
     
-    // Create transaction record
-    const updatedUser = await prisma.user.findUnique({ where: { id: req.user.id } });
-    await prisma.transaction.create({
-      data: {
-        userId: req.user.id,
-        type: 'withdrawal',
-        amount: -amount,
-        cashChange: -amount,
-        cashBalanceAfter: updatedUser.cashBalance,
-        bonusBalanceAfter: updatedUser.bonusBalance,
-        lockedBalanceAfter: updatedUser.lockedBalance,
-        virtualBalanceAfter: updatedUser.virtualBalance,
-        description: `${currency} withdrawal to ${toAddress.substring(0, 8)}...`,
-        reference: withdrawal.id
+    // Process withdrawal automatically
+    try {
+      let txResult;
+      
+      if (currency === 'USDT') {
+        const privateKey = decryptPrivateKey(wallet.usdtPrivateKey);
+        txResult = await sendUSDT(privateKey, toAddress, amount);
+      } else if (currency === 'USDC') {
+        const privateKey = decryptPrivateKey(wallet.usdcPrivateKey);
+        txResult = await sendUSDC(privateKey, toAddress, amount);
+      } else if (currency === 'LTC') {
+        const privateKey = decryptPrivateKey(wallet.ltcPrivateKey);
+        txResult = await sendLTC(privateKey, toAddress, amount);
       }
-    });
-    
-    res.json({ 
-      success: true, 
-      message: 'Withdrawal request submitted. Processing time: 1-24 hours.',
-      withdrawalId: withdrawal.id
-    });
+      
+      // Update withdrawal with transaction hash
+      await prisma.cryptoWithdrawal.update({
+        where: { id: withdrawal.id },
+        data: {
+          txHash: txResult.txid || txResult.transaction_id,
+          status: 'completed'
+        }
+      });
+      
+      // Create transaction record
+      const updatedUser = await prisma.user.findUnique({ where: { id: req.user.id } });
+      await prisma.transaction.create({
+        data: {
+          userId: req.user.id,
+          type: 'withdrawal',
+          amount: -usdAmount,
+          cashChange: -usdAmount,
+          cashBalanceAfter: updatedUser.cashBalance,
+          bonusBalanceAfter: updatedUser.bonusBalance,
+          lockedBalanceAfter: updatedUser.lockedBalance,
+          virtualBalanceAfter: updatedUser.virtualBalance,
+          description: `${currency} withdrawal to ${toAddress.substring(0, 8)}...`,
+          reference: withdrawal.id
+        }
+      });
+      
+      res.json({ 
+        success: true, 
+        message: `Withdrawal completed! TX: ${txResult.txid || txResult.transaction_id}`,
+        withdrawalId: withdrawal.id,
+        txHash: txResult.txid || txResult.transaction_id
+      });
+      
+    } catch (sendError) {
+      console.error('Withdrawal send error:', sendError);
+      
+      // Refund user balance
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: {
+          cashBalance: { increment: usdAmount }
+        }
+      });
+      
+      // Update withdrawal status
+      await prisma.cryptoWithdrawal.update({
+        where: { id: withdrawal.id },
+        data: { status: 'failed' }
+      });
+      
+      res.status(500).json({ error: 'Withdrawal failed: ' + sendError.message });
+    }
   } catch (error) {
     console.error('Withdrawal error:', error);
     res.status(500).json({ error: 'Failed to process withdrawal' });
