@@ -29,12 +29,7 @@ const MIN_DEPOSIT = { USDT: 10, USDC: 10, LTC: 0.1 };
 const MIN_WITHDRAW = { USDT: 10, USDC: 10, LTC: 0.01 };
 const TRX_GAS_FUND = 1; // TRX to send to each TRON wallet for gas
 
-function getLtcUsdRate() {
-  const raw = process.env.LTC_USD_RATE;
-  if (!raw) return null;
-  const n = Number(raw);
-  return Number.isFinite(n) && n > 0 ? n : null;
-}
+import { getLTCUSDRate } from '../utils/tron.js';
 
 /* ──────────────────────────────────────────────────────────────
    Bonus
@@ -106,7 +101,14 @@ router.get('/info', authenticateToken, async (req, res) => {
     }
 
     const { usdtPrivateKey, usdcPrivateKey, ltcPrivateKey, ...safe } = wallet;
-    return res.json(safe);
+    
+    // Get live LTC rate
+    const ltcRate = await getLTCUSDRate();
+    
+    return res.json({
+      ...safe,
+      ltcUsdRate: ltcRate
+    });
   } catch (error) {
     console.error('Wallet info error:', error);
     res.status(500).json({ error: 'Server error: ' + error.message });
@@ -202,11 +204,8 @@ router.post('/check-balance', authenticateToken, async (req, res) => {
         if (currency === 'USDT' || currency === 'USDC') {
           usdToCredit = dep.amount;
         } else if (currency === 'LTC') {
-          if (ltcRate) {
-            usdToCredit = dep.amount * ltcRate;
-          } else {
-            usdToCredit = 0; // no rate, don't auto-credit
-          }
+          const ltcRate = await getLTCUSDRate();
+          usdToCredit = dep.amount * ltcRate;
         }
 
         if (usdToCredit > 0) {
@@ -341,10 +340,7 @@ router.post('/withdraw', authenticateToken, async (req, res) => {
     if (currency === 'USDT' || currency === 'USDC') {
       usdToDeduct = amount; // 1 token = $1
     } else {
-      const rate = getLtcUsdRate();
-      if (!rate) {
-        return res.status(400).json({ error: 'LTC_USD_RATE not configured. Cannot compute USD deduction for LTC withdrawal.' });
-      }
+      const rate = await getLTCUSDRate();
       usdToDeduct = amount * rate;
     }
 

@@ -14,6 +14,7 @@
     "@types/qrcode": "^1.5.5",
     "axios": "^1.11.0",
     "bcryptjs": "^3.0.2",
+    "bitcoinjs-lib": "^6.1.7",
     "bs58": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

@@ -27,6 +27,7 @@ const FloatingReportButton: React.FC = () => {
         body: JSON.stringify({
           subject: subject.trim(),
           message: message.trim(),
+          userId: user?.id // Explicitly send user ID
         })
       });
 

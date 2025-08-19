@@ -34,18 +34,18 @@ let botNames = [...DEFAULT_BOT_NAMES];
 // Submit bug report
 router.post('/bug-reports', async (req, res) => {
   try {
-    const { subject, message } = req.body;
+    const { subject, message, userId } = req.body;
     
     if (!subject || !message) {
       return res.status(400).json({ error: 'Subject and message are required' });
     }
     
-    // Ensure we have a user ID if user is authenticated
-    const userId = req.user ? req.user.id : null;
+    // Use the provided userId or fall back to req.user
+    const finalUserId = userId || (req.user ? req.user.id : null);
     
     const bugReport = await prisma.bugReport.create({
       data: {
-        userId: userId,
+        userId: finalUserId,
         subject: subject.trim(),
         message: message.trim(),
         priority: 'medium' // Default priority set by system

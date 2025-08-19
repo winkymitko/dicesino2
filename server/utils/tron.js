@@ -40,45 +40,38 @@ export function generateTronWallet() {
   }
 }
 
-// Generate LTC address and private key (production-ready)
+// Generate LTC address and private key using bitcoinjs-lib
 export function generateLTCWallet() {
   try {
-    // Generate a valid private key for LTC
-    let privateKey;
-    do {
-      privateKey = crypto.randomBytes(32);
-    } while (!secp256k1.privateKeyVerify(privateKey));
+    // Define Litecoin network parameters
+    const ltcNetwork = {
+      messagePrefix: '\x19Litecoin Signed Message:\n',
+      bech32: 'ltc',
+      bip32: {
+        public: 0x019da462,
+        private: 0x019d9cfe,
+      },
+      pubKeyHash: 0x30, // LTC addresses start with 'L'
+      scriptHash: 0x32, // LTC script addresses start with 'M'
+      wif: 0xb0,
+    };
     
-    const privateKeyHex = privateKey.toString('hex');
+    // Generate random private key
+    const keyPair = bitcoin.ECPair.makeRandom({ network: ltcNetwork });
+    const privateKeyHex = keyPair.privateKey.toString('hex');
     
-    // Generate public key from private key
-    const publicKey = secp256k1.publicKeyCreate(privateKey, true); // compressed
+    // Generate P2PKH address (starts with L)
+    const { address } = bitcoin.payments.p2pkh({ 
+      pubkey: keyPair.publicKey, 
+      network: ltcNetwork 
+    });
     
-    // Create LTC address (P2PKH - starts with L)
-    const publicKeyHash = createHash('sha256').update(publicKey).digest();
-    const ripemd160Hash = createHash('ripemd160').update(publicKeyHash).digest();
-    
-    // LTC mainnet version byte is 0x30 (48) for P2PKH addresses
-    const versionByte = Buffer.from([0x30]);
-    const payload = Buffer.concat([versionByte, ripemd160Hash]);
-    
-    // Double SHA256 for checksum
-    const hash1 = createHash('sha256').update(payload).digest();
-    const hash2 = createHash('sha256').update(hash1).digest();
-    const checksum = hash2.slice(0, 4);
-    
-    // Combine payload and checksum
-    const fullPayload = Buffer.concat([payload, checksum]);
-    
-    // Base58 encode
-    const ltcAddress = bs58.encode(fullPayload);
-    
-    if (!isValidLTCAddress(ltcAddress)) {
+    if (!isValidLTCAddress(address)) {
       throw new Error('Generated invalid LTC address');
     }
     
     return {
-      address: ltcAddress,
+      address: address,
       privateKey: privateKeyHex
     };
   } catch (error) {
@@ -156,6 +149,18 @@ export async function getUSDCBalance(address) {
   } catch (error) {
     console.error('Error getting USDC balance:', error);
     return 0;
+  }
+}
+
+// Get live LTC to USD rate
+export async function getLTCUSDRate() {
+  try {
+    const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=litecoin&vs_currencies=usd');
+    return response.data.litecoin.usd;
+  } catch (error) {
+    console.error('Error fetching LTC price:', error);
+    // Fallback to environment variable or default
+    return parseFloat(process.env.LTC_USD_RATE) || 100;
   }
 }
 
