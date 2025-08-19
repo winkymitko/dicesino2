@@ -4,6 +4,7 @@ import axios from 'axios';
 import crypto from 'crypto';
 import { createHash } from 'crypto';
 import * as bitcoin from 'bitcoinjs-lib';
+import * as bitcoin from 'bitcoinjs-lib';
 
 // Contract addresses on TRON mainnet
 const USDT_CONTRACT_ADDRESS = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
@@ -44,11 +45,18 @@ export function generateTronWallet() {
 // Generate LTC address and private key using bitcoinjs-lib
 export function generateLTCWallet() {
   try {
-    // Use Bitcoin testnet as base and modify for Litecoin
-    const ltcNetwork = bitcoin.networks.testnet;
-    ltcNetwork.pubKeyHash = 0x30; // LTC mainnet pubkey hash
-    ltcNetwork.scriptHash = 0x32; // LTC mainnet script hash
-    ltcNetwork.wif = 0xb0; // LTC mainnet WIF
+    // Define Litecoin mainnet network parameters
+    const ltcNetwork = {
+      messagePrefix: '\x19Litecoin Signed Message:\n',
+      bech32: 'ltc',
+      bip32: {
+        public: 0x019da462,
+        private: 0x019d9cfe,
+      },
+      pubKeyHash: 0x30,
+      scriptHash: 0x32,
+      wif: 0xb0,
+    };
     
     // Generate key pair
     const keyPair = bitcoin.ECPair.makeRandom({ network: ltcNetwork });
