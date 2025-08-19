@@ -53,7 +53,7 @@ const TopUp: React.FC = () => {
       network: 'LTC',
       color: 'text-gray-400',
       bgColor: 'bg-gray-500/10 border-gray-500/20',
-      minDeposit: 0.1
+      minDeposit: 0.001
     }
   };
 
