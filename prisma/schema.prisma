@@ -166,10 +166,10 @@ model Transaction {
 model CryptoWallet {
   id         String   @id @default(cuid())
   userId     String   @unique
-  address    String   @unique
-  privateKey String   // In production, encrypt this!
-  currency   String   @default("USDT")
-  network    String   @default("TRC20")
+  tronAddress    String?   @unique  // For USDT and USDC (TRC20)
+  tronPrivateKey String?   // In production, encrypt this!
+  ltcAddress     String?   @unique  // For LTC
+  ltcPrivateKey  String?   // In production, encrypt this!
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -184,7 +184,9 @@ model CryptoDeposit {
   userId        String
   walletId      String
   amount        Float
-  currency      String   @default("USDT")
+  currency      String   // "USDT", "USDC", "LTC"
+  network       String   // "TRC20", "LTC"
+  toAddress     String   // The address funds were sent to
   txHash        String   @unique
   status        String   @default("pending") // pending, confirmed, failed
   confirmations Int      @default(0)
@@ -202,7 +204,8 @@ model CryptoWithdrawal {
   id            String   @id @default(cuid())
   userId        String
   amount        Float
-  currency      String   @default("USDT")
+  currency      String   // "USDT", "USDC", "LTC"
+  network       String   // "TRC20", "LTC"
   toAddress     String
   txHash        String?  @unique
   status        String   @default("pending") // pending, processing, completed, failed

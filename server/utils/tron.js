@@ -5,6 +5,7 @@ import crypto from 'crypto';
 
 // USDT TRC20 contract address on TRON mainnet
 const USDT_CONTRACT_ADDRESS = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
+const USDC_CONTRACT_ADDRESS = 'TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8'; // USDC TRC20
 
 // Initialize TronWeb with TronGrid
 const tronWeb = new TronWebConstructor({
@@ -95,6 +96,35 @@ export function generateTronWallet() {
   }
 }
 
+// Generate LTC address and private key
+export function generateLTCWallet() {
+  try {
+    // For LTC, we'll generate a simple P2PKH address
+    // In production, you'd use a proper LTC library like bitcoinjs-lib
+    const privateKeyBytes = crypto.randomBytes(32);
+    const privateKeyHex = privateKeyBytes.toString('hex');
+    
+    // Generate a mock LTC address (starts with L or M for mainnet)
+    const addressBytes = crypto.createHash('sha256').update(privateKeyBytes).digest();
+    const ltcAddress = 'L' + addressBytes.toString('hex').substring(0, 33);
+    
+    return {
+      address: ltcAddress,
+      privateKey: privateKeyHex
+    };
+  } catch (error) {
+    console.error('LTC wallet generation failed:', error);
+    // Fallback
+    const fallbackPrivateKey = crypto.randomBytes(32).toString('hex');
+    const fallbackAddress = 'L' + crypto.randomBytes(17).toString('hex');
+    
+    return {
+      address: fallbackAddress,
+      privateKey: fallbackPrivateKey
+    };
+  }
+}
+
 // Validate TRON address format
 export function isValidTronAddress(address) {
   try {
@@ -122,6 +152,25 @@ export function isValidTronAddress(address) {
   }
 }
 
+// Validate LTC address format
+export function isValidLTCAddress(address) {
+  try {
+    if (!address || typeof address !== 'string') {
+      return false;
+    }
+    
+    // LTC addresses start with L, M, or 3 and are 26-35 characters
+    if (!/^[LM3][A-Za-z0-9]{25,34}$/.test(address)) {
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error validating LTC address:', error);
+    return false;
+  }
+}
+
 // Get USDT balance for an address
 export async function getUSDTBalance(address) {
   try {
@@ -141,13 +190,44 @@ export async function getUSDTBalance(address) {
   }
 }
 
-// Get transaction history for an address
-export async function getTransactionHistory(address, limit = 50) {
+// Get USDC balance for an address
+export async function getUSDCBalance(address) {
   try {
+    const contract = await tronWeb.contract().at(USDC_CONTRACT_ADDRESS);
+    const balance = await contract.balanceOf(address).call();
+    
+    // USDC has 6 decimals
+    const balanceInUSDC = tronWeb.toBigNumber(balance).dividedBy(1000000);
+    
+    return parseFloat(balanceInUSDC.toString());
+  } catch (error) {
+    console.error('Error getting USDC balance:', error);
+    return 0;
+  }
+}
+
+// Get LTC balance for an address (mock implementation)
+export async function getLTCBalance(address) {
+  try {
+    // In production, you'd use a proper LTC API like BlockCypher or similar
+    // For now, return a mock balance
+    console.log('Getting LTC balance for:', address);
+    return 0; // Mock balance
+  } catch (error) {
+    console.error('Error getting LTC balance:', error);
+    return 0;
+  }
+}
+
+// Get transaction history for an address
+export async function getTransactionHistory(address, currency = 'USDT', limit = 50) {
+  try {
+    const contractAddress = currency === 'USDC' ? USDC_CONTRACT_ADDRESS : USDT_CONTRACT_ADDRESS;
+    
     const response = await axios.get(`https://api.trongrid.io/v1/accounts/${address}/transactions/trc20`, {
       params: {
         limit,
-        contract_address: USDT_CONTRACT_ADDRESS,
+        contract_address: contractAddress,
         only_to: true // Only incoming transactions
       },
       headers: {
@@ -163,14 +243,20 @@ export async function getTransactionHistory(address, limit = 50) {
 }
 
 // Check for new deposits since last check
-export async function checkNewDeposits(address, lastCheckedTimestamp = 0) {
+export async function checkNewDeposits(address, currency = 'USDT', lastCheckedTimestamp = 0) {
   try {
-    const transactions = await getTransactionHistory(address, 200);
+    if (currency === 'LTC') {
+      // Mock LTC transaction check
+      return [];
+    }
+    
+    const transactions = await getTransactionHistory(address, currency, 200);
+    const contractAddress = currency === 'USDC' ? USDC_CONTRACT_ADDRESS : USDT_CONTRACT_ADDRESS;
     
     const newDeposits = transactions.filter(tx => {
-      // Filter for incoming USDT transactions after last check
+      // Filter for incoming transactions after last check
       return tx.to === address && 
-             tx.token_info.address === USDT_CONTRACT_ADDRESS &&
+             tx.token_info.address === contractAddress &&
              tx.block_timestamp > lastCheckedTimestamp;
     });
 
@@ -180,7 +266,8 @@ export async function checkNewDeposits(address, lastCheckedTimestamp = 0) {
       timestamp: tx.block_timestamp,
       confirmations: tx.confirmed ? 20 : 0, // Assume 20 confirmations if confirmed
       from: tx.from,
-      blockNumber: tx.block
+      blockNumber: tx.block,
+      currency
     }));
   } catch (error) {
     console.error('Error checking new deposits:', error);

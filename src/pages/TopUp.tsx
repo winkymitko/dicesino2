@@ -7,11 +7,20 @@ import * as QRCode from 'qrcode';
 const TopUp: React.FC = () => {
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
-  const [walletAddress, setWalletAddress] = useState('');
+  const [selectedCurrency, setSelectedCurrency] = useState('USDT');
+  const [walletAddresses, setWalletAddresses] = useState({
+    tron: '',
+    ltc: ''
+  });
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [copied, setCopied] = useState(false);
   const [checking, setChecking] = useState(false);
-  const [walletStatus, setWalletStatus] = useState<any>({});
+  const [walletStatus, setWalletStatus] = useState<any>({
+    usdtBalance: 0,
+    usdcBalance: 0,
+    ltcBalance: 0,
+    trxBalance: 0
+  });
   const [deposits, setDeposits] = useState<any[]>([]);
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
@@ -19,6 +28,34 @@ const TopUp: React.FC = () => {
   const [withdrawAddress, setWithdrawAddress] = useState('');
   const [withdrawing, setWithdrawing] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Currency configurations
+  const currencies = {
+    USDT: {
+      name: 'Tether USD',
+      symbol: 'USDT',
+      network: 'TRC20',
+      color: 'text-green-400',
+      bgColor: 'bg-green-500/10 border-green-500/20',
+      minDeposit: 10
+    },
+    USDC: {
+      name: 'USD Coin',
+      symbol: 'USDC',
+      network: 'TRC20',
+      color: 'text-blue-400',
+      bgColor: 'bg-blue-500/10 border-blue-500/20',
+      minDeposit: 10
+    },
+    LTC: {
+      name: 'Litecoin',
+      symbol: 'LTC',
+      network: 'LTC',
+      color: 'text-gray-400',
+      bgColor: 'bg-gray-500/10 border-gray-500/20',
+      minDeposit: 0.1
+    }
+  };
 
   // Safe balance calculations with fallbacks
   const realBalance = (user?.cashBalance || 0) + (user?.bonusBalance || 0) + (user?.lockedBalance || 0);
@@ -41,10 +78,14 @@ const TopUp: React.FC = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        setWalletAddress(data.address);
+        setWalletAddresses({
+          tron: data.tronAddress || '',
+          ltc: data.ltcAddress || ''
+        });
         
-        // Generate QR code
-        const qrUrl = await QRCode.toDataURL(data.address, {
+        // Generate QR code for selected currency
+        const currentAddress = selectedCurrency === 'LTC' ? data.ltcAddress : data.tronAddress;
+        const qrUrl = await QRCode.toDataURL(currentAddress, {
           width: 256,
           margin: 2,
           color: {
@@ -63,6 +104,23 @@ const TopUp: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Update QR code when currency changes
+  useEffect(() => {
+    if (walletAddresses.tron || walletAddresses.ltc) {
+      const currentAddress = selectedCurrency === 'LTC' ? walletAddresses.ltc : walletAddresses.tron;
+      if (currentAddress) {
+        QRCode.toDataURL(currentAddress, {
+          width: 256,
+          margin: 2,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        }).then(setQrCodeUrl);
+      }
+    }
+  }, [selectedCurrency, walletAddresses]);
 
   const fetchWalletStatus = async () => {
     try {
@@ -131,7 +189,8 @@ const TopUp: React.FC = () => {
         credentials: 'include',
         body: JSON.stringify({
           amount,
-          toAddress: withdrawAddress
+          toAddress: withdrawAddress,
+          currency: selectedCurrency
         })
       });
       
@@ -156,7 +215,8 @@ const TopUp: React.FC = () => {
   };
   const copyAddress = async () => {
     try {
-      await navigator.clipboard.writeText(walletAddress);
+      const currentAddress = selectedCurrency === 'LTC' ? walletAddresses.ltc : walletAddresses.tron;
+      await navigator.clipboard.writeText(currentAddress);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
@@ -169,7 +229,9 @@ const TopUp: React.FC = () => {
     try {
       const response = await fetch('/api/wallet/check-balance', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include'
+        body: JSON.stringify({ currency: selectedCurrency })
       });
       if (response.ok) {
         const data = await response.json();
@@ -211,7 +273,30 @@ const TopUp: React.FC = () => {
       <div className="grid md:grid-cols-2 gap-8">
         {/* Wallet Info */}
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-          <h2 className="text-2xl font-bold mb-6 text-center">Your USDT Wallet</h2>
+          <h2 className="text-2xl font-bold mb-6 text-center">Your Crypto Wallet</h2>
+          
+          {/* Currency Selector */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium mb-3">Select Currency</label>
+            <div className="grid grid-cols-3 gap-2">
+              {Object.entries(currencies).map(([key, config]) => (
+                <button
+                  key={key}
+                  onClick={() => setSelectedCurrency(key)}
+                  className={`p-3 rounded-lg border transition-all text-center ${
+                    selectedCurrency === key
+                      ? config.bgColor + ' border-current'
+                      : 'bg-black/20 border-white/20 hover:bg-white/10'
+                  }`}
+                >
+                  <div className={`font-bold ${selectedCurrency === key ? config.color : 'text-gray-400'}`}>
+                    {config.symbol}
+                  </div>
+                  <div className="text-xs text-gray-500">{config.network}</div>
+                </button>
+              ))}
+            </div>
+          </div>
           
           {/* QR Code */}
           <div className="text-center mb-6">
@@ -224,11 +309,13 @@ const TopUp: React.FC = () => {
 
           {/* Wallet Address */}
           <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">USDT (TRC20) Address</label>
+            <label className="block text-sm font-medium mb-2">
+              {currencies[selectedCurrency].name} ({currencies[selectedCurrency].network}) Address
+            </label>
             <div className="flex items-center space-x-2">
               <input
                 type="text"
-                value={walletAddress}
+                value={selectedCurrency === 'LTC' ? walletAddresses.ltc : walletAddresses.tron}
                 readOnly
                 className="flex-1 px-4 py-3 bg-black/30 border border-white/20 rounded-lg text-sm font-mono"
               />
@@ -244,32 +331,48 @@ const TopUp: React.FC = () => {
             )}
             
             {/* Wallet Status */}
-            {walletStatus?.usdtBalance !== undefined && (
-              <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                 <div className="text-sm">
+                  {selectedCurrency === 'USDT' && (
                   <div className="flex justify-between items-center">
-                    <span className="text-blue-400">USDT Balance on Blockchain:</span>
+                      <span className="text-green-400">USDT Balance:</span>
                     <span className="font-bold">${(walletStatus.usdtBalance || 0).toFixed(2)}</span>
                   </div>
+                  )}
+                  {selectedCurrency === 'USDC' && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-blue-400">USDC Balance:</span>
+                      <span className="font-bold">${(walletStatus.usdcBalance || 0).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {selectedCurrency === 'LTC' && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">LTC Balance:</span>
+                      <span className="font-bold">{(walletStatus.ltcBalance || 0).toFixed(4)} LTC</span>
+                    </div>
+                  )}
+                  {(selectedCurrency === 'USDT' || selectedCurrency === 'USDC') && (
                   <div className="flex justify-between items-center mt-1">
                     <span className="text-gray-400">TRX Balance (Gas):</span>
                     <span className="text-sm">{(walletStatus.trxBalance || 0).toFixed(2)} TRX</span>
                   </div>
+                  )}
                 </div>
-              </div>
-            )}
+            </div>
           </div>
 
           {/* Instructions */}
-          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-6">
+          <div className={`${currencies[selectedCurrency].bgColor} rounded-lg p-4 mb-6`}>
             <h3 className="font-bold text-yellow-400 mb-2">⚠️ Important Instructions</h3>
             <ul className="text-sm text-gray-300 space-y-1">
-              <li>• Send only USDT (TRC20) to this address</li>
-              <li>• Minimum deposit: $10 USDT</li>
+              <li>• Send only {currencies[selectedCurrency].name} ({currencies[selectedCurrency].network}) to this address</li>
+              <li>• Minimum deposit: {selectedCurrency === 'LTC' ? `${currencies[selectedCurrency].minDeposit} LTC` : `$${currencies[selectedCurrency].minDeposit} ${selectedCurrency}`}</li>
               <li>• Deposits are confirmed after 1 block confirmation</li>
               <li>• Do not send other cryptocurrencies to this address</li>
-              <li>• Network: TRON (TRC20) - Low fees!</li>
+              <li>• Network: {currencies[selectedCurrency].network} {selectedCurrency !== 'LTC' ? '- Low fees!' : ''}</li>
+              {selectedCurrency !== 'LTC' && (
               <li>• Your wallet has been funded with 1 TRX for gas fees</li>
+              )}
             </ul>
           </div>
 
@@ -277,10 +380,10 @@ const TopUp: React.FC = () => {
           <button
             onClick={checkBalance}
             disabled={checking}
-            className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-all flex items-center justify-center space-x-2 mb-4"
+            className={`w-full bg-gradient-to-r ${currencies[selectedCurrency].bgColor.includes('green') ? 'from-green-500 to-green-600 hover:from-green-600 hover:to-green-700' : currencies[selectedCurrency].bgColor.includes('blue') ? 'from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700' : 'from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700'} disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-all flex items-center justify-center space-x-2 mb-4`}
           >
             <RefreshCw className={`h-5 w-5 ${checking ? 'animate-spin' : ''}`} />
-            <span>{checking ? 'Checking...' : 'Check for New Deposits'}</span>
+            <span>{checking ? 'Checking...' : `Check for New ${selectedCurrency} Deposits`}</span>
           </button>
           
           <div className="text-center">
@@ -335,7 +438,11 @@ const TopUp: React.FC = () => {
             {/* Withdraw Button */}
             <div className="mt-4 text-center">
               <button
-                onClick={() => setShowWithdrawModal(true)}
+                onClick={() => {
+                  setWithdrawAmount('');
+                  setWithdrawAddress('');
+                  setShowWithdrawModal(true);
+                }}
                 disabled={(user?.cashBalance || 0) < 10}
                 className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2 px-6 rounded-lg transition-all"
               >
@@ -406,7 +513,23 @@ const TopUp: React.FC = () => {
       {showWithdrawModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-gray-900 rounded-2xl border border-white/20 p-6 w-full max-w-md mx-4">
-            <h3 className="text-xl font-bold mb-4">Withdraw USDT</h3>
+            <h3 className="text-xl font-bold mb-4">Withdraw Crypto</h3>
+            
+            {/* Currency Selection in Modal */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">Currency</label>
+              <select
+                value={selectedCurrency}
+                onChange={(e) => setSelectedCurrency(e.target.value)}
+                className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
+              >
+                {Object.entries(currencies).map(([key, config]) => (
+                  <option key={key} value={key}>
+                    {config.name} ({config.symbol})
+                  </option>
+                ))}
+              </select>
+            </div>
             
             <div className="space-y-4">
               <div>
@@ -426,13 +549,13 @@ const TopUp: React.FC = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2">TRON Address (TRC20)</label>
+                <label className="block text-sm font-medium mb-2">{currencies[selectedCurrency].network} Address</label>
                 <input
                   type="text"
                   value={withdrawAddress}
                   onChange={(e) => setWithdrawAddress(e.target.value)}
                   className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
-                  placeholder="Enter TRON address"
+                  placeholder={`Enter ${currencies[selectedCurrency].network} address`}
                 />
               </div>
               

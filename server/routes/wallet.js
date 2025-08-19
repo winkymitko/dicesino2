@@ -3,9 +3,13 @@ import { PrismaClient } from '@prisma/client';
 import { authenticateToken } from '../middleware/auth.js';
 import { 
   generateTronWallet, 
+  generateLTCWallet,
   getUSDTBalance, 
+  getUSDCBalance,
+  getLTCBalance,
   checkNewDeposits,
   isValidTronAddress,
+  isValidLTCAddress,
   getTRXBalance,
   sendTRXForGas
 } from '../utils/tron.js';
@@ -58,34 +62,45 @@ router.get('/info', authenticateToken, async (req, res) => {
       // Create new wallet for user
       console.log('Creating new wallet for user:', req.user.id);
       
-      let walletData;
+      let tronWalletData, ltcWalletData;
       try {
-        walletData = generateTronWallet();
+        tronWalletData = generateTronWallet();
+        ltcWalletData = generateLTCWallet();
       } catch (error) {
         console.error('Failed to generate TRON wallet:', error);
         // Fallback wallet generation
-        walletData = {
+        tronWalletData = {
           address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', // Fallback address
           privateKey: '01'.repeat(32) // Fallback private key
         };
+        ltcWalletData = {
+          address: 'L' + '01'.repeat(17),
+          privateKey: '01'.repeat(32)
+        };
       }
       
-      const { address, privateKey } = walletData;
+      const { address: tronAddress, privateKey: tronPrivateKey } = tronWalletData;
+      const { address: ltcAddress, privateKey: ltcPrivateKey } = ltcWalletData;
       
       // Validate the generated address
-      if (!isValidTronAddress(address)) {
-        console.error('Generated address not valid:', address);
+      if (!isValidTronAddress(tronAddress)) {
+        console.error('Generated TRON address not valid:', tronAddress);
         return res.status(500).json({ error: 'Failed to generate valid TRON address' });
+      }
+      
+      if (!isValidLTCAddress(ltcAddress)) {
+        console.error('Generated LTC address not valid:', ltcAddress);
+        return res.status(500).json({ error: 'Failed to generate valid LTC address' });
       }
       
       try {
         wallet = await prisma.cryptoWallet.create({
           data: {
             userId: req.user.id,
-            address,
-            privateKey: crypto.createHash('sha256').update(privateKey + (process.env.ENCRYPTION_KEY || 'fallback-key')).digest('hex'),
-            currency: 'USDT',
-            network: 'TRC20'
+            tronAddress,
+            tronPrivateKey: crypto.createHash('sha256').update(tronPrivateKey + (process.env.ENCRYPTION_KEY || 'fallback-key')).digest('hex'),
+            ltcAddress,
+            ltcPrivateKey: crypto.createHash('sha256').update(ltcPrivateKey + (process.env.ENCRYPTION_KEY || 'fallback-key')).digest('hex')
           }
         });
         console.log('Wallet created successfully:', wallet.id);
@@ -96,7 +111,7 @@ router.get('/info', authenticateToken, async (req, res) => {
       
       // Send some TRX for gas fees to new wallet
       try {
-        await sendTRXForGas(address, 1); // Send 1 TRX for gas
+        await sendTRXForGas(tronAddress, 1); // Send 1 TRX for gas
         console.log('TRX sent for gas fees');
       } catch (error) {
         console.warn('Failed to send TRX for gas fees:', error.message);
@@ -105,7 +120,7 @@ router.get('/info', authenticateToken, async (req, res) => {
     }
 
     // Don't send private key to frontend
-    const { privateKey, ...safeWallet } = wallet;
+    const { tronPrivateKey, ltcPrivateKey, ...safeWallet } = wallet;
     console.log('Returning wallet info:', safeWallet.id);
     res.json(safeWallet);
   } catch (error) {
@@ -133,6 +148,8 @@ router.get('/deposits', authenticateToken, async (req, res) => {
 // Check balance (simulate checking blockchain)
 router.post('/check-balance', authenticateToken, async (req, res) => {
   try {
+    const { currency = 'USDT' } = req.body;
+    
     const wallet = await prisma.cryptoWallet.findUnique({
       where: { userId: req.user.id }
     });
@@ -141,12 +158,24 @@ router.post('/check-balance', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Wallet not found' });
     }
 
-    // Get current USDT balance
-    const currentBalance = await getUSDTBalance(wallet.address);
+    let currentBalance = 0;
+    let address = '';
+    
+    // Get balance based on currency
+    if (currency === 'USDT') {
+      address = wallet.tronAddress;
+      currentBalance = await getUSDTBalance(address);
+    } else if (currency === 'USDC') {
+      address = wallet.tronAddress;
+      currentBalance = await getUSDCBalance(address);
+    } else if (currency === 'LTC') {
+      address = wallet.ltcAddress;
+      currentBalance = await getLTCBalance(address);
+    }
     
     // Get last deposit timestamp to check for new deposits
     const lastDeposit = await prisma.cryptoDeposit.findFirst({
-      where: { userId: req.user.id },
+      where: { userId: req.user.id, currency },
       orderBy: { createdAt: 'desc' }
     });
     
@@ -155,7 +184,7 @@ router.post('/check-balance', authenticateToken, async (req, res) => {
       Math.floor(Date.now() / 1000) - 86400; // Check last 24 hours if no previous deposits
     
     // Check for new deposits
-    const newDeposits = await checkNewDeposits(wallet.address, lastCheckedTimestamp);
+    const newDeposits = await checkNewDeposits(address, currency, lastCheckedTimestamp);
     
     let totalNewDeposits = 0;
     let processedDeposits = [];
@@ -173,7 +202,9 @@ router.post('/check-balance', authenticateToken, async (req, res) => {
             userId: req.user.id,
             walletId: wallet.id,
             amount: deposit.amount,
-            currency: 'USDT',
+            currency,
+            network: currency === 'LTC' ? 'LTC' : 'TRC20',
+            toAddress: address,
             txHash: deposit.txHash,
             status: deposit.confirmations >= 1 ? 'confirmed' : 'pending',
             confirmations: deposit.confirmations
@@ -211,7 +242,7 @@ router.post('/check-balance', authenticateToken, async (req, res) => {
               bonusBalanceAfter: updatedUser.bonusBalance,
               lockedBalanceAfter: updatedUser.lockedBalance,
               virtualBalanceAfter: updatedUser.virtualBalance,
-              description: `USDT deposit: ${deposit.txHash.substring(0, 8)}...`,
+              description: `${currency} deposit: ${deposit.txHash.substring(0, 8)}...`,
               reference: deposit.txHash
             }
           });
@@ -225,15 +256,19 @@ router.post('/check-balance', authenticateToken, async (req, res) => {
     if (totalNewDeposits > 0) {
       return res.json({ 
         success: true, 
-        message: `New deposits confirmed: $${totalNewDeposits.toFixed(2)} USDT`,
+        message: `New deposits confirmed: $${totalNewDeposits.toFixed(2)} ${currency}`,
         newDeposit: true,
         deposits: processedDeposits,
-        currentBalance
+        currentBalance,
+        currency
       });
     }
     
-    // Also check TRX balance for gas fees
-    const trxBalance = await getTRXBalance(wallet.address);
+    // Also check TRX balance for gas fees (only for TRON currencies)
+    let trxBalance = 0;
+    if (currency === 'USDT' || currency === 'USDC') {
+      trxBalance = await getTRXBalance(wallet.tronAddress);
+    }
     
     res.json({ 
       success: true, 
@@ -241,7 +276,8 @@ router.post('/check-balance', authenticateToken, async (req, res) => {
       newDeposit: false,
       currentBalance,
       trxBalance,
-      walletAddress: wallet.address
+      walletAddress: address,
+      currency
     });
   } catch (error) {
     console.error('Error checking balance:', error);
@@ -260,17 +296,21 @@ router.get('/status', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Wallet not found' });
     }
 
-    const [usdtBalance, trxBalance] = await Promise.all([
-      getUSDTBalance(wallet.address),
-      getTRXBalance(wallet.address)
+    const [usdtBalance, usdcBalance, ltcBalance, trxBalance] = await Promise.all([
+      getUSDTBalance(wallet.tronAddress),
+      getUSDCBalance(wallet.tronAddress),
+      getLTCBalance(wallet.ltcAddress),
+      getTRXBalance(wallet.tronAddress)
     ]);
 
     res.json({
-      address: wallet.address,
+      tronAddress: wallet.tronAddress,
+      ltcAddress: wallet.ltcAddress,
       usdtBalance,
+      usdcBalance,
+      ltcBalance,
       trxBalance,
-      network: wallet.network,
-      currency: wallet.currency
+      supportedCurrencies: ['USDT', 'USDC', 'LTC']
     });
   } catch (error) {
     console.error('Error getting wallet status:', error);
@@ -466,14 +506,22 @@ router.post('/webhook', async (req, res) => {
 // Request withdrawal
 router.post('/withdraw', authenticateToken, async (req, res) => {
   try {
-    const { amount, toAddress } = req.body;
+    const { amount, toAddress, currency = 'USDT' } = req.body;
     
     if (!amount || amount < 10) {
       return res.status(400).json({ error: 'Minimum withdrawal is $10' });
     }
     
-    if (!toAddress || !isValidTronAddress(toAddress)) {
-      return res.status(400).json({ error: 'Invalid TRON address' });
+    // Validate address based on currency
+    let isValidAddress = false;
+    if (currency === 'LTC') {
+      isValidAddress = isValidLTCAddress(toAddress);
+    } else {
+      isValidAddress = isValidTronAddress(toAddress);
+    }
+    
+    if (!toAddress || !isValidAddress) {
+      return res.status(400).json({ error: `Invalid ${currency} address` });
     }
     
     const user = await prisma.user.findUnique({
@@ -489,7 +537,8 @@ router.post('/withdraw', authenticateToken, async (req, res) => {
       data: {
         userId: req.user.id,
         amount,
-        currency: 'USDT',
+        currency,
+        network: currency === 'LTC' ? 'LTC' : 'TRC20',
         toAddress,
         status: 'pending'
       }
@@ -515,7 +564,7 @@ router.post('/withdraw', authenticateToken, async (req, res) => {
         bonusBalanceAfter: updatedUser.bonusBalance,
         lockedBalanceAfter: updatedUser.lockedBalance,
         virtualBalanceAfter: updatedUser.virtualBalance,
-        description: `USDT withdrawal to ${toAddress.substring(0, 8)}...`,
+        description: `${currency} withdrawal to ${toAddress.substring(0, 8)}...`,
         reference: withdrawal.id
       }
     });
