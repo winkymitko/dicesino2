@@ -4,6 +4,10 @@ import axios from 'axios';
 import crypto from 'crypto';
 import { createHash } from 'crypto';
 import bitcoin from 'bitcoinjs-lib';
+import * as ecc from 'tiny-secp256k1';
+
+// Initialize bitcoinjs-lib with secp256k1
+bitcoin.initEccLib(ecc);
 
 // Contract addresses on TRON mainnet
 const USDT_CONTRACT_ADDRESS = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
