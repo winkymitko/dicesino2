@@ -42,7 +42,7 @@ router.post('/bug-reports', async (req, res) => {
     
     const bugReport = await prisma.bugReport.create({
       data: {
-        userId: req.user?.id || null,
+        userId: req.user ? req.user.id : null,
         subject: subject.trim(),
         message: message.trim(),
         priority: 'medium' // Default priority set by system
