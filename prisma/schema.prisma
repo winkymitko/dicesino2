@@ -1,249 +1,381 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+import express from 'express';
+import { PrismaClient } from '@prisma/client';
+import { authenticateToken } from '../middleware/auth.js';
+import {
+  generateTronWallet,
+  getUSDTBalance,
+  getUSDCBalance,
+  checkNewDeposits,
+  isValidTronAddress,
+  getTRXBalance,
+  sendTRXForGas,
+  sendUSDT,
+  sendUSDC,
+  encryptPrivateKey,
+  decryptPrivateKey
+} from '../utils/tron.js';
 
-generator client {
-  provider = "prisma-client-js"
+const router = express.Router();
+const prisma = new PrismaClient();
+
+const MIN_DEPOSIT = { USDT: 10, USDC: 10 };
+const MIN_WITHDRAW = { USDT: 10, USDC: 10 };
+const TRX_GAS_FUND = 1; // TRX to send to each TRON wallet for gas
+
+// Grant deposit bonus
+async function grantDepositBonus(userId, depositAmountUSD, bonusAmountUSD) {
+  const wageringMultiplier = 25;
+  const wageringRequired = bonusAmountUSD * wageringMultiplier;
+
+  await prisma.bonus.create({
+    data: {
+      userId,
+      amount: bonusAmountUSD,
+      type: 'deposit',
+      description: `Deposit bonus for $${depositAmountUSD.toFixed(2)} deposit`,
+      wageringRequired,
+      wageringMultiplier
+    }
+  });
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      bonusBalance: { increment: bonusAmountUSD },
+      activeWageringRequirement: { increment: wageringRequired }
+    }
+  });
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+// Get or create wallet info
+router.get('/info', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'User not authenticated' });
 
-model User {
-  id                         String    @id @default(cuid())
-  email                      String    @unique
-  username                   String?   @unique
-  password                   String
-  name                       String?
-  phone                      String?
-  cashBalance                Float     @default(0)
-  bonusBalance               Float     @default(0)
-  lockedBalance              Float     @default(0)
-  virtualBalance             Float     @default(1000)
-  activeWageringRequirement  Float     @default(0)
-  currentWageringProgress    Float     @default(0)
-  wageringMultiplier         Float     @default(20)
-  maxBetWhileBonus           Float     @default(50)
-  maxBonusCashout            Float     @default(1000)
-  isAdmin                    Boolean   @default(false)
-  isAffiliate                Boolean   @default(false)
-  affiliateCode              String?   @unique
-  affiliateCommission        Float     @default(0)
-  referredBy                 String?
-  currentWinStreak           Int       @default(0)
-  totalGameWins              Int       @default(0)
-  totalGameLosses            Int       @default(0)
-  diceGameEdge               Float     @default(5)
-  diceBattleEdge             Float     @default(5)
-  diceRouletteEdge           Float     @default(5)
-  createdAt                  DateTime  @default(now())
-  updatedAt                  DateTime  @updatedAt
+    let wallet = await prisma.cryptoWallet.findUnique({ where: { userId: req.user.id } });
 
-  // Relations
-  games                      Game[]
-  gameRounds                 GameRound[]
-  transactions               Transaction[]
-  bonuses                    Bonus[]
-  cryptoWallet               CryptoWallet?
-  cryptoDeposits             CryptoDeposit[]
-  cryptoWithdrawals          CryptoWithdrawal[]
-  bugReports                 BugReport[]
-  affiliateStats             AffiliateStats?
-  affiliatePayoutPeriods     AffiliatePayoutPeriod[]
+    if (!wallet) {
+      // Create separate wallets
+      const usdt = generateTronWallet();
+      const usdc = generateTronWallet();
 
-  @@map("users")
-}
+      if (!isValidTronAddress(usdt.address)) return res.status(500).json({ error: 'Failed to generate valid TRON address (USDT)' });
+      if (!isValidTronAddress(usdc.address)) return res.status(500).json({ error: 'Failed to generate valid TRON address (USDC)' });
 
-model Game {
-  id          String      @id @default(cuid())
-  userId      String
-  gameType    String      // 'dice', 'dicebattle', 'diceroulette'
-  stake       Float
-  totalPot    Float
-  finalPot    Float?
-  status      String      // 'active', 'cashed_out', 'lost', 'tie'
-  betSource   String?     // 'cash', 'bonus', 'mixed'
-  bonusUsed   Float       @default(0)
-  cashUsed    Float       @default(0)
-  metadata    String?     // JSON string for game-specific data
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+      wallet = await prisma.cryptoWallet.create({
+        data: {
+          userId: req.user.id,
+          usdtAddress: usdt.address,
+          usdtPrivateKey: encryptPrivateKey(usdt.privateKey),
+          usdcAddress: usdc.address,
+          usdcPrivateKey: encryptPrivateKey(usdc.privateKey)
+        }
+      });
 
-  // Relations
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  rounds      GameRound[]
+      // Fund TRX gas to each TRON wallet
+      try {
+        await Promise.all([
+          sendTRXForGas(usdt.address, TRX_GAS_FUND),
+          sendTRXForGas(usdc.address, TRX_GAS_FUND)
+        ]);
+      } catch (e) {
+        console.warn('Failed to fund TRX for gas:', e?.message || e);
+      }
+    }
 
-  @@map("games")
-}
+    const { usdtPrivateKey, usdcPrivateKey, ...safe } = wallet;
+    
+    return res.json(safe);
+  } catch (error) {
+    console.error('Wallet info error:', error);
+    res.status(500).json({ error: 'Server error: ' + error.message });
+  }
+});
 
-model GameRound {
-  id                    String   @id @default(cuid())
-  gameId                String
-  userId                String
-  roundNumber           Int
-  dice1                 Int?
-  dice2                 Int?
-  dice3                 Int?
-  points                Int      @default(0)
-  multiplier            Float    @default(1.0)
-  potBefore             Float
-  potAfter              Float
-  serverSeed            String?
-  clientSeed            String?
-  nonce                 Int?
-  wageringContribution  Float    @default(0)
-  metadata              String?  // JSON string for round-specific data
-  createdAt             DateTime @default(now())
+// Get deposits history
+router.get('/deposits', authenticateToken, async (req, res) => {
+  try {
+    const deposits = await prisma.cryptoDeposit.findMany({
+      where: { userId: req.user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 20
+    });
+    res.json({ deposits });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
-  // Relations
-  game                  Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+// Check balance & pull new deposits
+router.post('/check-balance', authenticateToken, async (req, res) => {
+  try {
+    const currency = (req.body && req.body.currency) || 'USDT';
 
-  @@map("game_rounds")
-}
+    const wallet = await prisma.cryptoWallet.findUnique({ where: { userId: req.user.id } });
+    if (!wallet) return res.status(404).json({ error: 'Wallet not found' });
 
-model Transaction {
-  id                  String   @id @default(cuid())
-  userId              String
-  type                String   // 'deposit', 'withdrawal', 'bet', 'win', 'bonus_grant', 'bonus_conversion'
-  amount              Float
-  cashChange          Float    @default(0)
-  bonusChange         Float    @default(0)
-  lockedChange        Float    @default(0)
-  virtualChange       Float    @default(0)
-  cashBalanceAfter    Float    @default(0)
-  bonusBalanceAfter   Float    @default(0)
-  lockedBalanceAfter  Float    @default(0)
-  virtualBalanceAfter Float    @default(0)
-  description         String?
-  reference           String?  // Game ID, transaction hash, etc.
-  createdAt           DateTime @default(now())
+    let address = '';
+    let currentBalance = 0;
 
-  // Relations
-  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    if (currency === 'USDT') {
+      address = wallet.usdtAddress;
+      currentBalance = await getUSDTBalance(address);
+    } else if (currency === 'USDC') {
+      address = wallet.usdcAddress;
+      currentBalance = await getUSDCBalance(address);
+    } else {
+      return res.status(400).json({ error: 'Unsupported currency' });
+    }
 
-  @@map("transactions")
-}
+    const lastDeposit = await prisma.cryptoDeposit.findFirst({
+      where: { userId: req.user.id, currency },
+      orderBy: { createdAt: 'desc' }
+    });
 
-model Bonus {
-  id                 String    @id @default(cuid())
-  userId             String
-  amount             Float
-  type               String    // 'signup', 'deposit', 'admin_bonus'
-  description        String?
-  wageringRequired   Float     @default(0)
-  wageringMultiplier Float     @default(20)
-  status             String    @default("active") // 'active', 'completed', 'expired'
-  completedAt        DateTime?
-  createdAt          DateTime  @default(now())
+    const lastCheckedTimestamp = lastDeposit
+      ? Math.floor(new Date(lastDeposit.createdAt).getTime() / 1000)
+      : Math.floor(Date.now() / 1000) - 86400;
 
-  // Relations
-  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    const newDeposits = await checkNewDeposits(address, currency, lastCheckedTimestamp);
 
-  @@map("bonuses")
-}
+    let totalUsdCredited = 0;
+    const processedDeposits = [];
 
-model CryptoWallet {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  usdtAddress     String
-  usdtPrivateKey  String
-  usdcAddress     String
-  usdcPrivateKey  String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+    for (const dep of newDeposits) {
+      if (dep.amount < MIN_DEPOSIT[currency]) continue;
 
-  // Relations
-  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deposits        CryptoDeposit[]
-  withdrawals     CryptoWithdrawal[]
+      const exists = await prisma.cryptoDeposit.findUnique({ where: { txHash: dep.txHash } });
+      if (exists) continue;
 
-  @@map("crypto_wallets")
-}
+      const created = await prisma.cryptoDeposit.create({
+        data: {
+          userId: req.user.id,
+          walletId: wallet.id,
+          amount: dep.amount,
+          currency,
+          network: 'TRC20',
+          toAddress: address,
+          txHash: dep.txHash,
+          status: dep.confirmations >= 1 ? 'confirmed' : 'pending',
+          confirmations: dep.confirmations
+        }
+      });
 
-model CryptoDeposit {
-  id            String       @id @default(cuid())
-  userId        String
-  walletId      String
-  amount        Float
-  currency      String       // 'USDT', 'USDC'
-  network       String       // 'TRC20'
-  toAddress     String
-  txHash        String       @unique
-  status        String       @default("pending") // 'pending', 'confirmed', 'failed'
-  confirmations Int          @default(0)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+      if (dep.confirmations >= 1) {
+        const usdToCredit = dep.amount; // 1:1 for USDT/USDC
 
-  // Relations
-  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  wallet        CryptoWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+        await prisma.user.update({
+          where: { id: req.user.id },
+          data: { cashBalance: { increment: usdToCredit } }
+        });
 
-  @@map("crypto_deposits")
-}
+        const bonusAmount = Math.min(usdToCredit * 0.5, 100);
+        if (bonusAmount > 0) {
+          await grantDepositBonus(req.user.id, usdToCredit, bonusAmount);
+        }
 
-model CryptoWithdrawal {
-  id         String       @id @default(cuid())
-  userId     String
-  amount     Float
-  currency   String       // 'USDT', 'USDC'
-  network    String       // 'TRC20'
-  toAddress  String
-  txHash     String?
-  status     String       @default("pending") // 'pending', 'processing', 'completed', 'failed'
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
+        const updatedUser = await prisma.user.findUnique({ where: { id: req.user.id } });
+        await prisma.transaction.create({
+          data: {
+            userId: req.user.id,
+            type: 'deposit',
+            amount: usdToCredit,
+            cashChange: usdToCredit,
+            bonusChange: bonusAmount,
+            cashBalanceAfter: updatedUser.cashBalance,
+            bonusBalanceAfter: updatedUser.bonusBalance,
+            lockedBalanceAfter: updatedUser.lockedBalance,
+            virtualBalanceAfter: updatedUser.virtualBalance,
+            description: `${currency} deposit (${dep.amount} ${currency}) ${dep.txHash.substring(0, 8)}...`,
+            reference: dep.txHash
+          }
+        });
 
-  // Relations
-  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+        totalUsdCredited += usdToCredit;
+      }
 
-  @@map("crypto_withdrawals")
-}
+      processedDeposits.push(created);
+    }
 
-model BugReport {
-  id          String   @id @default(cuid())
-  userId      String?
-  subject     String
-  message     String
-  priority    String   @default("medium") // 'low', 'medium', 'high', 'critical'
-  status      String   @default("open")   // 'open', 'in_progress', 'resolved', 'closed'
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+    const trxBalance = await getTRXBalance(address);
 
-  // Relations
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+    if (processedDeposits.length > 0) {
+      return res.json({
+        success: true,
+        message: totalUsdCredited > 0 
+          ? `New deposits confirmed. USD credited: $${totalUsdCredited.toFixed(2)}`
+          : 'New deposits recorded. USD credit pending.',
+        newDeposit: true,
+        deposits: processedDeposits,
+        currentBalance,
+        trxBalance,
+        currency
+      });
+    }
 
-  @@map("bug_reports")
-}
+    return res.json({
+      success: true,
+      message: 'No new deposits found',
+      newDeposit: false,
+      currentBalance,
+      trxBalance,
+      walletAddress: address,
+      currency
+    });
+  } catch (error) {
+    console.error('Error checking balance:', error);
+    res.status(500).json({ error: 'Failed to check balance: ' + error.message });
+  }
+});
 
-model AffiliateStats {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  payoutWallet  String?
-  payoutPeriod  String   @default("Monthly") // 'Weekly', 'Bi-weekly', 'Monthly', 'Quarterly'
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+// Get wallet status
+router.get('/status', authenticateToken, async (req, res) => {
+  try {
+    const wallet = await prisma.cryptoWallet.findUnique({ where: { userId: req.user.id } });
+    if (!wallet) return res.status(404).json({ error: 'Wallet not found' });
 
-  // Relations
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    const [usdtBalance, usdcBalance, usdtTrxBalance, usdcTrxBalance] = await Promise.all([
+      getUSDTBalance(wallet.usdtAddress),
+      getUSDCBalance(wallet.usdcAddress),
+      getTRXBalance(wallet.usdtAddress),
+      getTRXBalance(wallet.usdcAddress)
+    ]);
 
-  @@map("affiliate_stats")
-}
+    res.json({
+      usdtAddress: wallet.usdtAddress,
+      usdcAddress: wallet.usdcAddress,
+      usdtBalance,
+      usdcBalance,
+      usdtTrxBalance,
+      usdcTrxBalance,
+      supportedCurrencies: ['USDT', 'USDC']
+    });
+  } catch (error) {
+    console.error('Error getting wallet status:', error);
+    res.status(500).json({ error: 'Failed to get wallet status' });
+  }
+});
 
-model AffiliatePayoutPeriod {
-  id          String   @id @default(cuid())
-  affiliateId String
-  periodStart DateTime
-  periodEnd   DateTime
-  totalProfit Float    @default(0)
-  commission  Float    @default(0)
-  status      String   @default("ongoing") // 'ongoing', 'pending', 'finished'
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+// Withdraw
+router.post('/withdraw', authenticateToken, async (req, res) => {
+  try {
+    const { amount, toAddress, currency = 'USDT' } = req.body || {};
 
-  // Relations
-  affiliate   User     @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+    if (!amount || amount < MIN_WITHDRAW[currency]) {
+      return res.status(400).json({ error: `Minimum withdrawal is $${MIN_WITHDRAW[currency]}` });
+    }
 
-  @@map("affiliate_payout_periods")
-}
+    if (!toAddress || !isValidTronAddress(toAddress)) {
+      return res.status(400).json({ error: `Invalid ${currency} address` });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user) return res.status(400).json({ error: 'User not found' });
+
+    if (user.cashBalance < amount) {
+      return res.status(400).json({ error: 'Insufficient cash balance' });
+    }
+
+    const wallet = await prisma.cryptoWallet.findUnique({ where: { userId: req.user.id } });
+    if (!wallet) return res.status(404).json({ error: 'Wallet not found' });
+
+    // Create withdrawal record
+    const withdrawal = await prisma.cryptoWithdrawal.create({
+      data: {
+        userId: req.user.id,
+        walletId: wallet.id,
+        amount,
+        currency,
+        network: 'TRC20',
+        toAddress,
+        status: 'processing'
+      }
+    });
+
+    // Deduct from user balance
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { cashBalance: { decrement: amount } }
+    });
+
+    try {
+      // Send crypto
+      let txResult;
+      if (currency === 'USDT') {
+        const pk = decryptPrivateKey(wallet.usdtPrivateKey);
+        txResult = await sendUSDT(pk, toAddress, amount);
+      } else {
+        const pk = decryptPrivateKey(wallet.usdcPrivateKey);
+        txResult = await sendUSDC(pk, toAddress, amount);
+      }
+
+      await prisma.cryptoWithdrawal.update({
+        where: { id: withdrawal.id },
+        data: {
+          txHash: txResult.txid,
+          status: 'completed'
+        }
+      });
+
+      const updatedUser = await prisma.user.findUnique({ where: { id: req.user.id } });
+      await prisma.transaction.create({
+        data: {
+          userId: req.user.id,
+          type: 'withdrawal',
+          amount: -amount,
+          cashChange: -amount,
+          cashBalanceAfter: updatedUser.cashBalance,
+          bonusBalanceAfter: updatedUser.bonusBalance,
+          lockedBalanceAfter: updatedUser.lockedBalance,
+          virtualBalanceAfter: updatedUser.virtualBalance,
+          description: `${currency} withdrawal (${amount} ${currency}) to ${toAddress.substring(0, 8)}...`,
+          reference: withdrawal.id
+        }
+      });
+
+      return res.json({
+        success: true,
+        message: `Withdrawal completed! TX: ${txResult.txid}`,
+        withdrawalId: withdrawal.id,
+        txHash: txResult.txid
+      });
+    } catch (sendError) {
+      console.error('Withdrawal send error:', sendError);
+
+      // Refund
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: { cashBalance: { increment: amount } }
+      });
+
+      await prisma.cryptoWithdrawal.update({
+        where: { id: withdrawal.id },
+        data: { status: 'failed' }
+      });
+
+      return res.status(500).json({ error: 'Withdrawal failed: ' + (sendError?.message || sendError) });
+    }
+  } catch (error) {
+    console.error('Withdrawal error:', error);
+    res.status(500).json({ error: 'Failed to process withdrawal' });
+  }
+});
+
+// Get withdrawals history
+router.get('/withdrawals', authenticateToken, async (req, res) => {
+  try {
+    const withdrawals = await prisma.cryptoWithdrawal.findMany({
+      where: { userId: req.user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 20
+    });
+
+    res.json({ withdrawals });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+export default router;
