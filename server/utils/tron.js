@@ -596,6 +596,12 @@ export async function sendLTC(privateKey, toAddress, amount) {
   throw new Error('LTC sending not implemented');
 }
 
+export function generateLTCWallet() {
+  const privateKey = crypto.randomBytes(32);
+  const address = 'L' + crypto.randomBytes(16).toString('hex');
+  return { address, privateKey: privateKey.toString('hex') };
+}
+
 // Encryption functions for private keys
 export function encryptPrivateKey(privateKey) {
   // Simple base64 encoding (in production, use proper encryption)
