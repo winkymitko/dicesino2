@@ -527,65 +527,101 @@ const AdminPanel: React.FC = () => {
                           <div className="text-gray-400">Progress</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-yellow-400 font-bold">${userStats[u.id].wagering.required.toFixed(2)}</div>
-                          <div className="text-gray-400">Required</div>
+                      {/* Game Statistics */}
+                      <div className="grid grid-cols-3 gap-3 mb-4">
+                        {/* BarboDice Stats */}
+                        <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded">
+                          <h6 className="font-bold text-blue-400 mb-2 text-sm">🎲 BarboDice</h6>
+                          <div className="space-y-1 text-xs">
+                            <div className="flex justify-between">
+                              <span>Games:</span>
+                              <span className="font-bold">{
+                                (userStats[u.id].statsMode || 'real') === 'real' 
+                                  ? userStats[u.id].realStats?.barboDice?.totalGames || 0
+                                  : userStats[u.id].virtualStats?.barboDice?.totalGames || 0
+                              }</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Wins:</span>
+                              <span className="text-green-400">{
+                                (userStats[u.id].statsMode || 'real') === 'real' 
+                                  ? userStats[u.id].realStats?.barboDice?.wins || 0
+                                  : userStats[u.id].virtualStats?.barboDice?.wins || 0
+                              }</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Losses:</span>
+                              <span className="text-red-400">{
+                                (userStats[u.id].statsMode || 'real') === 'real' 
+                                  ? userStats[u.id].realStats?.barboDice?.losses || 0
+                                  : userStats[u.id].virtualStats?.barboDice?.losses || 0
+                              }</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* DiceBattle Stats */}
+                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded">
+                          <h6 className="font-bold text-red-400 mb-2 text-sm">⚔️ DiceBattle</h6>
+                          <div className="space-y-1 text-xs">
+                            <div className="flex justify-between">
+                              <span>Battles:</span>
+                              <span className="font-bold">{
+                                (userStats[u.id].statsMode || 'real') === 'real' 
+                                  ? userStats[u.id].realStats?.diceBattle?.totalGames || 0
+                                  : userStats[u.id].virtualStats?.diceBattle?.totalGames || 0
+                              }</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Wins:</span>
+                              <span className="text-green-400">{
+                                (userStats[u.id].statsMode || 'real') === 'real' 
+                                  ? userStats[u.id].realStats?.diceBattle?.wins || 0
+                                  : userStats[u.id].virtualStats?.diceBattle?.wins || 0
+                              }</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Ties:</span>
+                              <span className="text-yellow-400">{
+                                (userStats[u.id].statsMode || 'real') === 'real' 
+                                  ? userStats[u.id].realStats?.diceBattle?.ties || 0
+                                  : userStats[u.id].virtualStats?.diceBattle?.ties || 0
+                              }</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* DiceRoulette Stats */}
+                        <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded">
+                          <h6 className="font-bold text-orange-400 mb-2 text-sm">🎯 DiceRoulette</h6>
+                          <div className="space-y-1 text-xs">
+                            <div className="flex justify-between">
+                              <span>Games:</span>
+                              <span className="font-bold">{
+                                (userStats[u.id].statsMode || 'real') === 'real' 
+                                  ? userStats[u.id].realStats?.diceRoulette?.totalGames || 0
+                                  : userStats[u.id].virtualStats?.diceRoulette?.totalGames || 0
+                              }</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Wins:</span>
+                              <span className="text-green-400">{
+                                (userStats[u.id].statsMode || 'real') === 'real' 
+                                  ? userStats[u.id].realStats?.diceRoulette?.wins || 0
+                                  : userStats[u.id].virtualStats?.diceRoulette?.wins || 0
+                              }</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Losses:</span>
+                              <span className="text-red-400">{
+                                (userStats[u.id].statsMode || 'real') === 'real' 
+                                  ? userStats[u.id].realStats?.diceRoulette?.losses || 0
+                                  : userStats[u.id].virtualStats?.diceRoulette?.losses || 0
+                              }</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-
-                  {/* Recent Transactions */}
-                  {userStats[u.id].transactions && userStats[u.id].transactions.length > 0 && (
-                    <div className="mt-3 p-3 bg-gray-500/10 border border-gray-500/20 rounded">
-                      <h6 className="font-bold text-gray-400 mb-2 text-sm">📊 Recent Transactions</h6>
-                      <div className="space-y-1 max-h-32 overflow-y-auto">
-                        {userStats[u.id].transactions.slice(0, 5).map((tx: any, idx: number) => (
-                          <div key={idx} className="flex justify-between items-center text-xs">
-                            <span className="text-gray-300">{tx.type}</span>
-                            <span className={`font-bold ${tx.amount >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                              ${Math.abs(tx.amount).toFixed(2)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Bug Reports Inbox - Full Width */}
-      <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-3">
-            <Bug className="h-6 w-6 text-red-400" />
-            <h2 className="text-2xl font-bold">Bug Reports Inbox</h2>
-            {openReportsCount > 0 && (
-              <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-                {openReportsCount}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center space-x-2">
-            <Filter className="h-4 w-4 text-gray-400" />
-            <select
-              value={reportFilter}
-              onChange={(e) => setReportFilter(e.target.value)}
-              className="bg-black/30 border border-white/20 rounded px-3 py-1 text-sm"
-            >
-              <option value="all">All Reports</option>
-              <option value="open">Open</option>
-              <option value="in_progress">In Progress</option>
-              <option value="resolved">Resolved</option>
-              <option value="closed">Closed</option>
-            </select>
-          </div>
-        </div>
-        
-        <div className="space-y-4 max-h-96 overflow-y-auto">
           {filteredReports.length > 0 ? (
             filteredReports.map((report) => (
               <div key={report.id} className="bg-black/30 rounded-lg p-4 border border-white/10">
