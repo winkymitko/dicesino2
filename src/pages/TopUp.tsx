@@ -1,621 +1,425 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Wallet, Copy, CheckCircle, RefreshCw, History, QrCode } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import * as QRCode from 'qrcode';
+import express from 'express';
+import { PrismaClient } from '@prisma/client';
+import { authenticateToken } from '../middleware/auth.js';
+import {
+  generateTronWallet,
+  generateLTCWallet,
+  getUSDTBalance,
+  getUSDCBalance,
+  getLTCBalance,
+  checkNewDeposits,
+  isValidTronAddress,
+  isValidLTCAddress,
+  getTRXBalance,
+  sendTRXForGas,
+  sendUSDT,
+  sendUSDC,
+  sendLTC,
+  encryptPrivateKey,
+  decryptPrivateKey
+} from '../utils/tron.js';
 
-const TopUp: React.FC = () => {
-  const { user, refreshUser } = useAuth();
-  const navigate = useNavigate();
-  const [selectedCurrency, setSelectedCurrency] = useState('USDT');
-  const [walletAddresses, setWalletAddresses] = useState({
-    tron: '',
-    ltc: ''
+const router = express.Router();
+const prisma = new PrismaClient();
+
+/* ──────────────────────────────────────────────────────────────
+   Config (JS only: no TS types here)
+   ────────────────────────────────────────────────────────────── */
+const MIN_DEPOSIT = { USDT: 10, USDC: 10, LTC: 0.1 };
+const MIN_WITHDRAW = { USDT: 10, USDC: 10, LTC: 0.01 };
+const TRX_GAS_FUND = 1; // TRX to send to each TRON wallet for gas
+
+import { getLTCUSDRate } from '../utils/tron.js';
+
+/* ──────────────────────────────────────────────────────────────
+   Bonus
+   ────────────────────────────────────────────────────────────── */
+async function grantDepositBonus(userId, depositAmountUSD, bonusAmountUSD) {
+  const wageringMultiplier = 25;
+  const wageringRequired = bonusAmountUSD * wageringMultiplier;
+
+  await prisma.bonus.create({
+    data: {
+      userId,
+      amount: bonusAmountUSD,
+      type: 'deposit',
+      description: `Deposit bonus for $${depositAmountUSD.toFixed(2)} deposit`,
+      wageringRequired,
+      wageringMultiplier
+    }
   });
-  const [qrCodeUrl, setQrCodeUrl] = useState('');
-  const [copied, setCopied] = useState(false);
-  const [checking, setChecking] = useState(false);
-  const [walletStatus, setWalletStatus] = useState<any>({
-    usdtBalance: 0,
-    usdcBalance: 0,
-    ltcBalance: 0,
-    trxBalance: 0
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      bonusBalance: { increment: bonusAmountUSD },
+      activeWageringRequirement: { increment: wageringRequired }
+    }
   });
-  const [deposits, setDeposits] = useState<any[]>([]);
-  const [withdrawals, setWithdrawals] = useState<any[]>([]);
-  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
-  const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [withdrawAddress, setWithdrawAddress] = useState('');
-  const [withdrawing, setWithdrawing] = useState(false);
-  const [loading, setLoading] = useState(true);
+}
 
-  // Currency configurations
-  const currencies = {
-    USDT: {
-      name: 'Tether USD',
-      symbol: 'USDT',
-      network: 'TRC20',
-      color: 'text-green-400',
-      bgColor: 'bg-green-500/10 border-green-500/20',
-      minDeposit: 10
-    },
-    USDC: {
-      name: 'USD Coin',
-      symbol: 'USDC',
-      network: 'TRC20',
-      color: 'text-blue-400',
-      bgColor: 'bg-blue-500/10 border-blue-500/20',
-      minDeposit: 10
-    },
-    LTC: {
-      name: 'Litecoin',
-      symbol: 'LTC',
-      network: 'LTC',
-      color: 'text-gray-400',
-      bgColor: 'bg-gray-500/10 border-gray-500/20',
-      minDeposit: 0.001
-    }
-  };
+/* ──────────────────────────────────────────────────────────────
+   Get or create wallet info (separate USDT, USDC, LTC)
+   ────────────────────────────────────────────────────────────── */
+router.get('/info', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'User not authenticated' });
 
-  // Safe balance calculations with fallbacks
-  const realBalance = (user?.cashBalance || 0) + (user?.bonusBalance || 0) + (user?.lockedBalance || 0);
-  const virtualBalance = user?.virtualBalance || 0;
+    let wallet = await prisma.cryptoWallet.findUnique({ where: { userId: req.user.id } });
 
-  useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    fetchWalletInfo();
-    fetchDeposits();
-    fetchWithdrawals();
-  }, [user, navigate]);
+    if (!wallet) {
+      // Create separate wallets
+      const usdt = generateTronWallet();
+      const usdc = generateTronWallet();
 
-  const fetchWalletInfo = async () => {
-    try {
-      const response = await fetch('/api/wallet/info', {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setWalletAddresses({
-          usdt: data.usdtAddress || '',
-          usdc: data.usdcAddress || '',
-          ltc: data.ltcAddress || ''
-        });
-        
-        // Generate QR code for selected currency
-        let currentAddress = '';
-        if (selectedCurrency === 'USDT') {
-          currentAddress = data.usdtAddress;
-        } else if (selectedCurrency === 'USDC') {
-          currentAddress = data.usdcAddress;
-        } else if (selectedCurrency === 'LTC') {
-          currentAddress = data.ltcAddress;
+      if (!isValidTronAddress(usdt.address)) return res.status(500).json({ error: 'Failed to generate valid TRON address (USDT)' });
+      if (!isValidTronAddress(usdc.address)) return res.status(500).json({ error: 'Failed to generate valid TRON address (USDC)' });
+
+      wallet = await prisma.cryptoWallet.create({
+        data: {
+          userId: req.user.id,
+          usdtAddress: usdt.address,
+          usdtPrivateKey: encryptPrivateKey(usdt.privateKey),
+          usdcAddress: usdc.address,
+          usdcPrivateKey: encryptPrivateKey(usdc.privateKey)
         }
-        
-        const qrUrl = await QRCode.toDataURL(currentAddress, {
-          width: 256,
-          margin: 2,
-          color: {
-            dark: '#000000',
-            light: '#FFFFFF'
-          }
-        });
-        setQrCodeUrl(qrUrl);
-        
-        // Fetch wallet status (balances)
-        await fetchWalletStatus();
-      }
-    } catch (error) {
-      console.error('Failed to fetch wallet info:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Update QR code when currency changes
-  useEffect(() => {
-    if (walletAddresses.tron || walletAddresses.ltc) {
-      let currentAddress = '';
-      if (selectedCurrency === 'USDT') {
-        currentAddress = walletAddresses.usdt;
-      } else if (selectedCurrency === 'USDC') {
-        currentAddress = walletAddresses.usdc;
-      } else if (selectedCurrency === 'LTC') {
-        currentAddress = walletAddresses.ltc;
-      }
-      
-      if (currentAddress) {
-        QRCode.toDataURL(currentAddress, {
-          width: 256,
-          margin: 2,
-          color: {
-            dark: '#000000',
-            light: '#FFFFFF'
-          }
-        }).then(setQrCodeUrl);
-      }
-    }
-  }, [selectedCurrency, walletAddresses]);
-
-  const fetchWalletStatus = async () => {
-    try {
-      const response = await fetch('/api/wallet/status', {
-        credentials: 'include'
       });
-      if (response.ok) {
-        const data = await response.json();
-        setWalletStatus(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch wallet status:', error);
-    }
-  };
 
-  const fetchDeposits = async () => {
-    try {
-      const response = await fetch('/api/wallet/deposits', {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setDeposits(data.deposits);
+      // Fund TRX gas to each TRON wallet (non-fatal if it fails)
+      try {
+        await Promise.all([
+          sendTRXForGas(usdt.address, TRX_GAS_FUND),
+          sendTRXForGas(usdc.address, TRX_GAS_FUND)
+        ]);
+      } catch (e) {
+        console.warn('Failed to fund TRX for gas:', e?.message || e);
       }
-    } catch (error) {
-      console.error('Failed to fetch deposits:', error);
     }
-  };
 
-  const fetchWithdrawals = async () => {
-    try {
-      const response = await fetch('/api/wallet/withdrawals', {
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setWithdrawals(data.withdrawals);
-      }
-    } catch (error) {
-      console.error('Failed to fetch withdrawals:', error);
-    }
-  };
-
-  const handleWithdraw = async () => {
-    if (!withdrawAmount || !withdrawAddress) {
-      alert('Please fill in all fields');
-      return;
-    }
+    const { usdtPrivateKey, usdcPrivateKey, ...safe } = wallet;
     
-    const amount = parseFloat(withdrawAmount);
-    if (amount < 10) {
-      alert('Minimum withdrawal is $10');
-      return;
-    }
-    
-    if ((user?.cashBalance || 0) < amount) {
-      alert('Insufficient cash balance');
-      return;
-    }
-    
-    setWithdrawing(true);
-    try {
-      const response = await fetch('/api/wallet/withdraw', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          amount,
-          toAddress: withdrawAddress,
-          currency: selectedCurrency
-        })
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        alert(data.message);
-        setShowWithdrawModal(false);
-        setWithdrawAmount('');
-        setWithdrawAddress('');
-        await refreshUser();
-        await fetchWithdrawals();
-      } else {
-        const error = await response.json();
-        alert(error.error);
-      }
-    } catch (error) {
-      console.error('Withdrawal error:', error);
-      alert('Failed to process withdrawal');
-    } finally {
-      setWithdrawing(false);
-    }
-  };
-  const copyAddress = async () => {
-    try {
-      let currentAddress = '';
-      if (selectedCurrency === 'USDT') {
-        currentAddress = walletAddresses.usdt;
-      } else if (selectedCurrency === 'USDC') {
-        currentAddress = walletAddresses.usdc;
-      } else if (selectedCurrency === 'LTC') {
-        currentAddress = walletAddresses.ltc;
-      }
-      
-      await navigator.clipboard.writeText(currentAddress);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error('Failed to copy address:', error);
-    }
-  };
-
-  const checkBalance = async () => {
-    setChecking(true);
-    try {
-      const response = await fetch('/api/wallet/check-balance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ currency: selectedCurrency })
-      });
-      if (response.ok) {
-        const data = await response.json();
-        await refreshUser();
-        await fetchDeposits();
-        await fetchWalletStatus();
-        
-        if (data.newDeposit) {
-          alert(data.message);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to check balance:', error);
-    } finally {
-      setChecking(false);
-    }
-  };
-
-  if (!user) return null;
-
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400">Loading wallet information...</p>
-        </div>
-      </div>
-    );
+    return res.json(safe);
+  } catch (error) {
+    console.error('Wallet info error:', error);
+    res.status(500).json({ error: 'Server error: ' + error.message });
   }
+});
 
-  return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="flex items-center space-x-3 mb-8">
-        <Wallet className="h-8 w-8 text-green-500" />
-        <h1 className="text-3xl font-bold">Top Up with Crypto</h1>
-      </div>
+/* ──────────────────────────────────────────────────────────────
+   Deposits history
+   ────────────────────────────────────────────────────────────── */
+router.get('/deposits', authenticateToken, async (req, res) => {
+  try {
+    const deposits = await prisma.cryptoDeposit.findMany({
+      where: { userId: req.user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 20
+    });
+    res.json({ deposits });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
-      <div className="grid md:grid-cols-2 gap-8">
-        {/* Wallet Info */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-          <h2 className="text-2xl font-bold mb-6 text-center">Your Crypto Wallet</h2>
-          
-          {/* Currency Selector */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-3">Select Currency</label>
-            <div className="grid grid-cols-3 gap-2">
-              {Object.entries(currencies).map(([key, config]) => (
-                <button
-                  key={key}
-                  onClick={() => setSelectedCurrency(key)}
-                  className={`p-3 rounded-lg border transition-all text-center ${
-                    selectedCurrency === key
-                      ? config.bgColor + ' border-current'
-                      : 'bg-black/20 border-white/20 hover:bg-white/10'
-                  }`}
-                >
-                  <div className={`font-bold ${selectedCurrency === key ? config.color : 'text-gray-400'}`}>
-                    {config.symbol}
-                  </div>
-                  <div className="text-xs text-gray-500">{config.network}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          {/* QR Code */}
-          <div className="text-center mb-6">
-            {qrCodeUrl && (
-              <div className="inline-block p-4 bg-white rounded-lg">
-                <img src={qrCodeUrl} alt="Wallet QR Code" className="w-48 h-48 mx-auto" />
-              </div>
-            )}
-          </div>
+/* ──────────────────────────────────────────────────────────────
+   Check balance & pull new deposits for a currency
+   - cryptoDeposit.amount is in token units (USDT/USDC/LTC)
+   - We credit cashBalance in USD:
+     * USDT/USDC: 1 token = $1
+     * LTC: uses LTC_USD_RATE if set; otherwise we DO NOT auto-credit
+   ────────────────────────────────────────────────────────────── */
+router.post('/check-balance', authenticateToken, async (req, res) => {
+  try {
+    const currency = (req.body && req.body.currency) || 'USDT';
 
-          {/* Wallet Address */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">
-              {currencies[selectedCurrency].name} ({currencies[selectedCurrency].network}) Address
-            </label>
-            <div className="flex items-center space-x-2">
-              <input
-                type="text"
-                value={
-                  selectedCurrency === 'USDT' ? walletAddresses.usdt :
-                  selectedCurrency === 'USDC' ? walletAddresses.usdc :
-                  walletAddresses.ltc
-                }
-                readOnly
-                className="flex-1 px-4 py-3 bg-black/30 border border-white/20 rounded-lg text-sm font-mono"
-              />
-              <button
-                onClick={copyAddress}
-                className="p-3 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-lg transition-colors"
-              >
-                {copied ? <CheckCircle className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
-              </button>
-            </div>
-            {copied && (
-              <p className="text-green-400 text-sm mt-2">Address copied to clipboard!</p>
-            )}
-            
-            {/* Wallet Status */}
-            <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                <div className="text-sm">
-                  {selectedCurrency === 'USDT' && (
-                  <div className="flex justify-between items-center">
-                      <span className="text-green-400">USDT Balance:</span>
-                    <span className="font-bold">${(walletStatus.usdtBalance || 0).toFixed(2)}</span>
-                  </div>
-                  )}
-                  {selectedCurrency === 'USDC' && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-blue-400">USDC Balance:</span>
-                      <span className="font-bold">${(walletStatus.usdcBalance || 0).toFixed(2)}</span>
-                    </div>
-                  )}
-                  {selectedCurrency === 'LTC' && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400">LTC Balance:</span>
-                      <span className="font-bold">{(walletStatus.ltcBalance || 0).toFixed(4)} LTC</span>
-                    </div>
-                  )}
-                  {(selectedCurrency === 'USDT' || selectedCurrency === 'USDC') && (
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="text-gray-400">TRX Balance (Gas):</span>
-                    <span className="text-sm">{(walletStatus.trxBalance || 0).toFixed(2)} TRX</span>
-                  </div>
-                  )}
-                </div>
-            </div>
-          </div>
+    const wallet = await prisma.cryptoWallet.findUnique({ where: { userId: req.user.id } });
+    if (!wallet) return res.status(404).json({ error: 'Wallet not found' });
 
-          {/* Instructions */}
-          <div className={`${currencies[selectedCurrency].bgColor} rounded-lg p-4 mb-6`}>
-            <h3 className="font-bold text-yellow-400 mb-2">⚠️ Important Instructions</h3>
-            <ul className="text-sm text-gray-300 space-y-1">
-              <li>• Send only {currencies[selectedCurrency].name} ({currencies[selectedCurrency].network}) to this address</li>
-              <li>• Minimum deposit: {selectedCurrency === 'LTC' ? `${currencies[selectedCurrency].minDeposit} LTC` : `$${currencies[selectedCurrency].minDeposit} ${selectedCurrency}`}</li>
-              <li>• Deposits are confirmed after 1 block confirmation</li>
-              <li>• Do not send other cryptocurrencies to this address</li>
-              <li>• Network: {currencies[selectedCurrency].network} {selectedCurrency !== 'LTC' ? '- Low fees!' : ''}</li>
-              {selectedCurrency !== 'LTC' && (
-              <li>• Your wallet has been funded with 1 TRX for gas fees</li>
-              )}
-            </ul>
-          </div>
+    let address = '';
+    let currentBalance = 0;
 
-          {/* Check Balance Button */}
-          <button
-            onClick={checkBalance}
-            disabled={checking}
-            className={`w-full bg-gradient-to-r ${currencies[selectedCurrency].bgColor.includes('green') ? 'from-green-500 to-green-600 hover:from-green-600 hover:to-green-700' : currencies[selectedCurrency].bgColor.includes('blue') ? 'from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700' : 'from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700'} disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-all flex items-center justify-center space-x-2 mb-4`}
-          >
-            <RefreshCw className={`h-5 w-5 ${checking ? 'animate-spin' : ''}`} />
-            <span>{checking ? 'Checking...' : `Check for New ${selectedCurrency} Deposits`}</span>
-          </button>
-          
-          <div className="text-center">
-            <p className="text-xs text-gray-400 mb-2">Having issues? Verify a transaction manually:</p>
-            <button
-              onClick={() => {
-                const txHash = prompt('Enter transaction hash (TXID):');
-                if (txHash) {
-                  fetch('/api/wallet/verify-deposit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ txHash })
-                  }).then(res => res.json()).then(data => {
-                    alert(data.message || data.error);
-                  });
-                }
-              }}
-              className="text-xs bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded transition-colors"
-            >
-              Verify Transaction
-            </button>
-          </div>
-        </div>
+    if (currency === 'USDT') {
+      address = wallet.usdtAddress;
+      currentBalance = await getUSDTBalance(address);
+    } else if (currency === 'USDC') {
+      address = wallet.usdcAddress;
+      currentBalance = await getUSDCBalance(address);
+    } else {
+      return res.status(400).json({ error: 'Unsupported currency' });
+    }
 
-        {/* Balance & History */}
-        <div className="space-y-6">
-          {/* Current Balance */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-            <h3 className="text-xl font-bold mb-4">Current Balance</h3>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-                <div className="text-2xl font-bold text-green-400">
-                  ${((user?.cashBalance || 0)).toFixed(2)}
-                </div>
-                <div className="text-sm text-gray-400">💰 Cash</div>
-              </div>
-              <div className="text-center p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                <div className="text-2xl font-bold text-yellow-400">
-                  ${((user?.bonusBalance || 0) + (user?.lockedBalance || 0)).toFixed(2)}
-                </div>
-                <div className="text-sm text-gray-400">🎁 Bonus</div>
-              </div>
-              <div className="text-center p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-                <div className="text-2xl font-bold text-purple-400">
-                  ${virtualBalance.toFixed(2)}
-                </div>
-                <div className="text-sm text-gray-400">🎮 Virtual</div>
-              </div>
-            </div>
-            
-            {/* Withdraw Button */}
-            <div className="mt-4 text-center">
-              <button
-                onClick={() => {
-                  setWithdrawAmount('');
-                  setWithdrawAddress('');
-                  setShowWithdrawModal(true);
-                }}
-                disabled={(user?.cashBalance || 0) < 10}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2 px-6 rounded-lg transition-all"
-              >
-                💸 Withdraw Cash (Min $10)
-              </button>
-              {(user?.cashBalance || 0) < 10 && (
-                <p className="text-xs text-gray-400 mt-2">Minimum withdrawal: $10</p>
-              )}
-            </div>
-          </div>
+    const lastDeposit = await prisma.cryptoDeposit.findFirst({
+      where: { userId: req.user.id, currency },
+      orderBy: { createdAt: 'desc' }
+    });
 
-          {/* Transaction History */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-            <div className="flex items-center space-x-2 mb-4">
-              <History className="h-5 w-5 text-blue-400" />
-              <h3 className="text-xl font-bold">Transaction History</h3>
-            </div>
-            
-            <div className="space-y-3 max-h-80 overflow-y-auto">
-              {/* Combine deposits and withdrawals, sort by date */}
-              {[...deposits.map(d => ({...d, type: 'deposit'})), ...withdrawals.map(w => ({...w, type: 'withdrawal'}))].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).length > 0 ? (
-                [...deposits.map(d => ({...d, type: 'deposit'})), ...withdrawals.map(w => ({...w, type: 'withdrawal'}))].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((transaction, index) => (
-                  <div key={index} className="flex justify-between items-center p-3 bg-black/30 rounded-lg">
-                    <div>
-                      <div className="font-medium">
-                        {transaction.type === 'deposit' ? '+' : '-'}${transaction.amount.toFixed(2)} USDT
-                      </div>
-                      <div className="text-sm text-gray-400">
-                        {transaction.type === 'deposit' ? 'Deposit' : 'Withdrawal'} - {new Date(transaction.createdAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className={`px-2 py-1 rounded text-xs font-bold ${
-                        transaction.status === 'confirmed' || transaction.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                        transaction.status === 'pending' || transaction.status === 'processing' ? 'bg-yellow-500/20 text-yellow-400' :
-                        'bg-red-500/20 text-red-400'
-                      }`}>
-                        {transaction.status}
-                      </div>
-                      {transaction.txHash && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          <a 
-                            href={`https://tronscan.org/#/transaction/${transaction.txHash}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-400 hover:text-blue-300"
-                          >
-                            TX: {transaction.txHash.substring(0, 8)}...
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center text-gray-400 py-8">
-                  <QrCode className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>No transactions yet</p>
-                  <p className="text-sm">Deposit or withdraw USDT</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Withdraw Modal */}
-      {showWithdrawModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-2xl border border-white/20 p-6 w-full max-w-md mx-4">
-            <h3 className="text-xl font-bold mb-4">Withdraw Crypto</h3>
-            
-            {/* Currency Selection in Modal */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Currency</label>
-              <select
-                value={selectedCurrency}
-                onChange={(e) => setSelectedCurrency(e.target.value)}
-                className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
-              >
-                {Object.entries(currencies).map(([key, config]) => (
-                  <option key={key} value={key}>
-                    {config.name} ({config.symbol})
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Amount (Min $10)</label>
-                <input
-                  type="number"
-                  min="10"
-                  step="0.01"
-                  value={withdrawAmount}
-                  onChange={(e) => setWithdrawAmount(e.target.value)}
-                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
-                  placeholder="Enter amount"
-                />
-                <div className="text-xs text-gray-400 mt-1">
-                  Available: ${(user?.cashBalance || 0).toFixed(2)}
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-2">{currencies[selectedCurrency].network} Address</label>
-                <input
-                  type="text"
-                  value={withdrawAddress}
-                  onChange={(e) => setWithdrawAddress(e.target.value)}
-                  className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors"
-                  placeholder={`Enter ${currencies[selectedCurrency].network} address`}
-                />
-              </div>
-              
-              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
-                <p className="text-xs text-yellow-400">
-                  ⚠️ Withdrawals are processed manually within 1-24 hours. 
-                  Double-check your address - transactions cannot be reversed!
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex space-x-3 mt-6">
-              <button
-                onClick={handleWithdraw}
-                disabled={withdrawing}
-                className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition-all"
-              >
-                {withdrawing ? 'Processing...' : 'Withdraw'}
-              </button>
-              <button
-                onClick={() => setShowWithdrawModal(false)}
-                className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+    const lastCheckedTimestamp = lastDeposit
+      ? Math.floor(new Date(lastDeposit.createdAt).getTime() / 1000)
+      : Math.floor(Date.now() / 1000) - 86400;
 
-export default TopUp;
+    const newDeposits = await checkNewDeposits(address, currency, lastCheckedTimestamp);
+
+    let totalUsdCredited = 0;
+    const processedDeposits = [];
+
+    for (const dep of newDeposits) {
+      if (dep.amount < MIN_DEPOSIT[currency]) continue;
+
+      const exists = await prisma.cryptoDeposit.findUnique({ where: { txHash: dep.txHash } });
+      if (exists) continue;
+
+      const created = await prisma.cryptoDeposit.create({
+        data: {
+          userId: req.user.id,
+          walletId: wallet.id,
+          amount: dep.amount,                 // token units
+          currency,                           // 'USDT' | 'USDC'
+          network: 'TRC20',
+          toAddress: address,
+          txHash: dep.txHash,
+          status: dep.confirmations >= 1 ? 'confirmed' : 'pending',
+          confirmations: dep.confirmations
+        }
+      });
+
+      if (dep.confirmations >= 1) {
+        let usdToCredit = 0;
+
+        if (currency === 'USDT' || currency === 'USDC') {
+          usdToCredit = dep.amount;
+        }
+
+        if (usdToCredit > 0) {
+          await prisma.user.update({
+            where: { id: req.user.id },
+            data: { cashBalance: { increment: usdToCredit } }
+          });
+
+          const bonusAmount = Math.min(usdToCredit * 0.5, 100);
+          if (bonusAmount > 0) {
+            await grantDepositBonus(req.user.id, usdToCredit, bonusAmount);
+          }
+
+          const updatedUser = await prisma.user.findUnique({ where: { id: req.user.id } });
+          await prisma.transaction.create({
+            data: {
+              userId: req.user.id,
+              type: 'deposit',
+              amount: usdToCredit,                 // USD credited
+              cashChange: usdToCredit,
+              bonusChange: Math.min(usdToCredit * 0.5, 100),
+              cashBalanceAfter: updatedUser.cashBalance,
+              bonusBalanceAfter: updatedUser.bonusBalance,
+              lockedBalanceAfter: updatedUser.lockedBalance,
+              virtualBalanceAfter: updatedUser.virtualBalance,
+              description: `${currency} deposit (${dep.amount} ${currency}) ${dep.txHash.substring(0, 8)}...`,
+              reference: dep.txHash
+            }
+          });
+
+          totalUsdCredited += usdToCredit;
+        }
+      }
+
+      processedDeposits.push(created);
+    }
+
+    let trxBalance = 0;
+    if (currency === 'USDT') trxBalance = await getTRXBalance(wallet.usdtAddress);
+    if (currency === 'USDC') trxBalance = await getTRXBalance(wallet.usdcAddress);
+
+    if (processedDeposits.length > 0) {
+      return res.json({
+        success: true,
+        message:
+          totalUsdCredited > 0
+            ? `New deposits confirmed. USD credited: $${totalUsdCredited.toFixed(2)}`
+            : `New deposits recorded. USD credit pending.`,
+        newDeposit: true,
+        deposits: processedDeposits,
+        currentBalance,
+        trxBalance,
+        currency
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: 'No new deposits found',
+      newDeposit: false,
+      currentBalance,
+      trxBalance,
+      walletAddress: address,
+      currency
+    });
+  } catch (error) {
+    console.error('Error checking balance:', error);
+    res.status(500).json({ error: 'Failed to check balance: ' + error.message });
+  }
+});
+
+/* ──────────────────────────────────────────────────────────────
+   Wallet status
+   ────────────────────────────────────────────────────────────── */
+router.get('/status', authenticateToken, async (req, res) => {
+  try {
+    const wallet = await prisma.cryptoWallet.findUnique({ where: { userId: req.user.id } });
+    if (!wallet) return res.status(404).json({ error: 'Wallet not found' });
+
+    const [usdtBalance, usdcBalance, usdtTrxBalance, usdcTrxBalance] = await Promise.all([
+      getUSDTBalance(wallet.usdtAddress),
+      getUSDCBalance(wallet.usdcAddress),
+      getTRXBalance(wallet.usdtAddress),
+      getTRXBalance(wallet.usdcAddress)
+    ]);
+
+    res.json({
+      usdtAddress: wallet.usdtAddress,
+      usdcAddress: wallet.usdcAddress,
+      usdtBalance,
+      usdcBalance,
+      usdtTrxBalance,
+      usdcTrxBalance,
+      supportedCurrencies: ['USDT', 'USDC']
+    });
+  } catch (error) {
+    console.error('Error getting wallet status:', error);
+    res.status(500).json({ error: 'Failed to get wallet status' });
+  }
+});
+
+/* ──────────────────────────────────────────────────────────────
+   Withdraw (amount is in token units)
+   We deduct user's cashBalance in USD
+   ────────────────────────────────────────────────────────────── */
+router.post('/withdraw', authenticateToken, async (req, res) => {
+  try {
+    const { amount, toAddress, currency = 'USDT' } = req.body || {};
+
+    if (!amount || amount < MIN_WITHDRAW[currency]) {
+      return res.status(400).json({
+        error: `Minimum withdrawal is $${MIN_WITHDRAW[currency]}`
+      });
+    }
+
+    let isValidAddress = isValidTronAddress(toAddress);
+    if (!toAddress || !isValidAddress) return res.status(400).json({ error: `Invalid ${currency} address` });
+
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user) return res.status(400).json({ error: 'User not found' });
+
+    // Compute USD to deduct
+    let usdToDeduct = 0;
+    if (currency === 'USDT' || currency === 'USDC') {
+      usdToDeduct = amount; // 1 token = $1
+    }
+
+    if (user.cashBalance < usdToDeduct) {
+      return res.status(400).json({ error: 'Insufficient cash balance' });
+    }
+
+    const wallet = await prisma.cryptoWallet.findUnique({ where: { userId: req.user.id } });
+    if (!wallet) return res.status(404).json({ error: 'Wallet not found' });
+
+    // Create withdrawal record (store token amount)
+    const withdrawal = await prisma.cryptoWithdrawal.create({
+      data: {
+        userId: req.user.id,
+        amount, // token units
+        currency,
+        network: 'TRC20',
+        toAddress,
+        status: 'processing'
+      }
+    });
+
+    // Deduct USD from user balance
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { cashBalance: { decrement: usdToDeduct } }
+    });
+
+    try {
+      // Decrypt key + send
+      let txResult;
+
+      if (currency === 'USDT') {
+        const pk = decryptPrivateKey(wallet.usdtPrivateKey);
+        txResult = await sendUSDT(pk, toAddress, amount);
+      } else if (currency === 'USDC') {
+        const pk = decryptPrivateKey(wallet.usdcPrivateKey);
+        txResult = await sendUSDC(pk, toAddress, amount);
+      }
+
+      await prisma.cryptoWithdrawal.update({
+        where: { id: withdrawal.id },
+        data: {
+          txHash: (txResult && (txResult.txid || txResult.transaction_id)) || null,
+          status: 'completed'
+        }
+      });
+
+      const updatedUser = await prisma.user.findUnique({ where: { id: req.user.id } });
+      await prisma.transaction.create({
+        data: {
+          userId: req.user.id,
+          type: 'withdrawal',
+          amount: -usdToDeduct,                  // USD impact
+          cashChange: -usdToDeduct,
+          cashBalanceAfter: updatedUser.cashBalance,
+          bonusBalanceAfter: updatedUser.bonusBalance,
+          lockedBalanceAfter: updatedUser.lockedBalance,
+          virtualBalanceAfter: updatedUser.virtualBalance,
+          description: `${currency} withdrawal (${amount} ${currency}) to ${toAddress.substring(0, 8)}...`,
+          reference: withdrawal.id
+        }
+      });
+
+      return res.json({
+        success: true,
+        message: `Withdrawal completed! TX: ${txResult?.txid || txResult?.transaction_id || 'n/a'}`,
+        withdrawalId: withdrawal.id,
+        txHash: (txResult && (txResult.txid || txResult.transaction_id)) || null
+      });
+    } catch (sendError) {
+      console.error('Withdrawal send error:', sendError);
+
+      // Refund USD
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: { cashBalance: { increment: usdToDeduct } }
+      });
+
+      await prisma.cryptoWithdrawal.update({
+        where: { id: withdrawal.id },
+        data: { status: 'failed' }
+      });
+
+      return res.status(500).json({ error: 'Withdrawal failed: ' + (sendError?.message || sendError) });
+    }
+  } catch (error) {
+    console.error('Withdrawal error:', error);
+    res.status(500).json({ error: 'Failed to process withdrawal' });
+  }
+});
+
+/* ──────────────────────────────────────────────────────────────
+   Withdrawals history
+   ────────────────────────────────────────────────────────────── */
+router.get('/withdrawals', authenticateToken, async (req, res) => {
+  try {
+    const withdrawals = await prisma.cryptoWithdrawal.findMany({
+      where: { userId: req.user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 20
+    });
+
+    res.json({ withdrawals });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+export default router;
