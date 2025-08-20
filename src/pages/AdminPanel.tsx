@@ -451,99 +451,24 @@ const AdminPanel: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Real Money Overview */}
-                  {(userStats[u.id].statsMode || 'real') === 'real' && (
-                    <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded">
-                      <h5 className="font-bold text-green-400 mb-2">💰 Real Money Overview</h5>
-                      <div className="grid grid-cols-3 gap-3 text-sm">
-                        <div className="text-center">
-                          <div className="text-green-400 font-bold">${(userStats[u.id].realMoney?.totalDeposited || 0).toFixed(2)}</div>
-                          <div className="text-gray-400">Deposited</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-red-400 font-bold">${(userStats[u.id].realMoney?.totalWithdrawn || 0).toFixed(2)}</div>
-                          <div className="text-gray-400">Withdrawn</div>
-                        </div>
-                        <div className="text-center">
-                          <div className={`font-bold ${(userStats[u.id].realMoney?.casinoProfit || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            ${(userStats[u.id].realMoney?.casinoProfit || 0).toFixed(2)}
-                          </div>
-                          <div className="text-gray-400">Casino Profit</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Affiliate Stats */}
-                  {userStats[u.id].affiliateStats && (
-                    <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/20 rounded">
-                      <h5 className="font-bold text-purple-400 mb-2">👥 Affiliate Performance</h5>
-                      <div className="grid grid-cols-3 gap-3 text-sm">
-                        <div className="text-center">
-                          <div className="text-purple-400 font-bold">{userStats[u.id].affiliateStats.totalReferrals}</div>
-                          <div className="text-gray-400">Referrals</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-green-400 font-bold">{userStats[u.id].affiliateStats.activeReferrals}</div>
-                          <div className="text-gray-400">Active</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-yellow-400 font-bold">${(userStats[u.id].affiliateStats.totalCommissionEarned || 0).toFixed(2)}</div>
-                          <div className="text-gray-400">Commission</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Game Statistics */}
                   <div className="grid grid-cols-3 gap-3 mb-4">
                     {/* BarboDice Stats */}
                     <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded">
                       <h6 className="font-bold text-blue-400 mb-2 text-sm">🎲 BarboDice</h6>
                       <div className="space-y-1 text-xs">
-                        {(userStats[u.id].statsMode || 'real') === 'real' ? (
-                          <>
-                            <div className="flex justify-between">
-                              <span>Games:</span>
-                              <span className="font-bold">{userStats[u.id].realStats?.barboDice?.totalGames || 0}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Wins:</span>
-                              <span className="text-green-400">{userStats[u.id].realStats?.barboDice?.wins || 0}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Losses:</span>
-                              <span className="text-red-400">{userStats[u.id].realStats?.barboDice?.losses || 0}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Profit:</span>
-                              <span className={`font-bold ${(userStats[u.id].realStats?.barboDice?.totalWins - userStats[u.id].realStats?.barboDice?.totalBets || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                ${((userStats[u.id].realStats?.barboDice?.totalWins || 0) - (userStats[u.id].realStats?.barboDice?.totalBets || 0)).toFixed(2)}
-                              </span>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex justify-between">
-                              <span>Games:</span>
-                              <span className="font-bold">{userStats[u.id].virtualStats?.barboDice?.totalGames || 0}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Wins:</span>
-                              <span className="text-green-400">{userStats[u.id].virtualStats?.barboDice?.wins || 0}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Losses:</span>
-                              <span className="text-red-400">{userStats[u.id].virtualStats?.barboDice?.losses || 0}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Profit:</span>
-                              <span className={`font-bold ${(userStats[u.id].virtualStats?.barboDice?.totalWins - userStats[u.id].virtualStats?.barboDice?.totalBets || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                ${((userStats[u.id].virtualStats?.barboDice?.totalWins || 0) - (userStats[u.id].virtualStats?.barboDice?.totalBets || 0)).toFixed(2)}
-                              </span>
-                            </div>
-                          </>
-                        )}
+                        <div className="flex justify-between">
+                          <span>Games:</span>
+                          <span className="font-bold">{userStats[u.id].totalGames || 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Wins:</span>
+                          <span className="text-green-400">{userStats[u.id].totalWins || 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Losses:</span>
+                          <span className="text-red-400">{userStats[u.id].totalLosses || 0}</span>
+                        </div>
                       </div>
                     </div>
 
@@ -551,49 +476,18 @@ const AdminPanel: React.FC = () => {
                     <div className="p-3 bg-red-500/10 border border-red-500/20 rounded">
                       <h6 className="font-bold text-red-400 mb-2 text-sm">⚔️ DiceBattle</h6>
                       <div className="space-y-1 text-xs">
-                        {(userStats[u.id].statsMode || 'real') === 'real' ? (
-                          <>
-                            <div className="flex justify-between">
-                              <span>Battles:</span>
-                              <span className="font-bold">{userStats[u.id].realStats?.diceBattle?.totalGames || 0}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Wins:</span>
-                              <span className="text-green-400">{userStats[u.id].realStats?.diceBattle?.wins || 0}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Ties:</span>
-                              <span className="text-yellow-400">{userStats[u.id].realStats?.diceBattle?.ties || 0}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Profit:</span>
-                              <span className={`font-bold ${(userStats[u.id].realStats?.diceBattle?.totalWins - userStats[u.id].realStats?.diceBattle?.totalBets || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                ${((userStats[u.id].realStats?.diceBattle?.totalWins || 0) - (userStats[u.id].realStats?.diceBattle?.totalBets || 0)).toFixed(2)}
-                              </span>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex justify-between">
-                              <span>Battles:</span>
-                              <span className="font-bold">{userStats[u.id].virtualStats?.diceBattle?.totalGames || 0}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Wins:</span>
-                              <span className="text-green-400">{userStats[u.id].virtualStats?.diceBattle?.wins || 0}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Ties:</span>
-                              <span className="text-yellow-400">{userStats[u.id].virtualStats?.diceBattle?.ties || 0}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Profit:</span>
-                              <span className={`font-bold ${(userStats[u.id].virtualStats?.diceBattle?.totalWins - userStats[u.id].virtualStats?.diceBattle?.totalBets || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                ${((userStats[u.id].virtualStats?.diceBattle?.totalWins || 0) - (userStats[u.id].virtualStats?.diceBattle?.totalBets || 0)).toFixed(2)}
-                              </span>
-                            </div>
-                          </>
-                        )}
+                        <div className="flex justify-between">
+                          <span>Battles:</span>
+                          <span className="font-bold">{userStats[u.id].totalBattles || 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Wins:</span>
+                          <span className="text-green-400">{userStats[u.id].battleWins || 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Ties:</span>
+                          <span className="text-yellow-400">{userStats[u.id].battleTies || 0}</span>
+                        </div>
                       </div>
                     </div>
 
@@ -601,49 +495,18 @@ const AdminPanel: React.FC = () => {
                     <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded">
                       <h6 className="font-bold text-orange-400 mb-2 text-sm">🎯 DiceRoulette</h6>
                       <div className="space-y-1 text-xs">
-                        {(userStats[u.id].statsMode || 'real') === 'real' ? (
-                          <>
-                            <div className="flex justify-between">
-                              <span>Games:</span>
-                              <span className="font-bold">{userStats[u.id].realStats?.diceRoulette?.totalGames || 0}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Wins:</span>
-                              <span className="text-green-400">{userStats[u.id].realStats?.diceRoulette?.wins || 0}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Losses:</span>
-                              <span className="text-red-400">{userStats[u.id].realStats?.diceRoulette?.losses || 0}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Profit:</span>
-                              <span className={`font-bold ${(userStats[u.id].realStats?.diceRoulette?.totalWins - userStats[u.id].realStats?.diceRoulette?.totalBets || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                ${((userStats[u.id].realStats?.diceRoulette?.totalWins || 0) - (userStats[u.id].realStats?.diceRoulette?.totalBets || 0)).toFixed(2)}
-                              </span>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex justify-between">
-                              <span>Games:</span>
-                              <span className="font-bold">{userStats[u.id].virtualStats?.diceRoulette?.totalGames || 0}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Wins:</span>
-                              <span className="text-green-400">{userStats[u.id].virtualStats?.diceRoulette?.wins || 0}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Losses:</span>
-                              <span className="text-red-400">{userStats[u.id].virtualStats?.diceRoulette?.losses || 0}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Profit:</span>
-                              <span className={`font-bold ${(userStats[u.id].virtualStats?.diceRoulette?.totalWins - userStats[u.id].virtualStats?.diceRoulette?.totalBets || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                ${((userStats[u.id].virtualStats?.diceRoulette?.totalWins || 0) - (userStats[u.id].virtualStats?.diceRoulette?.totalBets || 0)).toFixed(2)}
-                              </span>
-                            </div>
-                          </>
-                        )}
+                        <div className="flex justify-between">
+                          <span>Games:</span>
+                          <span className="font-bold">{userStats[u.id].rouletteGames || 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Wins:</span>
+                          <span className="text-green-400">{userStats[u.id].rouletteWins || 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Losses:</span>
+                          <span className="text-red-400">{userStats[u.id].rouletteLosses || 0}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
