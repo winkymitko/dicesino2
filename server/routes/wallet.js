@@ -22,31 +22,6 @@ const MIN_DEPOSIT = { USDT: 10, USDC: 10 };
 const MIN_WITHDRAW = { USDT: 10, USDC: 10 };
 const TRX_GAS_FUND = 1; // TRX to send to each TRON wallet for gas
 
-// Grant deposit bonus
-async function grantDepositBonus(userId, depositAmountUSD, bonusAmountUSD) {
-  const wageringMultiplier = 25;
-  const wageringRequired = bonusAmountUSD * wageringMultiplier;
-
-  await prisma.bonus.create({
-    data: {
-      userId,
-      amount: bonusAmountUSD,
-      type: 'deposit',
-      description: `Deposit bonus for $${depositAmountUSD.toFixed(2)} deposit`,
-      wageringRequired,
-      wageringMultiplier
-    }
-  });
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      bonusBalance: { increment: bonusAmountUSD },
-      activeWageringRequirement: { increment: wageringRequired }
-    }
-  });
-}
-
 // Get or create wallet info
 router.get('/info', authenticateToken, async (req, res) => {
   try {
