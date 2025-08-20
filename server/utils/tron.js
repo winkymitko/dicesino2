@@ -45,6 +45,9 @@ export function generateTronWallet() {
   }
 }
 
+// Generate new LTC address and private key
+export function generateLTCWallet() {
+  try {
     // Simple LTC wallet generation
     const privateKeyHex = crypto.randomBytes(32).toString('hex');
     const address = 'L' + crypto.randomBytes(16).toString('hex').substring(0, 32);
