@@ -558,4 +558,42 @@ router.delete('/bot-names', authenticateToken, requireAdmin, async (req, res) =>
   }
 });
 
+// Placeholder functions for wallet operations
+export async function checkNewDeposits(address, currency, lastTimestamp) {
+  // Placeholder - returns empty array for now
+  return [];
+}
+
+export async function getUSDTBalance(address) {
+  return 0;
+}
+
+export async function getUSDCBalance(address) {
+  return 0;
+}
+
+export async function getLTCBalance(address) {
+  return 0;
+}
+
+export async function getTRXBalance(address) {
+  return 0;
+}
+
+export async function sendTRXForGas(address, amount) {
+  console.log(`Would send ${amount} TRX to ${address} for gas`);
+}
+
+export async function sendUSDT(privateKey, toAddress, amount) {
+  throw new Error('USDT sending not implemented');
+}
+
+export async function sendUSDC(privateKey, toAddress, amount) {
+  throw new Error('USDC sending not implemented');
+}
+
+export async function sendLTC(privateKey, toAddress, amount) {
+  throw new Error('LTC sending not implemented');
+}
+
 export default router;
