@@ -15,7 +15,7 @@ const USDC_CONTRACT = 'TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8';
 // Generate TRON wallet
 export function generateTronWallet() {
   try {
-    const account = tronWeb.createAccount();
+    const account = TronWeb.utils.accounts.generateAccount();
     return {
       address: account.address.base58,
       privateKey: account.privateKey
@@ -29,7 +29,7 @@ export function generateTronWallet() {
 // Validate TRON address
 export function isValidTronAddress(address) {
   try {
-    return tronWeb.isAddress(address);
+    return TronWeb.isAddress(address);
   } catch {
     return false;
   }
@@ -40,7 +40,7 @@ export async function getUSDTBalance(address) {
   try {
     const contract = await tronWeb.contract().at(USDT_CONTRACT);
     const balance = await contract.balanceOf(address).call();
-    return parseFloat(tronWeb.fromSun(balance)) / 1000000; // USDT has 6 decimals
+    return parseFloat(TronWeb.fromSun(balance)) / 1000000; // USDT has 6 decimals
   } catch (error) {
     console.error('Failed to get USDT balance:', error);
     return 0;
@@ -52,7 +52,7 @@ export async function getUSDCBalance(address) {
   try {
     const contract = await tronWeb.contract().at(USDC_CONTRACT);
     const balance = await contract.balanceOf(address).call();
-    return parseFloat(tronWeb.fromSun(balance)) / 1000000; // USDC has 6 decimals
+    return parseFloat(TronWeb.fromSun(balance)) / 1000000; // USDC has 6 decimals
   } catch (error) {
     console.error('Failed to get USDC balance:', error);
     return 0;
@@ -63,7 +63,7 @@ export async function getUSDCBalance(address) {
 export async function getTRXBalance(address) {
   try {
     const balance = await tronWeb.trx.getBalance(address);
-    return parseFloat(tronWeb.fromSun(balance));
+    return parseFloat(TronWeb.fromSun(balance));
   } catch (error) {
     console.error('Failed to get TRX balance:', error);
     return 0;
@@ -73,7 +73,7 @@ export async function getTRXBalance(address) {
 // Send TRX for gas
 export async function sendTRXForGas(toAddress, amount) {
   try {
-    const transaction = await tronWeb.trx.sendTransaction(toAddress, tronWeb.toSun(amount));
+    const transaction = await tronWeb.trx.sendTransaction(toAddress, TronWeb.toSun(amount));
     return transaction;
   } catch (error) {
     console.error('Failed to send TRX for gas:', error);
