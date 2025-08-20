@@ -596,4 +596,15 @@ export async function sendLTC(privateKey, toAddress, amount) {
   throw new Error('LTC sending not implemented');
 }
 
+// Encryption functions for private keys
+export function encryptPrivateKey(privateKey) {
+  // Simple base64 encoding (in production, use proper encryption)
+  return Buffer.from(privateKey).toString('base64');
+}
+
+export function decryptPrivateKey(encryptedKey) {
+  // Simple base64 decoding (in production, use proper decryption)
+  return Buffer.from(encryptedKey, 'base64').toString();
+}
+
 export default router;
